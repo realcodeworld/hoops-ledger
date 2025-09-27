@@ -1,0 +1,23 @@
+{
+  "name": "HoopsLedger",
+  "short_name": "HoopsLedger",
+  "description": "Track hoops. Track dues. Zero fuss.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F97316",
+  "theme_color": "#F97316",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["sports", "business", "productivity"],
+  "orientation": "portrait-primary"
+}

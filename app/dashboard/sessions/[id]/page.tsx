@@ -1,0 +1,159 @@
+import { redirect, notFound } from 'next/navigation'
+import { getCurrentUser } from '@/lib/auth'
+import { AdminLayout } from '@/components/hoops/admin-layout'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Calendar, ArrowLeft, Clock, MapPin, Users, CreditCard } from 'lucide-react'
+import Link from 'next/link'
+import { getSessionDetail } from '@/lib/actions/sessions'
+import { getPlayers } from '@/lib/actions/players'
+import { formatTime, formatDate } from '@/lib/utils'
+import { AttendanceManager } from '@/components/hoops/attendance-manager'
+
+interface SessionDetailPageProps {
+  params: Promise<{
+    id: string
+  }>
+}
+
+export default async function SessionDetailPage({ params }: SessionDetailPageProps) {
+  const user = await getCurrentUser()
+  
+  if (!user) {
+    redirect('/auth')
+  }
+
+  const { id } = await params
+  
+  const [sessionResult, playersResult] = await Promise.all([
+    getSessionDetail(id),
+    getPlayers()
+  ])
+  
+  if (!sessionResult.success) {
+    notFound()
+  }
+
+  const session = sessionResult.data
+  const players = playersResult.success ? playersResult.data : []
+
+  const totalAttending = session.attendance.length
+  const paidCount = session.attendance.filter(a => a.status === 'paid').length
+  const unpaidCount = session.attendance.filter(a => a.status === 'unpaid').length
+  const waivedCount = session.attendance.filter(a => a.status === 'waived').length
+  
+  const totalFees = session.attendance.reduce((sum, a) => sum + a.feeAppliedPence, 0)
+  const totalPaid = session.attendance
+    .filter(a => a.status === 'paid')
+    .reduce((sum, a) => sum + a.feeAppliedPence, 0)
+
+  return (
+    <AdminLayout currentPath={`/dashboard/sessions/${id}`}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center space-x-4">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/sessions">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Sessions
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {session.name || `Training Session - ${formatDate(session.startsAt)}`}
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Attendance tracking and payment management
+            </p>
+          </div>
+        </div>
+
+        {/* Session Info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-primary" />
+              Session Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex items-center text-sm">
+                <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                {formatTime(session.startsAt)}
+                {session.endsAt && ` - ${formatTime(session.endsAt)}`}
+              </div>
+              {session.venue && (
+                <div className="flex items-center text-sm">
+                  <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                  {session.venue}
+                </div>
+              )}
+              <div className="flex items-center text-sm">
+                <Users className="w-4 h-4 mr-2 text-gray-500" />
+                {totalAttending} attending
+                {session.capacity && ` / ${session.capacity} max`}
+              </div>
+              <div className="flex items-center text-sm">
+                <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
+                £{(totalPaid / 100).toFixed(2)} / £{(totalFees / 100).toFixed(2)}
+              </div>
+            </div>
+            
+            {session.notes && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-gray-600">
+                  <strong>Notes:</strong> {session.notes}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{paidCount}</div>
+                <div className="text-sm text-gray-500">Paid</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{unpaidCount}</div>
+                <div className="text-sm text-gray-500">Unpaid</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{waivedCount}</div>
+                <div className="text-sm text-gray-500">Waived</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900">
+                  £{(totalFees / 100).toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-500">Total Fees</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Attendance Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Attendance & Payment Tracking</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AttendanceManager 
+              sessionId={id} 
+              attendance={session.attendance} 
+              availablePlayers={players}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
+  )
+}

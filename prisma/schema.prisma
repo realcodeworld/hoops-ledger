@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  timezone     String   @default("Europe/London")
+  currency     String   @default("GBP")
+  brandingJson Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        User[]
+  players      Player[]
+  sessions     Session[]
+  pricingRules PricingRule[]
+  payments     Payment[]
+  auditLogs    AuditLog[]
+
+  @@map("organizations")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name         String
+  email        String    @unique
+  role         UserRole
+  passwordHash String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  @@map("users")
+}
+
+enum UserRole {
+  admin
+  coach
+}
+
+model Player {
+  id              String      @id @default(cuid())
+  orgId           String
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name            String
+  email           String?     @unique
+  phone           String?
+  pricingRuleId   String?
+  pricingRule     PricingRule? @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
+  isExempt        Boolean     @default(false)
+  notes           String?
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  attendance Attendance[]
+  payments   Payment[]
+
+  @@map("players")
+}
+
+model Session {
+  id            String       @id @default(cuid())
+  orgId         String
+  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name          String?
+  venue         String?
+  startsAt      DateTime
+  endsAt        DateTime?
+  capacity      Int?
+  allowGuests   Boolean      @default(true)
+  notes         String?
+  pricingRuleId String?
+  pricingRule   PricingRule? @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  attendance Attendance[]
+  payments   Payment[]
+
+  @@map("sessions")
+}
+
+model PricingRule {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  feePence  Int      @default(500) // £5.00
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+  players  Player[]
+
+  @@map("pricing_rules")
+}
+
+model Attendance {
+  id               String           @id @default(cuid())
+  sessionId        String
+  session          Session          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId         String
+  player           Player           @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  checkedInAt      DateTime?
+  checkedInByUser  String?
+  feeAppliedPence  Int              @default(0)
+  status           AttendanceStatus @default(unpaid)
+  notes            String?
+  paymentId        String?
+  payment          Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([sessionId, playerId])
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  unpaid
+  paid
+  waived
+  exempt
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orgId       String
+  org         Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     Session?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  playerId    String
+  player      Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  amountPence Int
+  method      PaymentMethod
+  occurredOn  DateTime
+  recordedBy  String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  attendance Attendance[]
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  other
+}
+
+model MagicLink {
+  id         String    @id @default(cuid())
+  orgId      String
+  playerId   String
+  email      String
+  token      String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("magic_links")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}
