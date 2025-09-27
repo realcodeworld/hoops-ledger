@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 interface PlayerDetailsPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function PlayerDetailsPage({ params }: PlayerDetailsPageProps) {
@@ -31,9 +31,11 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     redirect('/auth')
   }
 
+  const { id } = await params
+
   const player = await prisma.player.findFirst({
     where: {
-      id: params.id,
+      id,
       orgId: user.orgId,
     },
     include: {

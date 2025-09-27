@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/hoops/admin-layout'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 
 interface PlayerEditPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function PlayerEditPage({ params }: PlayerEditPageProps) {
@@ -16,10 +16,12 @@ export default async function PlayerEditPage({ params }: PlayerEditPageProps) {
     redirect('/auth')
   }
 
+  const { id } = await params
+
   const [player, organization] = await Promise.all([
     prisma.player.findFirst({
       where: {
-        id: params.id,
+        id,
         orgId: user.orgId,
       },
       include: {
