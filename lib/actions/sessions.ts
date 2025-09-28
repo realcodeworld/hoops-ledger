@@ -123,8 +123,8 @@ export async function updateSession(formData: FormData) {
       data: {
         name: data.name || null,
         venue: data.venue || null,
-        startsAt: new Date(data.startsAt),
-        endsAt: data.endsAt ? new Date(data.endsAt) : null,
+        startsAt: new Date(`${data.date}T${data.startTime}`),
+        endsAt: data.endTime ? new Date(`${data.date}T${data.endTime}`) : null,
         capacity: data.capacity ? parseInt(data.capacity) : null,
         allowGuests: data.allowGuests,
         notes: data.notes || null,

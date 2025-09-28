@@ -35,18 +35,18 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
     notFound()
   }
 
-  const session = sessionResult.data
+  const session = sessionResult.data!
   const players = playersResult.success ? playersResult.data : []
 
-  const totalAttending = session.attendance.length
-  const paidCount = session.attendance.filter(a => a.status === 'paid').length
-  const unpaidCount = session.attendance.filter(a => a.status === 'unpaid').length
-  const waivedCount = session.attendance.filter(a => a.status === 'waived').length
-  
-  const totalFees = session.attendance.reduce((sum, a) => sum + a.feeAppliedPence, 0)
+  const totalAttending = session.attendance?.length || 0
+  const paidCount = session.attendance?.filter(a => a.status === 'paid').length || 0
+  const unpaidCount = session.attendance?.filter(a => a.status === 'unpaid').length || 0
+  const waivedCount = session.attendance?.filter(a => a.status === 'waived').length || 0
+
+  const totalFees = session.attendance?.reduce((sum, a) => sum + a.feeAppliedPence, 0) || 0
   const totalPaid = session.attendance
-    .filter(a => a.status === 'paid')
-    .reduce((sum, a) => sum + a.feeAppliedPence, 0)
+    ?.filter(a => a.status === 'paid')
+    .reduce((sum, a) => sum + a.feeAppliedPence, 0) || 0
 
   return (
     <AdminLayout currentPath={`/dashboard/sessions/${id}`}>
@@ -61,7 +61,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {session.name || `Training Session - ${formatDate(session.startsAt)}`}
+              {session.name || `Training Session - ${formatDate(session.startsAt!)}`}
             </h1>
             <p className="mt-2 text-gray-600">
               Attendance tracking and payment management
@@ -81,7 +81,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center text-sm">
                 <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                {formatTime(session.startsAt)}
+                {formatTime(session.startsAt!)}
                 {session.endsAt && ` - ${formatTime(session.endsAt)}`}
               </div>
               {session.venue && (
@@ -146,10 +146,10 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             <CardTitle>Attendance & Payment Tracking</CardTitle>
           </CardHeader>
           <CardContent>
-            <AttendanceManager 
-              sessionId={id} 
-              attendance={session.attendance} 
-              availablePlayers={players}
+            <AttendanceManager
+              sessionId={id}
+              attendance={session.attendance || []}
+              availablePlayers={players || []}
             />
           </CardContent>
         </Card>

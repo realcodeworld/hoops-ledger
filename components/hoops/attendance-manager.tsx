@@ -201,7 +201,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
                     <SelectContent>
                       {availablePlayersForSession.map((player) => (
                         <SelectItem key={player.id} value={player.id}>
-                          {player.name} ({player.category})
+                          {player.name} ({player.pricingRule?.name || 'No Category'})
                         </SelectItem>
                       ))}
                     </SelectContent>

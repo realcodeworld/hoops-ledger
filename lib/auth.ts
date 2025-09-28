@@ -142,7 +142,6 @@ export async function generateMagicLink(playerId: string): Promise<string> {
 export async function consumeMagicLink(token: string): Promise<Player | null> {
   const magicLink = await prisma.magicLink.findUnique({
     where: { token },
-    include: { player: true },
   })
 
   if (!magicLink) {
@@ -163,7 +162,14 @@ export async function consumeMagicLink(token: string): Promise<Player | null> {
     data: { consumedAt: new Date() },
   })
 
-  return magicLink.player
+  const player = await prisma.player.findUnique({
+    where: { id: magicLink.playerId },
+    include: {
+      pricingRule: true
+    }
+  })
+
+  return player
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {

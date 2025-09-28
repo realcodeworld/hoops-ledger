@@ -228,7 +228,7 @@ export async function getOrganizationReport(days = 30) {
         orgId: currentUser.orgId,
         isActive: true,
       },
-      by: ['category'],
+      by: ['pricingRuleId'],
       _count: true,
     })
 
@@ -272,7 +272,7 @@ export async function getOrganizationReport(days = 30) {
         attendanceInPeriod,
         averageFillRate: Math.round(averageFillRate * 10) / 10, // Round to 1 decimal
         categoryMix: categoryMix.map(item => ({
-          category: item.category,
+          pricingRuleId: item.pricingRuleId,
           count: item._count,
         })),
         monthlyRevenue,

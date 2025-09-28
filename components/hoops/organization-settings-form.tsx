@@ -44,7 +44,7 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
       const result = await updateOrganization(formData)
 
       if (result.success) {
-        setMessage({ type: 'success', text: result.message })
+        setMessage({ type: 'success', text: result.message || 'Organization settings updated successfully' })
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to update organization settings' })
       }

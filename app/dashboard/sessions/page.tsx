@@ -42,7 +42,7 @@ export default async function SessionsPage() {
 
         {/* Sessions List */}
         <div className="grid gap-6">
-          {sessions.length === 0 ? (
+          {(sessions?.length || 0) === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 mb-4" />
@@ -61,7 +61,7 @@ export default async function SessionsPage() {
               </CardContent>
             </Card>
           ) : (
-            sessions.map((session) => (
+            sessions?.map((session) => (
               <Card key={session.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">

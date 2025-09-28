@@ -46,7 +46,7 @@ export function PricingRulesForm({ pricingRule, currency, isAdmin }: PricingRule
       const result = await updatePricingRule(formData)
 
       if (result.success) {
-        setMessage({ type: 'success', text: result.message })
+        setMessage({ type: 'success', text: result.message || 'Pricing rule updated successfully' })
       } else {
         setMessage({ type: 'error', text: result.error || 'Failed to update pricing rules' })
       }
