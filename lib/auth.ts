@@ -3,6 +3,7 @@ import { prisma } from './prisma'
 import { v4 as uuidv4 } from 'uuid'
 import bcrypt from 'bcryptjs'
 import { User, Player } from '@prisma/client'
+import { Buffer } from 'buffer'
 
 const SESSION_COOKIE_NAME = 'hoops-session'
 
