@@ -22,7 +22,7 @@ export async function createUserSession(user: User) {
     role: user.role,
   }
 
-  const sessionToken = Buffer.from(JSON.stringify(sessionData)).toString('base64')
+  const sessionToken = btoa(JSON.stringify(sessionData))
   
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
@@ -42,7 +42,7 @@ export async function createPlayerSession(player: Player) {
     type: 'player',
   }
 
-  const sessionToken = Buffer.from(JSON.stringify(sessionData)).toString('base64')
+  const sessionToken = btoa(JSON.stringify(sessionData))
   
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
@@ -65,7 +65,7 @@ export async function getSession(): Promise<SessionData | null> {
     }
 
     const sessionData = JSON.parse(
-      Buffer.from(sessionCookie.value, 'base64').toString()
+      atob(sessionCookie.value)
     ) as SessionData
 
     return sessionData
