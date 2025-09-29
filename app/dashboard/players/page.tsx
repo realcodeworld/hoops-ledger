@@ -44,15 +44,12 @@ export default async function PlayersPage() {
     <AdminLayout currentPath="/dashboard/players">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Players</h1>
-            <p className="mt-2 text-gray-600">
-              Manage your basketball club members and their details.
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Players</h1>
           </div>
-          <div className="mt-4 sm:mt-0">
-            <Button asChild>
+          <div>
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/dashboard/players/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Player
@@ -143,7 +140,8 @@ export default async function PlayersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -203,8 +201,8 @@ export default async function PlayersPage() {
                         <ActivityBadge isActive={player.isActive} />
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        <CurrencyDisplay 
-                          amountPence={player.balance} 
+                        <CurrencyDisplay
+                          amountPence={player.balance}
                           showSign
                           className={player.balance > 0 ? 'text-warning' : player.balance < 0 ? 'text-success' : ''}
                         />
@@ -219,6 +217,82 @@ export default async function PlayersPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+              {playersWithBalances.map((player) => (
+                <div key={player.id} className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium truncate">{player.name}</h3>
+                      {player.notes && (
+                        <p className="text-sm text-gray-500 truncate">{player.notes}</p>
+                      )}
+                    </div>
+                    <PlayerActionsDropdown player={player} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-gray-500">Category</div>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <CategoryBadge
+                          categoryName={player.pricingRule?.name || 'No Category'}
+                          feePence={player.pricingRule?.feePence}
+                          currency={user.org?.currency || 'GBP'}
+                        />
+                        {player.isExempt && (
+                          <Badge variant="exempt">Exempt</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-gray-500">Status</div>
+                      <div className="mt-1">
+                        <ActivityBadge isActive={player.isActive} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-gray-500">Balance</div>
+                      <div className="mt-1 font-medium">
+                        <CurrencyDisplay
+                          amountPence={player.balance}
+                          showSign
+                          className={player.balance > 0 ? 'text-warning' : player.balance < 0 ? 'text-success' : ''}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-gray-500">Sessions</div>
+                      <div className="mt-1 font-medium">{player._count.attendance}</div>
+                    </div>
+                  </div>
+
+                  {(player.email || player.phone) && (
+                    <div className="pt-2 border-t">
+                      <div className="text-gray-500 text-sm mb-1">Contact</div>
+                      <div className="space-y-1">
+                        {player.email && (
+                          <div className="flex items-center text-sm">
+                            <Mail className="w-3 h-3 mr-2" />
+                            <span className="truncate">{player.email}</span>
+                          </div>
+                        )}
+                        {player.phone && (
+                          <div className="flex items-center text-sm">
+                            <Phone className="w-3 h-3 mr-2" />
+                            <span>{player.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
             
             {(players?.length || 0) === 0 && (

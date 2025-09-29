@@ -42,18 +42,15 @@ export default async function NewSessionPage() {
     <AdminLayout currentPath="/dashboard/sessions/new">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button asChild variant="outline" size="sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <Button asChild variant="outline" size="sm" className="w-fit">
             <Link href="/dashboard/sessions">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Sessions
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">New Session</h1>
-            <p className="mt-2 text-gray-600">
-              Create a new training session for attendance tracking.
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">New Session</h1>
           </div>
         </div>
 
@@ -77,9 +74,6 @@ export default async function NewSessionPage() {
                     placeholder="e.g., Advanced Training"
                     className="w-full"
                   />
-                  <p className="text-xs text-gray-500">
-                    Leave blank for default naming (Training Session - Date)
-                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -139,9 +133,6 @@ export default async function NewSessionPage() {
                     placeholder="e.g., 20"
                     className="w-full"
                   />
-                  <p className="text-xs text-gray-500">
-                    Maximum number of players
-                  </p>
                 </div>
               </div>
 
@@ -179,20 +170,6 @@ export default async function NewSessionPage() {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Help Card */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="font-medium text-blue-900 mb-2">💡 Session Creation Tips</h3>
-            <div className="text-sm text-blue-700 space-y-2">
-              <p>• <strong>Player Pricing:</strong> Player fees are determined by their individual pricing category (Standard, Student, Guest, etc.)</p>
-              <p>• <strong>Attendance Tracking:</strong> Once created, you can mark attendance and apply payments in real-time</p>
-              <p>• <strong>Guest Players:</strong> Enable guest access to allow non-members to join this session</p>
-              <p>• <strong>Capacity Management:</strong> Set limits to control session size and prevent overbooking</p>
-              <p>• <strong>Pricing Management:</strong> Create and manage pricing categories in Settings → Pricing Categories</p>
-            </div>
           </CardContent>
         </Card>
       </div>

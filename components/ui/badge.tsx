@@ -17,7 +17,7 @@ const badgeVariants = cva(
         outline: "text-foreground",
         // Status-specific variants for HoopsLedger
         paid: "border-transparent bg-success text-white",
-        unpaid: "border-transparent bg-warning text-white",
+        unpaid: "border-transparent bg-red-600 text-white",
         waived: "border-transparent bg-blue-600 text-white",
         exempt: "border-transparent bg-gray-500 text-white",
         student: "border-transparent bg-purple-100 text-purple-800",

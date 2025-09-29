@@ -22,11 +22,23 @@ export function MagicLinkHandler() {
       }
 
       try {
-        await consumeMagicLink(token)
+        const result = await consumeMagicLink(token)
+
+        if (!result.success) {
+          setStatus('error')
+          setError(result.error)
+          return
+        }
+
         setStatus('success')
+
+        // Redirect to player dashboard after successful auth
+        setTimeout(() => {
+          window.location.href = '/player/dashboard'
+        }, 2000)
       } catch (err) {
         setStatus('error')
-        setError(err instanceof Error ? err.message : 'Authentication failed')
+        setError('Something went wrong. Please try again.')
       }
     }
 

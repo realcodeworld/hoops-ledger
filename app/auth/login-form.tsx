@@ -16,9 +16,17 @@ export function LoginForm() {
     setError(null)
 
     try {
-      await loginUser(formData)
+      const result = await loginUser(formData)
+
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+
+      // Success - redirect will happen automatically
+      window.location.href = '/dashboard'
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Login failed')
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsPending(false)
     }

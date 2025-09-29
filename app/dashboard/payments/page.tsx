@@ -7,8 +7,8 @@ export default function PaymentsPage() {
     <AdminLayout currentPath="/dashboard/payments">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Payments</h1>
-          <p className="mt-2 text-gray-600">Manual payment tracking and balance management.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
+          <p className="mt-2 text-gray-600 text-sm sm:text-base">Manual payment tracking and balance management.</p>
         </div>
 
         <Card className="bg-orange-50 border-orange-200">

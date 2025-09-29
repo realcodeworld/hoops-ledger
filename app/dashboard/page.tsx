@@ -37,17 +37,14 @@ export default async function DashboardPage() {
 
   return (
     <AdminLayout currentPath="/dashboard">
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="mt-2 text-gray-600">
-              Welcome back, {user.name}. Here's what's happening with {user.org.name} today.
-            </p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
-            <Button asChild size="sm">
+          <div className="flex space-x-3">
+            <Button asChild size="sm" className="w-full sm:w-auto">
               <Link href="/dashboard/sessions/new">
                 <Plus className="w-4 h-4 mr-2" />
                 New Session
@@ -57,7 +54,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Players</CardTitle>
@@ -115,7 +112,7 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Today's Sessions */}
           <Card>
             <CardHeader>
@@ -139,16 +136,18 @@ export default async function DashboardPage() {
               ) : (
                 <div className="space-y-4">
                   {(todaySessions || []).map((session) => (
-                    <div key={session.id} className="flex items-center justify-between p-4 border rounded-xl">
-                      <div>
-                        <h3 className="font-medium">{session.name || 'Training Session'}</h3>
-                        <div className="flex items-center text-sm text-gray-500 space-x-4">
+                    <div key={session.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{session.name || 'Training Session'}</h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-1 sm:gap-4">
                           <span>{formatTime(session.startsAt)}</span>
-                          {session.venue && <span>• {session.venue}</span>}
-                          <span>• {session._count.attendance} attending</span>
+                          {session.venue && <span className="hidden sm:inline">•</span>}
+                          {session.venue && <span className="truncate">{session.venue}</span>}
+                          <span className="hidden sm:inline">•</span>
+                          <span>{session._count.attendance} attending</span>
                         </div>
                       </div>
-                      <Button asChild size="sm" variant="outline">
+                      <Button asChild size="sm" variant="outline" className="shrink-0 w-full sm:w-auto">
                         <Link href={`/dashboard/sessions/${session.id}`}>
                           View
                         </Link>
@@ -199,23 +198,6 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* Recent Activity Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">Activity feed will show recent player additions, payments, and session updates</p>
-              <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/audit">
-                  View Audit Logs
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   )

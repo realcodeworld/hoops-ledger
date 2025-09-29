@@ -101,20 +101,19 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     <AdminLayout currentPath="/dashboard/players">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button asChild variant="outline" size="sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <Button asChild variant="outline" size="sm" className="w-fit">
               <Link href="/dashboard/players">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Players
               </Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{player.name}</h1>
-              <p className="mt-2 text-gray-600">Player details and activity</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{player.name}</h1>
             </div>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href={`/dashboard/players/${player.id}/edit`}>
               <Edit className="w-4 h-4 mr-2" />
               Edit Player
@@ -239,14 +238,20 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                 {player.attendance.length > 0 ? (
                   <div className="space-y-3">
                     {player.attendance.map((attendance) => (
-                      <div key={attendance.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <div className="font-medium">{attendance.session.name}</div>
+                      <div key={attendance.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{attendance.session.name}</div>
                           <div className="text-sm text-gray-500">
-                            {new Date(attendance.session.startsAt).toLocaleDateString()} • {attendance.session.venue}
+                            <div className="sm:inline">{new Date(attendance.session.startsAt).toLocaleDateString()}</div>
+                            {attendance.session.venue && (
+                              <>
+                                <span className="hidden sm:inline"> • </span>
+                                <div className="sm:inline truncate">{attendance.session.venue}</div>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
                           <div className="font-medium">
                             <CurrencyDisplay amountPence={attendance.feeAppliedPence} />
                           </div>
@@ -277,8 +282,8 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                 {player.payments.length > 0 ? (
                   <div className="space-y-3">
                     {player.payments.map((payment) => (
-                      <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div>
+                      <div key={payment.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
                           <div className="font-medium">
                             <CurrencyDisplay amountPence={payment.amountPence} />
                           </div>
@@ -287,7 +292,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                           </div>
                         </div>
                         {payment.notes && (
-                          <div className="text-sm text-gray-600 max-w-[200px] truncate">
+                          <div className="text-sm text-gray-600 sm:max-w-[200px] truncate">
                             {payment.notes}
                           </div>
                         )}

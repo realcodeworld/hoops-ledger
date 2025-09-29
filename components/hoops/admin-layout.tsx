@@ -49,7 +49,7 @@ export async function AdminLayout({ children, currentPath = '/dashboard' }: Admi
       </div>
 
       {/* Mobile header */}
-      <div className="lg:hidden">
+      <div className="lg:hidden sticky top-0 z-40">
         <div className="flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200">
           <Logo size="sm" />
           <MobileNav user={user} currentPath={currentPath} />
@@ -58,8 +58,8 @@ export async function AdminLayout({ children, currentPath = '/dashboard' }: Admi
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <main className="py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main className="py-4 lg:py-6">
+          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
             {children}
           </div>
         </main>

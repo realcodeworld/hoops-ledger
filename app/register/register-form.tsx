@@ -16,9 +16,17 @@ export function RegisterForm() {
     setError(null)
 
     try {
-      await registerUser(formData)
+      const result = await registerUser(formData)
+
+      if (!result.success) {
+        setError(result.error)
+        return
+      }
+
+      // Success - redirect will happen automatically
+      window.location.href = '/dashboard'
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Registration failed')
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsPending(false)
     }

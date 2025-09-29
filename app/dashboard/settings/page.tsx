@@ -26,13 +26,7 @@ export default async function SettingsPage() {
     <AdminLayout currentPath="/dashboard/settings">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-2 text-gray-600">
-            {isAdmin
-              ? 'Manage your organization settings and configuration.'
-              : 'View organization settings and configuration.'
-            }
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
         </div>
 
         {/* Organization Profile Settings */}
@@ -57,7 +51,7 @@ export default async function SettingsPage() {
             </div>
             <p className="text-purple-700 mb-4">More organization management features are in development:</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               <div className="bg-white rounded-lg p-4 border border-purple-200">
                 <Users className="w-5 h-5 text-purple-500 mb-2" />
                 <h4 className="font-medium text-purple-900 mb-1">User Management</h4>

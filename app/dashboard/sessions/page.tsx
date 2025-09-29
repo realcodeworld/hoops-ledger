@@ -26,9 +26,6 @@ export default async function SessionsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Sessions</h1>
-            <p className="mt-2 text-gray-600">
-              Manage training sessions and track attendance.
-            </p>
           </div>
           <div className="mt-4 sm:mt-0">
             <Button asChild>
@@ -49,9 +46,6 @@ export default async function SessionsPage() {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No sessions yet
                 </h3>
-                <p className="text-gray-500 text-center mb-6">
-                  Create your first training session to start tracking attendance.
-                </p>
                 <Button asChild>
                   <Link href="/dashboard/sessions/new">
                     <Plus className="w-4 h-4 mr-2" />
@@ -116,23 +110,6 @@ export default async function SessionsPage() {
           )}
         </div>
 
-        {/* Future Features Preview */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="font-medium text-blue-900 mb-2">📅 Sessions Management - Ready to Build</h3>
-            <div className="text-sm text-blue-700 space-y-2">
-              <p>✅ <strong>Session Creation:</strong> Create training sessions with date, time, venue, and capacity</p>
-              <p>✅ <strong>Live Attendance:</strong> Fast mobile interface for marking player attendance</p>
-              <p>✅ <strong>Fee Management:</strong> Apply pricing rules and handle exemptions</p>
-              <p>✅ <strong>Payment Processing:</strong> Mark payments and track balances in real-time</p>
-            </div>
-            <div className="mt-4">
-              <p className="text-xs text-blue-600">
-                All server actions are implemented. UI components ready to be built next.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   )

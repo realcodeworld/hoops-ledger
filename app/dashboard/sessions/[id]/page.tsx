@@ -52,20 +52,17 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
     <AdminLayout currentPath={`/dashboard/sessions/${id}`}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button asChild variant="outline" size="sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <Button asChild variant="outline" size="sm" className="w-fit">
             <Link href="/dashboard/sessions">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Sessions
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
               {session.name || `Training Session - ${formatDate(session.startsAt!)}`}
             </h1>
-            <p className="mt-2 text-gray-600">
-              Attendance tracking and payment management
-            </p>
           </div>
         </div>
 
@@ -78,26 +75,32 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex items-center text-sm">
-                <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                {formatTime(session.startsAt!)}
-                {session.endsAt && ` - ${formatTime(session.endsAt)}`}
+                <Clock className="w-4 h-4 mr-2 text-gray-500 shrink-0" />
+                <span className="truncate">
+                  {formatTime(session.startsAt!)}
+                  {session.endsAt && ` - ${formatTime(session.endsAt)}`}
+                </span>
               </div>
               {session.venue && (
                 <div className="flex items-center text-sm">
-                  <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                  {session.venue}
+                  <MapPin className="w-4 h-4 mr-2 text-gray-500 shrink-0" />
+                  <span className="truncate">{session.venue}</span>
                 </div>
               )}
               <div className="flex items-center text-sm">
-                <Users className="w-4 h-4 mr-2 text-gray-500" />
-                {totalAttending} attending
-                {session.capacity && ` / ${session.capacity} max`}
+                <Users className="w-4 h-4 mr-2 text-gray-500 shrink-0" />
+                <span>
+                  {totalAttending} attending
+                  {session.capacity && ` / ${session.capacity} max`}
+                </span>
               </div>
               <div className="flex items-center text-sm">
-                <CreditCard className="w-4 h-4 mr-2 text-gray-500" />
-                £{(totalPaid / 100).toFixed(2)} / £{(totalFees / 100).toFixed(2)}
+                <CreditCard className="w-4 h-4 mr-2 text-gray-500 shrink-0" />
+                <span className="tabular-nums">
+                  £{(totalPaid / 100).toFixed(2)} / £{(totalFees / 100).toFixed(2)}
+                </span>
               </div>
             </div>
             
@@ -117,24 +120,24 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             <CardTitle>Payment Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{paidCount}</div>
-                <div className="text-sm text-gray-500">Paid</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">{paidCount}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Paid</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{unpaidCount}</div>
-                <div className="text-sm text-gray-500">Unpaid</div>
+              <div className="text-center p-3 bg-red-50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{unpaidCount}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Unpaid</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{waivedCount}</div>
-                <div className="text-sm text-gray-500">Waived</div>
+              <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{waivedCount}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Waived</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-xl sm:text-2xl font-bold text-gray-900 tabular-nums">
                   £{(totalFees / 100).toFixed(2)}
                 </div>
-                <div className="text-sm text-gray-500">Total Fees</div>
+                <div className="text-xs sm:text-sm text-gray-500">Total Fees</div>
               </div>
             </div>
           </CardContent>

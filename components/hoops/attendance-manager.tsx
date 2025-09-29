@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { CreditCard, Plus } from 'lucide-react'
-import { markPayment, addPlayerToSession } from '@/lib/actions/attendance'
+import { Textarea } from '@/components/ui/textarea'
+import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2 } from 'lucide-react'
+import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount } from '@/lib/actions/attendance'
 import { createQuickPlayer } from '@/lib/actions/players'
 
 interface AttendanceRecord {
@@ -51,21 +52,19 @@ interface AttendanceManagerProps {
 }
 
 export function AttendanceManager({ sessionId, attendance, availablePlayers }: AttendanceManagerProps) {
-  const [searchQuery, setSearchQuery] = useState('')
   const [selectedPlayerToAdd, setSelectedPlayerToAdd] = useState<string>('')
   const [newPlayerName, setNewPlayerName] = useState('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
+  const [editingNotes, setEditingNotes] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState('')
+  const [paymentDialog, setPaymentDialog] = useState<string | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState('')
 
   // Filter players not already in attendance
   const attendingPlayerIds = attendance.map(a => a.playerId)
-  const availablePlayersForSession = availablePlayers.filter(p => 
+  const availablePlayersForSession = availablePlayers.filter(p =>
     !attendingPlayerIds.includes(p.id) && p.isActive
   )
-
-  // Filter attendance based on selected player from ALL players in organization
-  const filteredAttendance = searchQuery && searchQuery !== 'all'
-    ? attendance.filter(record => record.playerId === searchQuery)
-    : attendance
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -86,9 +85,17 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
     return 'bg-gray-100 text-gray-800'
   }
 
-  const handleMarkPaid = async (attendanceId: string) => {
+  const handleOpenPaymentDialog = (attendanceId: string, feeAmount: number) => {
+    setPaymentDialog(attendanceId)
+    setPaymentAmount((feeAmount / 100).toFixed(2))
+  }
+
+  const handleMarkPaid = async (attendanceId: string, method: 'cash' | 'bank_transfer') => {
     try {
-      await markPayment(attendanceId, 'cash')
+      const amountPence = Math.round(parseFloat(paymentAmount || '0') * 100)
+      await markPaymentWithAmount(attendanceId, method, amountPence)
+      setPaymentDialog(null)
+      setPaymentAmount('')
       window.location.reload()
     } catch (error) {
       console.error('Failed to mark payment:', error)
@@ -102,6 +109,36 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
     } catch (error) {
       console.error('Failed to waive fee:', error)
     }
+  }
+
+  const handleResetToUnpaid = async (attendanceId: string) => {
+    try {
+      await markPayment(attendanceId, 'reset')
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to reset payment:', error)
+    }
+  }
+
+  const handleEditNotes = (attendanceId: string, currentNotes: string | null) => {
+    setEditingNotes(attendanceId)
+    setNoteText(currentNotes || '')
+  }
+
+  const handleSaveNotes = async (attendanceId: string) => {
+    try {
+      await updateAttendanceNotes(attendanceId, noteText)
+      setEditingNotes(null)
+      setNoteText('')
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to update notes:', error)
+    }
+  }
+
+  const handleCancelNotes = () => {
+    setEditingNotes(null)
+    setNoteText('')
   }
 
   const handleAddExistingPlayer = async () => {
@@ -162,26 +199,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
           </Select>
         </div>
 
-        <div className="flex-1">
-          <Label htmlFor="player-filter" className="sr-only">Filter by player</Label>
-          <Select value={searchQuery || 'all'} onValueChange={setSearchQuery}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter view by player" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Show All Players ({attendance.length})</SelectItem>
-              {attendance.map((record) => (
-                <SelectItem key={record.playerId} value={record.playerId}>
-                  {record.player.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         
         <Dialog open={isAddingPlayer} onOpenChange={setIsAddingPlayer}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Player
             </Button>
@@ -273,24 +294,27 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
 
       {/* Attendance List */}
       <div className="space-y-3">
-        {filteredAttendance.length === 0 ? (
+        {attendance.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No players registered for this session yet.
           </div>
         ) : (
-          filteredAttendance.map((record) => (
+          attendance.map((record) => (
             <div
               key={record.id}
-              className="flex items-center justify-between p-4 bg-white border rounded-lg hover:shadow-sm transition-shadow"
+              className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 bg-white border rounded-lg hover:shadow-sm transition-shadow"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-3">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{record.player.name}</h3>
-                    {record.player.email && (
-                      <p className="text-sm text-gray-500">{record.player.email}</p>
-                    )}
-                  </div>
+              <div className="flex-1 min-w-0 space-y-3">
+                {/* Player Name and Email */}
+                <div className="min-w-0">
+                  <h3 className="font-medium text-gray-900 truncate">{record.player.name}</h3>
+                  {record.player.email && (
+                    <p className="text-sm text-gray-500 truncate break-all">{record.player.email}</p>
+                  )}
+                </div>
+
+                {/* Badges Row */}
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge className={getCategoryBadge(record.player.pricingRule?.name || 'No Category')}>
                     {record.player.pricingRule?.name || 'No Category'}
                   </Badge>
@@ -298,9 +322,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
                     {record.status}
                   </Badge>
                 </div>
-                
-                <div className="flex items-center space-x-4 mt-2">
-                  <span className="text-sm text-gray-500">
+
+                {/* Fee and Payment Info */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm text-gray-500 tabular-nums">
                     Fee: £{(record.feeAppliedPence / 100).toFixed(2)}
                   </span>
                   {record.payment && (
@@ -309,35 +334,170 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
                     </span>
                   )}
                 </div>
+
+                {/* Notes Section */}
+                <div className="border-t pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Notes</span>
+                    {editingNotes !== record.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditNotes(record.id, record.notes)}
+                        className="h-6 px-2 text-xs"
+                      >
+                        <Edit3 className="w-3 h-3 mr-1" />
+                        {record.notes ? 'Edit' : 'Add'}
+                      </Button>
+                    )}
+                  </div>
+
+                  {editingNotes === record.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={noteText}
+                        onChange={(e) => setNoteText(e.target.value)}
+                        placeholder="e.g., Will pay on Monday, Cash payment pending..."
+                        className="min-h-[60px] text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveNotes(record.id)}
+                          className="h-7 px-3 text-xs"
+                        >
+                          <Save className="w-3 h-3 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelNotes}
+                          className="h-7 px-3 text-xs"
+                        >
+                          <X className="w-3 h-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="min-h-[40px]">
+                      {record.notes ? (
+                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                          {record.notes}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">
+                          No notes added
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex sm:flex-col gap-2 sm:items-end">
                 {record.status === 'unpaid' && (
-                  <div className="flex space-x-1">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleMarkPaid(record.id)}
-                      className="tap-target"
+                      onClick={() => handleOpenPaymentDialog(record.id, record.feeAppliedPence)}
+                      className="tap-target flex-1 sm:flex-none"
                     >
                       <CreditCard className="w-4 h-4 mr-1" />
-                      Mark Paid
+                      <span className="hidden sm:inline">Mark </span>Paid
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleWaiveFee(record.id)}
-                      className="tap-target text-blue-600 hover:text-blue-700"
+                      className="tap-target text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
                     >
                       Waive
                     </Button>
                   </div>
+                )}
+                {(record.status === 'paid' || record.status === 'waived') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleResetToUnpaid(record.id)}
+                    className="tap-target text-orange-600 hover:text-orange-700 w-full sm:w-auto"
+                  >
+                    Reset to Unpaid
+                  </Button>
                 )}
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={!!paymentDialog} onOpenChange={(open) => !open && setPaymentDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+          </DialogHeader>
+          {paymentDialog && (
+            <div className="space-y-4">
+              {/* Amount Selection */}
+              <div>
+                <Label htmlFor="payment-amount">Payment Amount</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">£</span>
+                  <Input
+                    id="payment-amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    className="pl-8"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Fee due: £{((attendance.find(a => a.id === paymentDialog)?.feeAppliedPence || 0) / 100).toFixed(2)}
+                </p>
+              </div>
+
+              {/* Payment Method Selection */}
+              <div className="space-y-3">
+                <Label>Payment Method</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  <Button
+                    onClick={() => handleMarkPaid(paymentDialog, 'cash')}
+                    className="flex items-center justify-center gap-3 h-12"
+                    variant="outline"
+                  >
+                    <Banknote className="w-5 h-5" />
+                    <span>Cash Payment</span>
+                  </Button>
+                  <Button
+                    onClick={() => handleMarkPaid(paymentDialog, 'bank_transfer')}
+                    className="flex items-center justify-center gap-3 h-12"
+                    variant="outline"
+                  >
+                    <Building2 className="w-5 h-5" />
+                    <span>Bank Transfer</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setPaymentDialog(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile-friendly summary */}
       <div className="lg:hidden mt-6 p-4 bg-gray-50 rounded-lg">

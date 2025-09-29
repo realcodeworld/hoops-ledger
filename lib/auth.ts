@@ -27,7 +27,7 @@ export async function createUserSession(user: User) {
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
   })
@@ -47,7 +47,7 @@ export async function createPlayerSession(player: Player) {
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax',
     maxAge: 60 * 60 * 2, // 2 hours for player sessions
   })
@@ -69,7 +69,8 @@ export async function getSession(): Promise<SessionData | null> {
     ) as SessionData
 
     return sessionData
-  } catch {
+  } catch (error) {
+    console.error('Session parsing error:', error)
     return null
   }
 }

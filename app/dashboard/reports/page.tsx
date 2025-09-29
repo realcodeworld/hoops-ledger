@@ -15,8 +15,8 @@ export default async function ReportsPage() {
     <AdminLayout currentPath="/dashboard/reports">
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="mt-2 text-gray-600">Financial reports and attendance analytics.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+          <p className="mt-2 text-gray-600 text-sm sm:text-base">Financial reports and attendance analytics.</p>
         </div>
 
         <Card className="bg-blue-50 border-blue-200">

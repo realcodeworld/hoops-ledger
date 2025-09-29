@@ -397,11 +397,151 @@ export async function markAttendance(sessionId: string, playerId: string, data: 
   }
 }
 
-export async function markPayment(attendanceId: string, method: 'cash' | 'bank_transfer' | 'other' | 'waived', notes?: string) {
+export async function markPaymentWithAmount(attendanceId: string, method: 'cash' | 'bank_transfer', amountPence: number, notes?: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get existing attendance record
+    const attendance = await prisma.attendance.findFirst({
+      where: {
+        id: attendanceId,
+        session: {
+          orgId: currentUser.orgId,
+        },
+      },
+      include: {
+        player: true,
+        session: true,
+      },
+    })
+
+    if (!attendance) {
+      throw new Error('Attendance record not found')
+    }
+
+    const beforeState = attendance
+
+    // Update attendance status
+    const updatedAttendance = await prisma.attendance.update({
+      where: { id: attendanceId },
+      data: {
+        status: 'paid',
+        notes: notes || attendance.notes,
+      },
+    })
+
+    // Create payment record
+    let payment = null
+    if (amountPence > 0) {
+      payment = await prisma.payment.create({
+        data: {
+          orgId: currentUser.orgId,
+          sessionId: attendance.sessionId,
+          playerId: attendance.playerId,
+          amountPence,
+          method: method as PaymentMethod,
+          occurredOn: new Date(),
+          recordedBy: currentUser.id,
+          notes,
+        },
+      })
+
+      // Link payment to attendance
+      await prisma.attendance.update({
+        where: { id: attendanceId },
+        data: { paymentId: payment.id },
+      })
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        orgId: currentUser.orgId,
+        actorUserId: currentUser.id,
+        action: 'MARK_PAID_WITH_AMOUNT',
+        entityType: 'Attendance',
+        entityId: attendance.id,
+        before: beforeState,
+        after: { ...updatedAttendance, payment },
+      },
+    })
+
+    revalidatePath(`/dashboard/sessions/${attendance.sessionId}`)
+    return { success: true, data: { attendance: updatedAttendance, payment } }
+  } catch (error) {
+    console.error('Mark paid with amount error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to mark as paid'
+    }
+  }
+}
+
+export async function markPayment(attendanceId: string, method: 'cash' | 'bank_transfer' | 'other' | 'waived' | 'reset', notes?: string) {
   if (method === 'waived') {
     return markWaived(attendanceId, notes || 'Fee waived')
+  } else if (method === 'reset') {
+    return undoPaid(attendanceId)
   } else {
     return markPaid(attendanceId, method as PaymentMethod, notes)
+  }
+}
+
+export async function updateAttendanceNotes(attendanceId: string, notes: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get existing attendance record
+    const attendance = await prisma.attendance.findFirst({
+      where: {
+        id: attendanceId,
+        session: {
+          orgId: currentUser.orgId,
+        },
+      },
+    })
+
+    if (!attendance) {
+      throw new Error('Attendance record not found')
+    }
+
+    const beforeState = attendance
+
+    // Update attendance notes
+    const updatedAttendance = await prisma.attendance.update({
+      where: { id: attendanceId },
+      data: {
+        notes: notes.trim() || null,
+      },
+    })
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        orgId: currentUser.orgId,
+        actorUserId: currentUser.id,
+        action: 'UPDATE_ATTENDANCE_NOTES',
+        entityType: 'Attendance',
+        entityId: attendance.id,
+        before: beforeState,
+        after: updatedAttendance,
+      },
+    })
+
+    revalidatePath(`/dashboard/sessions/${attendance.sessionId}`)
+    return { success: true, data: updatedAttendance }
+  } catch (error) {
+    console.error('Update attendance notes error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update notes'
+    }
   }
 }
 
@@ -430,7 +570,7 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
         where: { id: playerId },
         include: { pricingRule: true }
       }),
-      prisma.session.findUnique({ 
+      prisma.session.findUnique({
         where: { id: sessionId },
         include: { pricingRule: true }
       })
@@ -445,7 +585,7 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
       const currentAttendance = await prisma.attendance.count({
         where: { sessionId },
       })
-      
+
       if (currentAttendance >= session.capacity) {
         throw new Error('Session is at full capacity')
       }
@@ -482,9 +622,9 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
     return { success: true, data: attendance }
   } catch (error) {
     console.error('Add player to session error:', error)
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to add player to session' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add player to session'
     }
   }
 }

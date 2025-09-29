@@ -38,12 +38,18 @@ export async function loginUser(formData: FormData) {
     })
 
     if (!user || !user.passwordHash) {
-      throw new Error('Invalid email or password')
+      return {
+        success: false,
+        error: 'Invalid email or password. Please check your credentials and try again.'
+      }
     }
 
     const isValidPassword = await verifyPassword(data.password, user.passwordHash)
     if (!isValidPassword) {
-      throw new Error('Invalid email or password')
+      return {
+        success: false,
+        error: 'Invalid email or password. Please check your credentials and try again.'
+      }
     }
 
     // Update last login
@@ -54,10 +60,21 @@ export async function loginUser(formData: FormData) {
 
     await createUserSession(user)
 
-    redirect('/dashboard')
+    return { success: true, message: 'Login successful' }
   } catch (error) {
     console.error('Login error:', error)
-    throw new Error('Login failed')
+
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: 'Please provide a valid email and password.'
+      }
+    }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Login failed. Please try again.'
+    }
   }
 }
 
@@ -76,7 +93,10 @@ export async function registerUser(formData: FormData) {
     })
 
     if (existingUser) {
-      throw new Error('User with this email already exists')
+      return {
+        success: false,
+        error: 'An account with this email already exists. Please use a different email or try logging in.'
+      }
     }
 
     // Create organization first
@@ -112,10 +132,29 @@ export async function registerUser(formData: FormData) {
     // Create user session
     await createUserSession(user)
 
-    redirect('/dashboard')
+    return { success: true, message: 'Account created successfully' }
   } catch (error) {
     console.error('Registration error:', error)
-    throw new Error(error instanceof Error ? error.message : 'Registration failed')
+
+    if (error instanceof z.ZodError) {
+      const firstError = error.errors[0]
+      return {
+        success: false,
+        error: firstError.message || 'Please check your information and try again.'
+      }
+    }
+
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return {
+        success: false,
+        error: 'An account with this email already exists. Please use a different email.'
+      }
+    }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Registration failed. Please try again.'
+    }
   }
 }
 
@@ -168,14 +207,20 @@ export async function consumeMagicLink(token: string) {
     const player = await consumeMagicLinkUtil(token)
     
     if (!player) {
-      throw new Error('Invalid or expired magic link')
+      return {
+        success: false,
+        error: 'This magic link is invalid or has expired. Please request a new one.'
+      }
     }
 
     await createPlayerSession(player)
 
-    redirect('/player/dashboard')
+    return { success: true, message: 'Login successful' }
   } catch (error) {
     console.error('Magic link consumption error:', error)
-    throw new Error('Invalid or expired magic link')
+    return {
+      success: false,
+      error: 'This magic link is invalid or has expired. Please request a new one.'
+    }
   }
 }

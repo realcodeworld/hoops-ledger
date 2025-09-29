@@ -36,46 +36,19 @@ export default async function NewPlayerPage() {
 
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Player</h1>
-          <p className="mt-2 text-gray-600">
-            Create a new player profile for your basketball club.
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Player</h1>
         </div>
 
         {/* Form */}
         <Card>
           <CardHeader>
             <CardTitle>Player Information</CardTitle>
-            <CardDescription>
-              Fill out the player's details below. Email address is optional but required 
-              for players to access their personal portal via magic links.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <NewPlayerForm
               pricingRules={organization.pricingRules}
               currency={organization.currency}
             />
-          </CardContent>
-        </Card>
-
-        {/* Help Text */}
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="font-medium text-blue-900 mb-2">Pricing Categories</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              {organization.pricingRules.map((rule) => (
-                <p key={rule.id}>
-                  <strong>{rule.name}:</strong> {organization.currency === 'GBP' ? '£' : organization.currency}{(rule.feePence / 100).toFixed(2)} per session
-                </p>
-              ))}
-            </div>
-            <div className="mt-4">
-              <p className="text-sm text-blue-700">
-                <strong>Exempt players</strong> are automatically charged £0.00 for all sessions,
-                regardless of their category. This is useful for coaches, volunteers, or sponsored players.
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
