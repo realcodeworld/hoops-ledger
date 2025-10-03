@@ -19,7 +19,7 @@ export function RegisterForm() {
       const result = await registerUser(formData)
 
       if (!result.success) {
-        setError(result.error)
+        setError(result.error || 'Registration failed')
         return
       }
 

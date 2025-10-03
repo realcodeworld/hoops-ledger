@@ -23,145 +23,123 @@ const updateUserSchema = z.object({
 })
 
 export async function createUser(formData: FormData) {
-  try {
-    const currentUser = await getCurrentUser()
-    if (!currentUser || currentUser.role !== 'admin') {
-      throw new Error('Unauthorized - Admin access required')
-    }
-
-    const data = createUserSchema.parse({
-      name: formData.get('name'),
-      email: formData.get('email'),
-      role: formData.get('role'),
-      password: formData.get('password'),
-    })
-
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    })
-
-    if (existingUser) {
-      throw new Error('A user with this email already exists')
-    }
-
-    const passwordHash = await hashPassword(data.password)
-
-    const user = await prisma.user.create({
-      data: {
-        orgId: currentUser.orgId,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        passwordHash,
-      },
-    })
-
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        orgId: currentUser.orgId,
-        actorUserId: currentUser.id,
-        action: 'CREATE_USER',
-        entityType: 'User',
-        entityId: user.id,
-        after: { ...user, passwordHash: '[REDACTED]' },
-      },
-    })
-
-    revalidatePath('/dashboard/users')
-    redirect('/dashboard/users')
-  } catch (error) {
-    console.error('Create user error:', error)
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
-      throw error
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create user',
-    }
+  const currentUser = await getCurrentUser()
+  if (!currentUser || currentUser.role !== 'admin') {
+    throw new Error('Unauthorized - Admin access required')
   }
-}
 
-export async function updateUser(formData: FormData) {
-  try {
-    const currentUser = await getCurrentUser()
-    if (!currentUser || currentUser.role !== 'admin') {
-      throw new Error('Unauthorized - Admin access required')
-    }
+  const data = createUserSchema.parse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    role: formData.get('role'),
+    password: formData.get('password'),
+  })
 
-    const data = updateUserSchema.parse({
-      id: formData.get('id'),
-      name: formData.get('name'),
-      email: formData.get('email'),
-      role: formData.get('role'),
-      password: formData.get('password') || '',
-    })
+  // Check if email already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email: data.email },
+  })
 
-    // Get existing user for audit log
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: data.id,
-        orgId: currentUser.orgId,
-      },
-    })
+  if (existingUser) {
+    throw new Error('A user with this email already exists')
+  }
 
-    if (!existingUser) {
-      throw new Error('User not found')
-    }
+  const passwordHash = await hashPassword(data.password)
 
-    // Check if email is being changed and if it conflicts
-    if (data.email !== existingUser.email) {
-      const emailTaken = await prisma.user.findUnique({
-        where: { email: data.email },
-      })
-      if (emailTaken) {
-        throw new Error('A user with this email already exists')
-      }
-    }
-
-    // Prepare update data
-    const updateData: any = {
+  const user = await prisma.user.create({
+    data: {
+      orgId: currentUser.orgId,
       name: data.name,
       email: data.email,
       role: data.role,
-    }
+      passwordHash,
+    },
+  })
 
-    // Only update password if provided
-    if (data.password && data.password.length > 0) {
-      updateData.passwordHash = await hashPassword(data.password)
-    }
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      orgId: currentUser.orgId,
+      actorUserId: currentUser.id,
+      action: 'CREATE_USER',
+      entityType: 'User',
+      entityId: user.id,
+      after: { ...user, passwordHash: '[REDACTED]' },
+    },
+  })
 
-    const updatedUser = await prisma.user.update({
-      where: { id: data.id },
-      data: updateData,
+  revalidatePath('/dashboard/users')
+  redirect('/dashboard/users')
+}
+
+export async function updateUser(formData: FormData) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser || currentUser.role !== 'admin') {
+    throw new Error('Unauthorized - Admin access required')
+  }
+
+  const data = updateUserSchema.parse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    email: formData.get('email'),
+    role: formData.get('role'),
+    password: formData.get('password') || '',
+  })
+
+  // Get existing user for audit log
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      id: data.id,
+      orgId: currentUser.orgId,
+    },
+  })
+
+  if (!existingUser) {
+    throw new Error('User not found')
+  }
+
+  // Check if email is being changed and if it conflicts
+  if (data.email !== existingUser.email) {
+    const emailTaken = await prisma.user.findUnique({
+      where: { email: data.email },
     })
-
-    // Audit log
-    await prisma.auditLog.create({
-      data: {
-        orgId: currentUser.orgId,
-        actorUserId: currentUser.id,
-        action: 'UPDATE_USER',
-        entityType: 'User',
-        entityId: updatedUser.id,
-        before: { ...existingUser, passwordHash: '[REDACTED]' },
-        after: { ...updatedUser, passwordHash: '[REDACTED]' },
-      },
-    })
-
-    revalidatePath('/dashboard/users')
-    redirect('/dashboard/users')
-  } catch (error) {
-    console.error('Update user error:', error)
-    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
-      throw error
-    }
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to update user',
+    if (emailTaken) {
+      throw new Error('A user with this email already exists')
     }
   }
+
+  // Prepare update data
+  const updateData: any = {
+    name: data.name,
+    email: data.email,
+    role: data.role,
+  }
+
+  // Only update password if provided
+  if (data.password && data.password.length > 0) {
+    updateData.passwordHash = await hashPassword(data.password)
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: data.id },
+    data: updateData,
+  })
+
+  // Audit log
+  await prisma.auditLog.create({
+    data: {
+      orgId: currentUser.orgId,
+      actorUserId: currentUser.id,
+      action: 'UPDATE_USER',
+      entityType: 'User',
+      entityId: updatedUser.id,
+      before: { ...existingUser, passwordHash: '[REDACTED]' },
+      after: { ...updatedUser, passwordHash: '[REDACTED]' },
+    },
+  })
+
+  revalidatePath('/dashboard/users')
+  redirect('/dashboard/users')
 }
 
 export async function deleteUser(userId: string) {

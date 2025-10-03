@@ -21,7 +21,7 @@ export default async function UsersPage() {
   }
 
   const usersResult = await getUsers()
-  const users = usersResult.success ? usersResult.data : []
+  const users = usersResult.success ? usersResult.data || [] : []
 
   return (
     <AdminLayout currentPath="/dashboard/users">

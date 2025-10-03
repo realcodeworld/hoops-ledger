@@ -26,7 +26,7 @@ export function MagicLinkHandler() {
 
         if (!result.success) {
           setStatus('error')
-          setError(result.error)
+          setError(result.error || 'Authentication failed')
           return
         }
 

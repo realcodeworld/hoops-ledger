@@ -137,10 +137,10 @@ export async function registerUser(formData: FormData) {
     console.error('Registration error:', error)
 
     if (error instanceof z.ZodError) {
-      const firstError = error.errors[0]
+      const firstError = error.issues[0]
       return {
         success: false,
-        error: firstError.message || 'Please check your information and try again.'
+        error: firstError?.message || 'Please check your information and try again.'
       }
     }
 

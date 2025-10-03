@@ -19,7 +19,7 @@ export function LoginForm() {
       const result = await loginUser(formData)
 
       if (!result.success) {
-        setError(result.error)
+        setError(result.error || 'Login failed')
         return
       }
 
