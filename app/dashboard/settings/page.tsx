@@ -55,7 +55,7 @@ export default async function SettingsPage() {
               <div className="bg-white rounded-lg p-4 border border-purple-200">
                 <Users className="w-5 h-5 text-purple-500 mb-2" />
                 <h4 className="font-medium text-purple-900 mb-1">User Management</h4>
-                <p className="text-purple-600">Add and manage admin and coach accounts</p>
+                <p className="text-purple-600">Add and manage admin and supervisor accounts</p>
               </div>
 
               <div className="bg-white rounded-lg p-4 border border-purple-200">

@@ -11,7 +11,7 @@ export interface SessionData {
   playerId?: string
   orgId: string
   type: 'user' | 'player'
-  role?: 'admin' | 'coach'
+  role?: 'admin' | 'supervisor'
 }
 
 export async function createUserSession(user: User) {

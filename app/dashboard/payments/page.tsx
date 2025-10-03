@@ -1,14 +1,24 @@
 import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
-import { CreditCard } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { CreditCard, Plus } from 'lucide-react'
+import Link from 'next/link'
 
 export default function PaymentsPage() {
   return (
     <AdminLayout currentPath="/dashboard/payments">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
-          <p className="mt-2 text-gray-600 text-sm sm:text-base">Manual payment tracking and balance management.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
+            <p className="mt-2 text-gray-600 text-sm sm:text-base">Manual payment tracking and balance management.</p>
+          </div>
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/dashboard/payments/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Record Payment
+            </Link>
+          </Button>
         </div>
 
         <Card className="bg-orange-50 border-orange-200">

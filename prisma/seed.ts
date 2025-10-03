@@ -37,17 +37,17 @@ async function main() {
     },
   })
 
-  // Create coach user
-  const coachPasswordHash = await bcrypt.hash('coach123', 10)
-  const coachUser = await prisma.user.upsert({
-    where: { email: 'coach@demohoops.com' },
+  // Create supervisor user
+  const supervisorPasswordHash = await bcrypt.hash('supervisor123', 10)
+  const supervisorUser = await prisma.user.upsert({
+    where: { email: 'supervisor@demohoops.com' },
     update: {},
     create: {
       orgId: org.id,
-      name: 'Coach User',
-      email: 'coach@demohoops.com',
-      role: 'coach',
-      passwordHash: coachPasswordHash,
+      name: 'Supervisor User',
+      email: 'supervisor@demohoops.com',
+      role: 'supervisor',
+      passwordHash: supervisorPasswordHash,
     },
   })
 
@@ -266,7 +266,7 @@ async function main() {
 
   console.log('✅ Database seeded successfully!')
   console.log('📧 Admin login: admin@demohoops.com / admin123')
-  console.log('🏀 Coach login: coach@demohoops.com / coach123')
+  console.log('👤 Supervisor login: supervisor@demohoops.com / supervisor123')
   console.log(`🏟️  Organization: ${org.name} (${org.slug})`)
   console.log(`👥 Created ${players.length} demo players with different pricing categories`)
   console.log(`💰 Created 4 pricing categories: Standard (£5.00), Student (£3.00), Guest (£0.00), U17 (£2.50)`)

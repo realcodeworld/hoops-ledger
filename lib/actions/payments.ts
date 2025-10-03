@@ -11,8 +11,8 @@ const createPaymentSchema = z.object({
   amountPence: z.number().int().min(1, 'Amount must be positive'),
   method: z.enum(['cash', 'bank_transfer', 'other']),
   occurredOn: z.string().min(1, 'Date is required'),
-  sessionId: z.string().optional().or(z.literal('')),
-  notes: z.string().optional().or(z.literal('')),
+  sessionId: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 })
 
 export async function createManualPayment(formData: FormData) {
@@ -83,10 +83,11 @@ export async function createManualPayment(formData: FormData) {
     })
 
     revalidatePath('/dashboard/payments')
+    revalidatePath(`/dashboard/players/${data.playerId}`)
     if (data.sessionId) {
       revalidatePath(`/dashboard/sessions/${data.sessionId}`)
     }
-    
+
     return { success: true, data: payment }
   } catch (error) {
     console.error('Create payment error:', error)

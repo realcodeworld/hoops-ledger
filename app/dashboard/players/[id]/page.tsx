@@ -17,7 +17,8 @@ import {
   TrendingUp,
   DollarSign,
   Users,
-  FileText
+  FileText,
+  Plus
 } from 'lucide-react'
 
 interface PlayerDetailsPageProps {
@@ -95,30 +96,42 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     },
   })
 
-  const balance = (totalFeesOwed._sum.feeAppliedPence || 0) - (totalPayments._sum.amountPence || 0)
+  const totalOwed = totalFeesOwed._sum.feeAppliedPence || 0
+  const totalPaid = totalPayments._sum.amountPence || 0
+  const balanceDifference = totalOwed - totalPaid
+  const unpaid = Math.max(0, balanceDifference)
+  const credit = Math.max(0, -balanceDifference)
 
   return (
     <AdminLayout currentPath="/dashboard/players">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <Button asChild variant="outline" size="sm" className="w-fit">
-              <Link href="/dashboard/players">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Players
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{player.name}</h1>
-            </div>
-          </div>
-          <Button asChild className="w-full sm:w-auto">
-            <Link href={`/dashboard/players/${player.id}/edit`}>
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Player
+          <Button asChild variant="outline" size="sm" className="w-fit">
+            <Link href="/dashboard/players">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Players
             </Link>
           </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href={`/dashboard/payments/new?playerId=${player.id}`}>
+                <Plus className="w-4 h-4 mr-2" />
+                Record Payment
+              </Link>
+            </Button>
+            <Button asChild className="w-full sm:w-auto">
+              <Link href={`/dashboard/players/${player.id}/edit`}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Player
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Player Name */}
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{player.name}</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -201,7 +214,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                 <CardTitle>Statistics</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <Users className="w-5 h-5 text-blue-500" />
@@ -214,13 +227,21 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                       <DollarSign className="w-5 h-5 text-green-500" />
                     </div>
                     <div className="text-2xl font-bold">
+                      <CurrencyDisplay amountPence={totalPaid} />
+                    </div>
+                    <div className="text-sm text-gray-500">Total Paid</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <TrendingUp className={`w-5 h-5 ${credit > 0 ? 'text-green-500' : 'text-orange-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold">
                       <CurrencyDisplay
-                        amountPence={balance}
-                        showSign
-                        className={balance > 0 ? 'text-warning' : balance < 0 ? 'text-success' : ''}
+                        amountPence={credit > 0 ? credit : unpaid}
+                        className={unpaid > 0 ? 'text-warning' : credit > 0 ? 'text-success' : ''}
                       />
                     </div>
-                    <div className="text-sm text-gray-500">Balance</div>
+                    <div className="text-sm text-gray-500">{credit > 0 ? 'In Credit' : 'Unpaid'}</div>
                   </div>
                 </div>
               </CardContent>

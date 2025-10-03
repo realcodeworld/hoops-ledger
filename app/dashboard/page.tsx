@@ -3,12 +3,10 @@ import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, Calendar, CreditCard, BarChart3, Plus, Clock } from 'lucide-react'
+import { Users, Calendar, CreditCard, BarChart3, Plus } from 'lucide-react'
 import { getPlayers } from '@/lib/actions/players'
-import { getTodaySessions } from '@/lib/actions/sessions'
 import { getOrganizationFinancials } from '@/lib/actions/payments'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
-import { formatTime } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -19,14 +17,12 @@ export default async function DashboardPage() {
   }
 
   // Fetch dashboard data
-  const [playersResult, sessionsResult, financialsResult] = await Promise.all([
+  const [playersResult, financialsResult] = await Promise.all([
     getPlayers(),
-    getTodaySessions(),
     getOrganizationFinancials(),
   ])
 
   const players = playersResult.success ? playersResult.data : []
-  const todaySessions = sessionsResult.success ? sessionsResult.data : []
   const financials = financialsResult.success ? financialsResult.data : {
     outstandingAmount: 0,
     monthlyRevenue: 0,
@@ -54,7 +50,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Players</CardTitle>
@@ -64,19 +60,6 @@ export default async function DashboardPage() {
               <div className="text-2xl font-bold">{activePlayers.length}</div>
               <p className="text-xs text-muted-foreground">
                 {(players?.length || 0) - activePlayers.length} inactive
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's Sessions</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{todaySessions?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Scheduled for today
               </p>
             </CardContent>
           </Card>
@@ -112,55 +95,8 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Today's Sessions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
-                Today's Sessions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(todaySessions?.length || 0) === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">No sessions scheduled for today</p>
-                  <Button asChild size="sm">
-                    <Link href="/dashboard/sessions/new">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Schedule Session
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(todaySessions || []).map((session) => (
-                    <div key={session.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{session.name || 'Training Session'}</h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 gap-1 sm:gap-4">
-                          <span>{formatTime(session.startsAt)}</span>
-                          {session.venue && <span className="hidden sm:inline">•</span>}
-                          {session.venue && <span className="truncate">{session.venue}</span>}
-                          <span className="hidden sm:inline">•</span>
-                          <span>{session._count.attendance} attending</span>
-                        </div>
-                      </div>
-                      <Button asChild size="sm" variant="outline" className="shrink-0 w-full sm:w-auto">
-                        <Link href={`/dashboard/sessions/${session.id}`}>
-                          View
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card>
+        {/* Quick Actions */}
+        <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
@@ -196,8 +132,6 @@ export default async function DashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
       </div>
     </AdminLayout>
   )

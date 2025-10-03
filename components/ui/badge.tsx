@@ -16,7 +16,7 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
         // Status-specific variants for HoopsLedger
-        paid: "border-transparent bg-success text-white",
+        paid: "border-transparent bg-green-600 text-white",
         unpaid: "border-transparent bg-red-600 text-white",
         waived: "border-transparent bg-blue-600 text-white",
         exempt: "border-transparent bg-gray-500 text-white",

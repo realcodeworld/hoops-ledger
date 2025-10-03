@@ -5,35 +5,44 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Logo } from './logo'
 import { logout } from '@/lib/actions/auth'
-import { 
-  Menu, 
-  X, 
-  LogOut, 
-  Users, 
-  Calendar, 
-  CreditCard, 
-  BarChart3, 
+import {
+  Menu,
+  X,
+  LogOut,
+  Users,
+  Calendar,
+  CreditCard,
+  BarChart3,
   Settings,
-  Shield
+  Shield,
+  UserCog
 } from 'lucide-react'
+import type { UserRole } from '@prisma/client'
 
 interface MobileNavProps {
-  user: any
+  user: {
+    name: string
+    role: UserRole
+  }
   currentPath: string
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Players', href: '/dashboard/players', icon: Users },
-  { name: 'Sessions', href: '/dashboard/sessions', icon: Calendar },
-  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-  { name: 'Audit Logs', href: '/dashboard/audit', icon: Shield },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['admin', 'supervisor'] },
+  { name: 'Players', href: '/dashboard/players', icon: Users, roles: ['admin', 'supervisor'] },
+  { name: 'Sessions', href: '/dashboard/sessions', icon: Calendar, roles: ['admin', 'supervisor'] },
+  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard, roles: ['admin', 'supervisor'] },
+  { name: 'Reports', href: '/dashboard/reports', icon: BarChart3, roles: ['admin', 'supervisor'] },
+  { name: 'Users', href: '/dashboard/users', icon: UserCog, roles: ['admin'] },
+  { name: 'Audit Logs', href: '/dashboard/audit', icon: Shield, roles: ['admin'] },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin', 'supervisor'] },
 ]
 
 export function MobileNav({ user, currentPath }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const filteredNavigation = navigation.filter(item =>
+    item.roles.includes(user.role)
+  )
 
   return (
     <>
@@ -63,10 +72,10 @@ export function MobileNav({ user, currentPath }: MobileNavProps) {
             </div>
             
             <nav className="mt-8 px-4 space-y-1">
-              {navigation.map((item) => {
+              {filteredNavigation.map((item) => {
                 const Icon = item.icon
                 const isActive = currentPath === item.href
-                
+
                 return (
                   <Link
                     key={item.name}

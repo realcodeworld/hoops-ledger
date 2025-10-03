@@ -50,7 +50,7 @@ model User {
 
 enum UserRole {
   admin
-  coach
+  supervisor
 }
 
 model Player {

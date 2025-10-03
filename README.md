@@ -22,12 +22,12 @@ HoopsLedger is a modern, multi-tenant SaaS application built specifically for ba
 - Access to comprehensive audit logs and reporting
 - Branding and organization settings management
 
-#### Coach/Host
+#### Supervisor
 - Create and manage training sessions
 - Mark attendance with quick mobile interface
 - Process payments and mark fees as paid/waived
 - Undo status changes when needed
-- No access to organization-wide settings
+- No access to user management or audit logs
 
 #### Player (Read-only Portal)
 - **Access only if email is on record** via manually shared magic link
@@ -101,7 +101,7 @@ HoopsLedger is a modern, multi-tenant SaaS application built specifically for ba
 5. **Access the application:**
    - Main app: http://localhost:3000
    - Demo admin login: `admin@demohoops.com` / `admin123`
-   - Demo coach login: `coach@demohoops.com` / `coach123`
+   - Demo supervisor login: `supervisor@demohoops.com` / `supervisor123`
 
 ### Database Management
 ```bash
@@ -114,7 +114,7 @@ pnpm typecheck    # Run TypeScript type checking
 
 ### Data Models
 - **Organizations**: Multi-tenant structure with branding and settings
-- **Users**: Admin and Coach roles with organization-scoped access
+- **Users**: Admin and Supervisor roles with organization-scoped access
 - **Players**: Club members with optional email addresses and categories
 - **Sessions**: Training sessions with pricing rules and capacity management
 - **Attendance**: Check-in records with fee calculations and status tracking
@@ -224,7 +224,7 @@ NODE_ENV="production"
 ✅ **Authentication & Access Control**
 - Admin creates players with optional email addresses
 - Magic link generation and consumption for players with emails
-- Role-based access (Admin, Coach, Player read-only)
+- Role-based access (Admin, Supervisor, Player read-only)
 
 ✅ **Session Management**
 - Create sessions with pricing rules and capacity

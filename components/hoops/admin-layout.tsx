@@ -29,7 +29,7 @@ export async function AdminLayout({ children, currentPath = '/dashboard' }: Admi
           </div>
           
           <div className="mt-8 flex-grow flex flex-col">
-            <AdminNavigation currentPath={currentPath} />
+            <AdminNavigation currentPath={currentPath} userRole={user.role} />
           </div>
 
           <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
