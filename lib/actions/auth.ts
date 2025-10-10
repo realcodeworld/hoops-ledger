@@ -205,7 +205,7 @@ export async function generateMagicLink(playerId: string) {
 export async function consumeMagicLink(token: string) {
   try {
     const player = await consumeMagicLinkUtil(token)
-    
+
     if (!player) {
       return {
         success: false,
@@ -221,6 +221,67 @@ export async function consumeMagicLink(token: string) {
     return {
       success: false,
       error: 'This magic link is invalid or has expired. Please request a new one.'
+    }
+  }
+}
+
+export async function requestPlayerMagicLink(formData: FormData) {
+  try {
+    const email = formData.get('email')?.toString()
+
+    if (!email) {
+      return {
+        success: false,
+        error: 'Please provide an email address'
+      }
+    }
+
+    // Find player by email
+    const player = await prisma.player.findFirst({
+      where: {
+        email: {
+          equals: email,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        org: true,
+      },
+    })
+
+    if (!player) {
+      // Don't reveal if email exists or not for security
+      return {
+        success: true,
+        message: 'If a player account exists with this email, a magic link has been sent.'
+      }
+    }
+
+    // Generate magic link
+    const magicLinkUrl = await generateMagicLinkUtil(player.id)
+
+    // Send email (import needed)
+    const { sendMagicLinkEmail } = await import('@/lib/email')
+    const emailResult = await sendMagicLinkEmail(
+      player.email!,
+      player.name,
+      magicLinkUrl,
+      player.org.name
+    )
+
+    if (!emailResult.success) {
+      throw new Error(emailResult.error || 'Failed to send email')
+    }
+
+    return {
+      success: true,
+      message: 'Magic link sent to your email'
+    }
+  } catch (error) {
+    console.error('Request player magic link error:', error)
+    return {
+      success: false,
+      error: 'Failed to send magic link. Please try again.'
     }
   }
 }

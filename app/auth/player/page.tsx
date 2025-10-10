@@ -1,14 +1,14 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { LoginForm } from './login-form'
+import { getCurrentPlayer } from '@/lib/auth'
+import { PlayerLoginForm } from './player-login-form'
 import { Logo } from '@/components/hoops/logo'
 import Link from 'next/link'
 
-export default async function AuthPage() {
-  const user = await getCurrentUser()
-  
-  if (user) {
-    redirect('/dashboard')
+export default async function PlayerLoginPage() {
+  const player = await getCurrentPlayer()
+
+  if (player) {
+    redirect('/player/dashboard')
   }
 
   return (
@@ -17,19 +17,19 @@ export default async function AuthPage() {
         <div className="text-center">
           <Logo size="lg" className="justify-center" />
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Admin Login
+            Player Login
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to manage your basketball club
+            Enter your email to receive a secure login link
           </p>
         </div>
-        <LoginForm />
-        
+        <PlayerLoginForm />
+
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            Are you a player?{' '}
-            <Link href="/auth/player" className="text-orange-600 hover:text-orange-500 font-medium">
-              Player login here
+            Are you an admin?{' '}
+            <Link href="/auth" className="text-orange-600 hover:text-orange-500 font-medium">
+              Admin login here
             </Link>
           </p>
         </div>

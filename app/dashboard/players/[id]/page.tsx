@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
+import { SendMagicLinkButton } from './send-magic-link-button'
 import { prisma } from '@/lib/prisma'
 import {
   ArrowLeft,
@@ -114,6 +115,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
             </Link>
           </Button>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <SendMagicLinkButton playerId={player.id} playerEmail={player.email} />
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href={`/dashboard/payments/new?playerId=${player.id}`}>
                 <Plus className="w-4 h-4 mr-2" />
