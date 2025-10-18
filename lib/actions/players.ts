@@ -269,7 +269,7 @@ export async function getPlayerDetail(playerId: string) {
   }
 }
 
-export async function createQuickPlayer(name: string) {
+export async function createQuickPlayer(name: string, pricingRuleId?: string) {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -280,21 +280,27 @@ export async function createQuickPlayer(name: string) {
       throw new Error('Player name is required')
     }
 
-    // Get the first available pricing rule (typically Standard)
-    const defaultPricingRule = await prisma.pricingRule.findFirst({
-      where: { orgId: currentUser.orgId },
-      orderBy: { createdAt: 'asc' },
-    })
+    // If no pricing rule provided, get the first available pricing rule (typically Standard)
+    let finalPricingRuleId = pricingRuleId
 
-    if (!defaultPricingRule) {
-      throw new Error('No pricing rules found for organization')
+    if (!finalPricingRuleId) {
+      const defaultPricingRule = await prisma.pricingRule.findFirst({
+        where: { orgId: currentUser.orgId },
+        orderBy: { createdAt: 'asc' },
+      })
+
+      if (!defaultPricingRule) {
+        throw new Error('No pricing rules found for organization')
+      }
+
+      finalPricingRuleId = defaultPricingRule.id
     }
 
     const player = await prisma.player.create({
       data: {
         orgId: currentUser.orgId,
         name: name.trim(),
-        pricingRuleId: defaultPricingRule.id,
+        pricingRuleId: finalPricingRuleId,
         isExempt: false,
         isActive: true,
       },

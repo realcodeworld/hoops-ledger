@@ -36,7 +36,9 @@ export default async function PlayersPage() {
     (players || []).map(async (player) => {
       const balanceResult = await getPlayerBalance(player.id)
       const balance = balanceResult.success ? balanceResult.data?.balance || 0 : 0
-      return { ...player, balance }
+      const credit = balanceResult.success ? balanceResult.data?.credit || 0 : 0
+      const unpaidBalance = balanceResult.success ? balanceResult.data?.unpaidBalance || 0 : 0
+      return { ...player, balance, credit, unpaidBalance }
     })
   )
 
@@ -201,11 +203,28 @@ export default async function PlayersPage() {
                         <ActivityBadge isActive={player.isActive} />
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        <CurrencyDisplay
-                          amountPence={player.balance}
-                          showSign
-                          className={player.balance > 0 ? 'text-warning' : player.balance < 0 ? 'text-success' : ''}
-                        />
+                        {player.credit > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-500">In Credit</span>
+                            <CurrencyDisplay
+                              amountPence={player.credit}
+                              className="text-green-600"
+                            />
+                          </div>
+                        ) : player.unpaidBalance > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-gray-500">Amount Due</span>
+                            <CurrencyDisplay
+                              amountPence={player.unpaidBalance}
+                              className="text-red-600"
+                            />
+                          </div>
+                        ) : (
+                          <CurrencyDisplay
+                            amountPence={0}
+                            className="text-gray-500"
+                          />
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {player._count.attendance}
@@ -256,14 +275,37 @@ export default async function PlayersPage() {
                     </div>
 
                     <div>
-                      <div className="text-gray-500">Balance</div>
-                      <div className="mt-1 font-medium">
-                        <CurrencyDisplay
-                          amountPence={player.balance}
-                          showSign
-                          className={player.balance > 0 ? 'text-warning' : player.balance < 0 ? 'text-success' : ''}
-                        />
-                      </div>
+                      {player.credit > 0 ? (
+                        <>
+                          <div className="text-gray-500">In Credit</div>
+                          <div className="mt-1 font-medium">
+                            <CurrencyDisplay
+                              amountPence={player.credit}
+                              className="text-green-600"
+                            />
+                          </div>
+                        </>
+                      ) : player.unpaidBalance > 0 ? (
+                        <>
+                          <div className="text-gray-500">Amount Due</div>
+                          <div className="mt-1 font-medium">
+                            <CurrencyDisplay
+                              amountPence={player.unpaidBalance}
+                              className="text-red-600"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-gray-500">Balance</div>
+                          <div className="mt-1 font-medium">
+                            <CurrencyDisplay
+                              amountPence={0}
+                              className="text-gray-500"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div>

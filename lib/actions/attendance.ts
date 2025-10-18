@@ -279,12 +279,12 @@ export async function markWaived(attendanceId: string, reason: string) {
 
     const beforeState = attendance
 
-    // Update attendance status
+    // Update attendance status, preserve existing notes if they exist
     const updatedAttendance = await prisma.attendance.update({
       where: { id: attendanceId },
       data: {
         status: 'waived',
-        notes: reason,
+        notes: attendance.notes || reason,
       },
     })
 

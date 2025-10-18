@@ -45,20 +45,38 @@ interface Player {
   } | null
 }
 
+interface PricingRule {
+  id: string
+  name: string
+  feePence: number
+}
+
 interface AttendanceManagerProps {
   sessionId: string
   attendance: AttendanceRecord[]
   availablePlayers: Player[]
+  pricingRules: PricingRule[]
 }
 
-export function AttendanceManager({ sessionId, attendance, availablePlayers }: AttendanceManagerProps) {
+export function AttendanceManager({ sessionId, attendance, availablePlayers, pricingRules }: AttendanceManagerProps) {
   const [selectedPlayerToAdd, setSelectedPlayerToAdd] = useState<string>('')
   const [newPlayerName, setNewPlayerName] = useState('')
+  const [newPlayerCategory, setNewPlayerCategory] = useState<string>('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [paymentDialog, setPaymentDialog] = useState<string | null>(null)
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
+
+  // Restore expanded player state after reload
+  useEffect(() => {
+    const savedExpandedPlayer = localStorage.getItem('expandedPlayer')
+    if (savedExpandedPlayer) {
+      setExpandedPlayer(savedExpandedPlayer)
+      localStorage.removeItem('expandedPlayer')
+    }
+  }, [])
 
   // Filter players not already in attendance
   const attendingPlayerIds = attendance.map(a => a.playerId)
@@ -93,6 +111,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
   const handleMarkPaid = async (attendanceId: string, method: 'cash' | 'bank_transfer') => {
     try {
       const amountPence = Math.round(parseFloat(paymentAmount || '0') * 100)
+      // Save expanded state before reload
+      if (expandedPlayer) {
+        localStorage.setItem('expandedPlayer', expandedPlayer)
+      }
       await markPaymentWithAmount(attendanceId, method, amountPence)
       setPaymentDialog(null)
       setPaymentAmount('')
@@ -104,6 +126,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
 
   const handleWaiveFee = async (attendanceId: string) => {
     try {
+      // Save expanded state before reload
+      if (expandedPlayer) {
+        localStorage.setItem('expandedPlayer', expandedPlayer)
+      }
       await markPayment(attendanceId, 'waived')
       window.location.reload()
     } catch (error) {
@@ -113,6 +139,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
 
   const handleResetToUnpaid = async (attendanceId: string) => {
     try {
+      // Save expanded state before reload
+      if (expandedPlayer) {
+        localStorage.setItem('expandedPlayer', expandedPlayer)
+      }
       await markPayment(attendanceId, 'reset')
       window.location.reload()
     } catch (error) {
@@ -127,6 +157,10 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
 
   const handleSaveNotes = async (attendanceId: string) => {
     try {
+      // Save the current expanded player to localStorage before reload
+      if (expandedPlayer) {
+        localStorage.setItem('expandedPlayer', expandedPlayer)
+      }
       await updateAttendanceNotes(attendanceId, noteText)
       setEditingNotes(null)
       setNoteText('')
@@ -155,12 +189,13 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
   }
 
   const handleCreateAndAddPlayer = async () => {
-    if (newPlayerName.trim()) {
+    if (newPlayerName.trim() && newPlayerCategory) {
       try {
-        const result = await createQuickPlayer(newPlayerName.trim())
+        const result = await createQuickPlayer(newPlayerName.trim(), newPlayerCategory)
         if (result.success && result.data) {
           await addPlayerToSession(sessionId, result.data.id)
           setNewPlayerName('')
+          setNewPlayerCategory('')
           setIsAddingPlayer(false)
           window.location.reload()
         }
@@ -249,39 +284,51 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="new-player-name">Player Name</Label>
-                <Input
-                  id="new-player-name"
-                  type="text"
-                  placeholder="Enter player name"
-                  value={newPlayerName}
-                  onChange={(e) => setNewPlayerName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && newPlayerName.trim()) {
-                      handleCreateAndAddPlayer()
-                    }
-                  }}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Creates player with default settings (Standard category)
-                </p>
-                {newPlayerName.trim() && (
-                  <Button 
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="new-player-name">Player Name</Label>
+                  <Input
+                    id="new-player-name"
+                    type="text"
+                    placeholder="Enter player name"
+                    value={newPlayerName}
+                    onChange={(e) => setNewPlayerName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="new-player-category">Category</Label>
+                  <Select value={newPlayerCategory} onValueChange={setNewPlayerCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pricingRules.map((rule) => (
+                        <SelectItem key={rule.id} value={rule.id}>
+                          {rule.name} - £{(rule.feePence / 100).toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {newPlayerName.trim() && newPlayerCategory && (
+                  <Button
                     onClick={handleCreateAndAddPlayer}
-                    className="w-full mt-2"
+                    className="w-full"
                   >
                     Create & Add Player
                   </Button>
                 )}
               </div>
               
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setIsAddingPlayer(false)
                   setSelectedPlayerToAdd('')
                   setNewPlayerName('')
+                  setNewPlayerCategory('')
                 }}
                 className="w-full"
               >
@@ -293,144 +340,218 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers }: A
       </div>
 
       {/* Attendance List */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {attendance.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
             No players registered for this session yet.
           </div>
         ) : (
-          attendance.map((record) => (
-            <div
-              key={record.id}
-              className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 p-4 bg-white border rounded-lg hover:shadow-sm transition-shadow"
-            >
-              <div className="flex-1 min-w-0 space-y-3">
-                {/* Player Name and Email */}
-                <div className="min-w-0">
-                  <h3 className="font-medium text-gray-900 truncate">{record.player.name}</h3>
-                  {record.player.email && (
-                    <p className="text-sm text-gray-500 truncate break-all">{record.player.email}</p>
-                  )}
-                </div>
+          attendance.map((record) => {
+            const isExpanded = expandedPlayer === record.id
 
-                {/* Badges Row */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className={getCategoryBadge(record.player.pricingRule?.name || 'No Category')}>
-                    {record.player.pricingRule?.name || 'No Category'}
-                  </Badge>
-                  <Badge className={getStatusBadge(record.status)}>
-                    {record.status}
-                  </Badge>
-                </div>
-
-                {/* Fee and Payment Info */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm text-gray-500 tabular-nums">
-                    Fee: £{(record.feeAppliedPence / 100).toFixed(2)}
-                  </span>
-                  {record.payment && (
-                    <span className="text-sm text-blue-600">
-                      Paid via {record.payment.method}
-                    </span>
-                  )}
-                </div>
-
-                {/* Notes Section */}
-                <div className="border-t pt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Notes</span>
-                    {editingNotes !== record.id && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditNotes(record.id, record.notes)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Edit3 className="w-3 h-3 mr-1" />
-                        {record.notes ? 'Edit' : 'Add'}
-                      </Button>
-                    )}
+            return (
+              <div
+                key={record.id}
+                className="bg-white border rounded-lg overflow-hidden hover:shadow-sm transition-shadow"
+              >
+                {/* Compact Header - Always Visible */}
+                <div
+                  className="flex items-center justify-between gap-2 p-3 cursor-pointer active:bg-gray-50"
+                  onClick={() => setExpandedPlayer(isExpanded ? null : record.id)}
+                >
+                  <div className="flex-1 min-w-0 flex items-center gap-2">
+                    <h3 className="font-medium text-gray-900 truncate">{record.player.name}</h3>
+                    <Badge className={`${getStatusBadge(record.status)} text-xs shrink-0`}>
+                      {record.status}
+                    </Badge>
                   </div>
 
-                  {editingNotes === record.id ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={noteText}
-                        onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="e.g., Will pay on Monday, Cash payment pending..."
-                        className="min-h-[60px] text-sm"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSaveNotes(record.id)}
-                          className="h-7 px-3 text-xs"
-                        >
-                          <Save className="w-3 h-3 mr-1" />
-                          Save
-                        </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {record.status === 'unpaid' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleOpenPaymentDialog(record.id, record.feeAppliedPence)
+                        }}
+                        className="h-8 px-3"
+                      >
+                        <CreditCard className="w-3 h-3 sm:mr-1" />
+                        <span className="hidden sm:inline">Pay</span>
+                      </Button>
+                    )}
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="border-t p-4 space-y-4 bg-gray-50">
+                    {/* Email */}
+                    {record.player.email && (
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Email</span>
+                        <p className="text-sm text-gray-700 break-all">{record.player.email}</p>
+                      </div>
+                    )}
+
+                    {/* Category & Fee */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Category</span>
+                        <div className="mt-1">
+                          <Badge className={getCategoryBadge(record.player.pricingRule?.name || 'No Category')}>
+                            {record.player.pricingRule?.name || 'No Category'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Fee</span>
+                        <p className="text-sm font-semibold text-gray-900 tabular-nums mt-1">
+                          £{(record.feeAppliedPence / 100).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Payment Info */}
+                    {record.payment && (
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">Payment Method</span>
+                        <p className="text-sm text-blue-600 capitalize mt-1">
+                          {record.payment.method.replace('_', ' ')}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Notes Section */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">Notes</span>
+                        {editingNotes !== record.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleEditNotes(record.id, record.notes)
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Edit3 className="w-3 h-3 mr-1" />
+                            {record.notes ? 'Edit' : 'Add'}
+                          </Button>
+                        )}
+                      </div>
+
+                      {editingNotes === record.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            placeholder="e.g., Will pay on Monday, Cash payment pending..."
+                            className="min-h-[60px] text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSaveNotes(record.id)
+                              }}
+                              className="h-7 px-3 text-xs"
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCancelNotes()
+                              }}
+                              className="h-7 px-3 text-xs"
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          {record.notes ? (
+                            <p className="text-sm text-gray-600 bg-white p-2 rounded border">
+                              {record.notes}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">
+                              No notes added
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2 border-t">
+                      {record.status === 'unpaid' && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenPaymentDialog(record.id, record.feeAppliedPence)
+                            }}
+                            className="flex-1"
+                          >
+                            <CreditCard className="w-4 h-4 mr-1" />
+                            Mark Paid
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleWaiveFee(record.id)
+                            }}
+                            className="flex-1 text-blue-600 hover:text-blue-700"
+                          >
+                            Waive Fee
+                          </Button>
+                        </>
+                      )}
+                      {(record.status === 'paid' || record.status === 'waived') && (
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={handleCancelNotes}
-                          className="h-7 px-3 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleResetToUnpaid(record.id)
+                          }}
+                          className="w-full text-orange-600 hover:text-orange-700"
                         >
-                          <X className="w-3 h-3 mr-1" />
-                          Cancel
+                          Reset to Unpaid
                         </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="min-h-[40px]">
-                      {record.notes ? (
-                        <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
-                          {record.notes}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-400 italic">
-                          No notes added
-                        </p>
                       )}
                     </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex sm:flex-col gap-2 sm:items-end">
-                {record.status === 'unpaid' && (
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenPaymentDialog(record.id, record.feeAppliedPence)}
-                      className="tap-target flex-1 sm:flex-none"
-                    >
-                      <CreditCard className="w-4 h-4 mr-1" />
-                      <span className="hidden sm:inline">Mark </span>Paid
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleWaiveFee(record.id)}
-                      className="tap-target text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
-                    >
-                      Waive
-                    </Button>
                   </div>
                 )}
-                {(record.status === 'paid' || record.status === 'waived') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleResetToUnpaid(record.id)}
-                    className="tap-target text-orange-600 hover:text-orange-700 w-full sm:w-auto"
-                  >
-                    Reset to Unpaid
-                  </Button>
-                )}
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 

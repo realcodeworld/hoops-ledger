@@ -23,8 +23,8 @@ export default function HomePage() {
           </Button>
 
           <Button asChild variant="outline" size="lg" className="w-full border-orange-200 hover:bg-orange-50">
-            <Link href="/register">
-              Register New Account
+            <Link href="/auth/player">
+              Player Login
             </Link>
           </Button>
         </div>

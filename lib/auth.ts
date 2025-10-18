@@ -163,8 +163,10 @@ export async function consumeMagicLink(token: string): Promise<Player | null> {
     data: { consumedAt: new Date() },
   })
 
-  const player = await prisma.player.findUnique({
+  // Update player's last login time
+  const player = await prisma.player.update({
     where: { id: magicLink.playerId },
+    data: { lastLoginAt: new Date() },
     include: {
       pricingRule: true
     }

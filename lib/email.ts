@@ -10,7 +10,7 @@ export async function sendMagicLinkEmail(
 ) {
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'HoopsLedger <noreply@hoopsledger.com>',
+      from: process.env.EMAIL_FROM || 'HoopsLedger <noreply@hoopscollect.xyz>',
       to: [to],
       subject: `Access Your ${organizationName} Dashboard`,
       html: `

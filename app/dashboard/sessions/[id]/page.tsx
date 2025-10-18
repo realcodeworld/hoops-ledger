@@ -10,6 +10,7 @@ import { getSessionDetail } from '@/lib/actions/sessions'
 import { getPlayers } from '@/lib/actions/players'
 import { formatTime, formatDate } from '@/lib/utils'
 import { AttendanceManager } from '@/components/hoops/attendance-manager'
+import { getOrganizationSettings } from '@/lib/actions/settings'
 
 interface SessionDetailPageProps {
   params: Promise<{
@@ -25,18 +26,20 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
   }
 
   const { id } = await params
-  
-  const [sessionResult, playersResult] = await Promise.all([
+
+  const [sessionResult, playersResult, orgSettings] = await Promise.all([
     getSessionDetail(id),
-    getPlayers()
+    getPlayers(),
+    getOrganizationSettings()
   ])
-  
+
   if (!sessionResult.success) {
     notFound()
   }
 
   const session = sessionResult.data!
   const players = playersResult.success ? playersResult.data : []
+  const pricingRules = orgSettings?.pricingRules || []
 
   const totalAttending = session.attendance?.length || 0
   const paidCount = session.attendance?.filter(a => a.status === 'paid').length || 0
@@ -153,6 +156,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
               sessionId={id}
               attendance={session.attendance || []}
               availablePlayers={players || []}
+              pricingRules={pricingRules}
             />
           </CardContent>
         </Card>

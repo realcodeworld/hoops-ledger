@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'HoopsLedger',
   description: 'Track hoops. Track dues. Zero fuss.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon',
+    apple: '/apple-icon',
+  },
 }
 
 export const viewport: Viewport = {

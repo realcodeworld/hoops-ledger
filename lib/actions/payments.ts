@@ -184,8 +184,21 @@ export async function getPlayerBalance(playerId: string) {
       throw new Error('Player not found')
     }
 
-    // Calculate balance
-    // Balance = sum of fees from attendance - sum of payments
+    // Calculate unpaid balance
+    // Unpaid balance = sum of only unpaid fees
+    const unpaidResult = await prisma.attendance.aggregate({
+      where: {
+        playerId,
+        status: 'unpaid',
+      },
+      _sum: {
+        feeAppliedPence: true,
+      },
+    })
+
+    const unpaidBalance = unpaidResult._sum.feeAppliedPence || 0
+
+    // Also calculate total fees and payments for reference
     const attendanceResult = await prisma.attendance.aggregate({
       where: {
         playerId,
@@ -209,15 +222,22 @@ export async function getPlayerBalance(playerId: string) {
 
     const totalFeesOwed = attendanceResult._sum.feeAppliedPence || 0
     const totalPaid = paymentResult._sum.amountPence || 0
-    const balance = totalFeesOwed - totalPaid
 
-    return { 
-      success: true, 
+    // Calculate credit (overpayment)
+    const credit = totalPaid - totalFeesOwed
+
+    // Return unpaid balance if they owe money, otherwise return credit as negative (so it displays as positive credit)
+    const balance = unpaidBalance > 0 ? unpaidBalance : (credit > 0 ? -credit : 0)
+
+    return {
+      success: true,
       data: {
         playerId,
         totalFeesOwed,
         totalPaid,
         balance,
+        unpaidBalance,
+        credit: credit > 0 ? credit : 0,
       }
     }
   } catch (error) {

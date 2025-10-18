@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { loginUser } from '@/lib/actions/auth'
-import { LogIn } from 'lucide-react'
+import { loginSuperAdmin } from '@/lib/actions/super-admin'
+import { Shield } from 'lucide-react'
 
-export function LoginForm() {
+export function SuperAdminLoginForm() {
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,15 +16,15 @@ export function LoginForm() {
     setError(null)
 
     try {
-      const result = await loginUser(formData)
+      const result = await loginSuperAdmin(formData)
 
       if (!result.success) {
         setError(result.error || 'Login failed')
         return
       }
 
-      // Success - redirect will happen automatically
-      window.location.href = '/dashboard'
+      // Success - redirect to super admin dashboard
+      window.location.href = '/super-admin/users'
     } catch (error) {
       setError('Something went wrong. Please try again.')
     } finally {
@@ -35,9 +35,12 @@ export function LoginForm() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="w-6 h-6 text-red-600" />
+          <CardTitle>Super Admin Access</CardTitle>
+        </div>
         <CardDescription>
-          Enter your credentials to access the admin dashboard
+          SaaS administrator login - Manage all users and organizations
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -50,7 +53,7 @@ export function LoginForm() {
               id="email"
               name="email"
               type="email"
-              placeholder="admin@club.com"
+              placeholder="superadmin@example.com"
               required
               disabled={isPending}
             />
@@ -68,16 +71,16 @@ export function LoginForm() {
               disabled={isPending}
             />
           </div>
-          
+
           {error && (
             <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-3">
               {error}
             </div>
           )}
 
-          <Button 
-            type="submit" 
-            className="w-full" 
+          <Button
+            type="submit"
+            className="w-full bg-red-600 hover:bg-red-700"
             size="lg"
             disabled={isPending}
           >
@@ -85,8 +88,8 @@ export function LoginForm() {
               'Signing in...'
             ) : (
               <>
-                <LogIn className="w-4 h-4 mr-2" />
-                Sign In
+                <Shield className="w-4 h-4 mr-2" />
+                Super Admin Sign In
               </>
             )}
           </Button>

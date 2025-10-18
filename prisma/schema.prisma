@@ -67,6 +67,7 @@ model Player {
   isActive        Boolean     @default(true)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  lastLoginAt     DateTime?
 
   attendance Attendance[]
   payments   Payment[]
@@ -190,4 +191,16 @@ model AuditLog {
   createdAt   DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model SuperAdmin {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  @@map("super_admins")
 }
