@@ -62,7 +62,7 @@ export default async function PlayerDashboardPage() {
   const unpaid = Math.max(0, balanceDifference)
   const credit = Math.max(0, -balanceDifference)
 
-  const sessionsAttended = playerData.attendance.filter(a => a.checkedInAt).length
+  const sessionsAttended = playerData.attendance.length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,24 +143,31 @@ export default async function PlayerDashboardPage() {
                   {playerData.attendance.map((attendance) => (
                     <div
                       key={attendance.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="p-3 bg-gray-50 rounded-lg"
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {attendance.session.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {format(new Date(attendance.session.startsAt), 'PPP')}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <CurrencyDisplay amountPence={attendance.feeAppliedPence} />
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">
+                            {attendance.session.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {format(new Date(attendance.session.startsAt), 'PPP')}
+                          </p>
                         </div>
-                        <Badge variant={attendance.status}>
-                          {attendance.status}
-                        </Badge>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <CurrencyDisplay amountPence={attendance.feeAppliedPence} />
+                          </div>
+                          <Badge variant={attendance.status}>
+                            {attendance.status}
+                          </Badge>
+                        </div>
                       </div>
+                      {attendance.notes && (
+                        <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                          Note: {attendance.notes}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
