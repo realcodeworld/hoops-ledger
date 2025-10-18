@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2 } from 'lucide-react'
-import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount } from '@/lib/actions/attendance'
+import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2, Trash2 } from 'lucide-react'
+import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount, removePlayerFromSession } from '@/lib/actions/attendance'
 import { createQuickPlayer } from '@/lib/actions/players'
 
 interface AttendanceRecord {
@@ -201,6 +201,17 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
         }
       } catch (error) {
         console.error('Failed to create and add player:', error)
+      }
+    }
+  }
+
+  const handleRemovePlayer = async (attendanceId: string) => {
+    if (confirm('Are you sure you want to remove this player from the session? This will delete the attendance record and any associated payment.')) {
+      try {
+        await removePlayerFromSession(attendanceId)
+        window.location.reload()
+      } catch (error) {
+        console.error('Failed to remove player:', error)
       }
     }
   }
@@ -505,47 +516,61 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 pt-2 border-t">
-                      {record.status === 'unpaid' && (
-                        <>
+                    <div className="space-y-2 pt-2 border-t">
+                      <div className="flex gap-2">
+                        {record.status === 'unpaid' && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleOpenPaymentDialog(record.id, record.feeAppliedPence)
+                              }}
+                              className="flex-1"
+                            >
+                              <CreditCard className="w-4 h-4 mr-1" />
+                              Mark Paid
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleWaiveFee(record.id)
+                              }}
+                              className="flex-1 text-blue-600 hover:text-blue-700"
+                            >
+                              Waive Fee
+                            </Button>
+                          </>
+                        )}
+                        {(record.status === 'paid' || record.status === 'waived') && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleOpenPaymentDialog(record.id, record.feeAppliedPence)
+                              handleResetToUnpaid(record.id)
                             }}
-                            className="flex-1"
+                            className="w-full text-orange-600 hover:text-orange-700"
                           >
-                            <CreditCard className="w-4 h-4 mr-1" />
-                            Mark Paid
+                            Reset to Unpaid
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleWaiveFee(record.id)
-                            }}
-                            className="flex-1 text-blue-600 hover:text-blue-700"
-                          >
-                            Waive Fee
-                          </Button>
-                        </>
-                      )}
-                      {(record.status === 'paid' || record.status === 'waived') && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleResetToUnpaid(record.id)
-                          }}
-                          className="w-full text-orange-600 hover:text-orange-700"
-                        >
-                          Reset to Unpaid
-                        </Button>
-                      )}
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemovePlayer(record.id)
+                        }}
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Remove from Session
+                      </Button>
                     </div>
                   </div>
                 )}

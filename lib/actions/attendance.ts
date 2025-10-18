@@ -628,3 +628,64 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
     }
   }
 }
+
+export async function removePlayerFromSession(attendanceId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get attendance record to verify ownership and check if paid
+    const attendance = await prisma.attendance.findFirst({
+      where: {
+        id: attendanceId,
+        session: {
+          orgId: currentUser.orgId,
+        },
+      },
+      include: {
+        payment: true,
+      },
+    })
+
+    if (!attendance) {
+      throw new Error('Attendance record not found')
+    }
+
+    const sessionId = attendance.sessionId
+
+    // If there's a payment associated, delete it first
+    if (attendance.paymentId) {
+      await prisma.payment.delete({
+        where: { id: attendance.paymentId },
+      })
+    }
+
+    // Delete the attendance record
+    await prisma.attendance.delete({
+      where: { id: attendanceId },
+    })
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        orgId: currentUser.orgId,
+        actorUserId: currentUser.id,
+        action: 'REMOVE_PLAYER_FROM_SESSION',
+        entityType: 'Attendance',
+        entityId: attendanceId,
+        before: attendance,
+      },
+    })
+
+    revalidatePath(`/dashboard/sessions/${sessionId}`)
+    return { success: true }
+  } catch (error) {
+    console.error('Remove player from session error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to remove player from session'
+    }
+  }
+}
