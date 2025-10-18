@@ -11,6 +11,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-superadmin": "tsx prisma/seed-super-admin.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

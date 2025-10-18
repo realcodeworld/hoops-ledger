@@ -1,36 +1,35 @@
 import { PrismaClient } from '@prisma/client'
-import { hashPassword } from '../lib/password'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding super admin...')
+  console.log('🔐 Seeding Super Admin...')
 
-  // Check if super admin already exists
-  const existingSuperAdmin = await prisma.superAdmin.findUnique({
-    where: { email: 'superadmin@hoops.com' },
-  })
+  const email = 'superadmin@hoopsledger.com'
+  const password = 'SuperAdmin123!'
 
-  if (existingSuperAdmin) {
-    console.log('✅ Super admin already exists')
-    return
-  }
+  const passwordHash = await bcrypt.hash(password, 10)
 
-  // Create super admin
-  const passwordHash = await hashPassword('SuperAdmin123!')
-
-  const superAdmin = await prisma.superAdmin.create({
-    data: {
+  const superAdmin = await prisma.superAdmin.upsert({
+    where: { email },
+    update: {
+      passwordHash,
       name: 'Super Admin',
-      email: 'superadmin@hoops.com',
+    },
+    create: {
+      name: 'Super Admin',
+      email,
       passwordHash,
     },
   })
 
-  console.log('✅ Super admin created:')
-  console.log('   Email:', superAdmin.email)
-  console.log('   Password: SuperAdmin123!')
-  console.log('   Login at: /super-admin/login')
+  console.log('✅ Super Admin seeded successfully!')
+  console.log('\n🔐 SUPER ADMIN CREDENTIALS:')
+  console.log(`   Email: ${superAdmin.email}`)
+  console.log(`   Password: ${password}`)
+  console.log(`   Login URL: /super-admin/login`)
+  console.log('\n⚠️  IMPORTANT: Change this password immediately after first login!')
 }
 
 main()

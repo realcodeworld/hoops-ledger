@@ -6,6 +6,20 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🏀 Seeding HoopsLedger database...')
 
+  // Create super admin
+  const superAdminPasswordHash = await bcrypt.hash('SuperAdmin123!', 10)
+  const superAdmin = await prisma.superAdmin.upsert({
+    where: { email: 'superadmin@hoopsledger.com' },
+    update: {
+      passwordHash: superAdminPasswordHash,
+    },
+    create: {
+      name: 'Super Admin',
+      email: 'superadmin@hoopsledger.com',
+      passwordHash: superAdminPasswordHash,
+    },
+  })
+
   // Create demo organization
   const org = await prisma.organization.upsert({
     where: { slug: 'demo-hoops' },
@@ -265,7 +279,13 @@ async function main() {
   ])
 
   console.log('✅ Database seeded successfully!')
-  console.log('📧 Admin login: admin@demohoops.com / admin123')
+  console.log('\n🔐 SUPER ADMIN LOGIN:')
+  console.log(`   Email: ${superAdmin.email}`)
+  console.log(`   Password: SuperAdmin123!`)
+  console.log(`   URL: /super-admin/login`)
+  console.log('\n📧 DEMO ORG ADMIN LOGIN:')
+  console.log(`   Email: admin@demohoops.com`)
+  console.log(`   Password: admin123`)
   console.log('👤 Supervisor login: supervisor@demohoops.com / supervisor123')
   console.log(`🏟️  Organization: ${org.name} (${org.slug})`)
   console.log(`👥 Created ${players.length} demo players with different pricing categories`)
