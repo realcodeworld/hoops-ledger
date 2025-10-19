@@ -35,11 +35,7 @@ export default async function ReportsPage() {
     include: {
       _count: {
         select: {
-          attendance: {
-            where: {
-              checkedInAt: { not: null },
-            },
-          },
+          attendance: true,
         },
       },
     },
@@ -133,7 +129,7 @@ export default async function ReportsPage() {
                 <CardContent>
                   <div className="text-2xl font-bold">{report.attendanceInPeriod}</div>
                   <p className="text-xs text-muted-foreground">
-                    Check-ins
+                    Session registrations
                   </p>
                 </CardContent>
               </Card>

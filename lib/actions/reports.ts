@@ -34,8 +34,10 @@ export async function getPlayerReport(playerId: string, days = 30) {
     const attendanceInRange = await prisma.attendance.count({
       where: {
         playerId,
-        checkedInAt: {
-          gte: rangeStart,
+        session: {
+          startsAt: {
+            gte: rangeStart,
+          },
         },
       },
     })
@@ -44,7 +46,6 @@ export async function getPlayerReport(playerId: string, days = 30) {
     const lifetimeAttendance = await prisma.attendance.count({
       where: {
         playerId,
-        checkedInAt: { not: null },
       },
     })
 
@@ -67,13 +68,14 @@ export async function getPlayerReport(playerId: string, days = 30) {
     const lastAttendance = await prisma.attendance.findFirst({
       where: {
         playerId,
-        checkedInAt: { not: null },
       },
       include: {
         session: true,
       },
       orderBy: {
-        checkedInAt: 'desc',
+        session: {
+          startsAt: 'desc',
+        },
       },
     })
 
@@ -94,7 +96,7 @@ export async function getPlayerReport(playerId: string, days = 30) {
 
     let currentStreak = 0
     for (const session of recentSessions) {
-      if (session.attendance.length > 0 && session.attendance[0].checkedInAt) {
+      if (session.attendance.length > 0) {
         currentStreak++
       } else {
         break
@@ -118,7 +120,7 @@ export async function getPlayerReport(playerId: string, days = 30) {
         averageFee: Math.round(averageFee),
         currentStreak,
         lastAttendance: lastAttendance ? {
-          date: lastAttendance.checkedInAt,
+          date: lastAttendance.session.startsAt,
           session: lastAttendance.session,
         } : null,
       },
@@ -187,7 +189,6 @@ export async function getOrganizationReport(days = 30) {
             gte: rangeStart,
           },
         },
-        checkedInAt: { not: null },
       },
     })
 
@@ -203,11 +204,7 @@ export async function getOrganizationReport(days = 30) {
       include: {
         _count: {
           select: {
-            attendance: {
-              where: {
-                checkedInAt: { not: null },
-              },
-            },
+            attendance: true,
           },
         },
       },
@@ -302,8 +299,10 @@ export async function getMyPlayerReport(days = 30) {
     const attendanceInRange = await prisma.attendance.count({
       where: {
         playerId: currentPlayer.id,
-        checkedInAt: {
-          gte: rangeStart,
+        session: {
+          startsAt: {
+            gte: rangeStart,
+          },
         },
       },
     })
@@ -312,7 +311,6 @@ export async function getMyPlayerReport(days = 30) {
     const lifetimeAttendance = await prisma.attendance.count({
       where: {
         playerId: currentPlayer.id,
-        checkedInAt: { not: null },
       },
     })
 
@@ -335,14 +333,15 @@ export async function getMyPlayerReport(days = 30) {
     const sessionHistory = await prisma.attendance.findMany({
       where: {
         playerId: currentPlayer.id,
-        checkedInAt: { not: null },
       },
       include: {
         session: true,
         payment: true,
       },
       orderBy: {
-        checkedInAt: 'desc',
+        session: {
+          startsAt: 'desc',
+        },
       },
       take: 20,
     })
