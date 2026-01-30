@@ -2,7 +2,7 @@ services:
   - type: web
     name: hoops-ledger
     env: node
-    plan: starter
+    plan: free
     buildCommand: pnpm install && pnpm build
     startCommand: pnpm start
     envVars:
@@ -20,6 +20,6 @@ services:
 
 databases:
   - name: hoops-ledger-db
-    plan: starter
+    plan: free
     databaseName: hoopsledger
     user: hoopsledger
