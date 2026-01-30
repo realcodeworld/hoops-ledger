@@ -82,13 +82,22 @@ export async function createManualPayment(formData: FormData) {
       },
     })
 
+    // Automatically allocate payment to unpaid sessions (oldest first)
+    const allocationResult = await allocatePaymentToSessions(payment.id)
+
     revalidatePath('/dashboard/payments')
     revalidatePath(`/dashboard/players/${data.playerId}`)
     if (data.sessionId) {
       revalidatePath(`/dashboard/sessions/${data.sessionId}`)
     }
 
-    return { success: true, data: payment }
+    return {
+      success: true,
+      data: {
+        payment,
+        allocation: allocationResult.data,
+      }
+    }
   } catch (error) {
     console.error('Create payment error:', error)
     return { 
@@ -161,6 +170,103 @@ export async function getPaymentAllocations() {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to fetch payment allocations' 
+    }
+  }
+}
+
+/**
+ * Allocates a payment to unpaid sessions in chronological order (oldest first)
+ * Returns the number of sessions paid and any remaining credit
+ */
+export async function allocatePaymentToSessions(paymentId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get the payment
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
+        orgId: currentUser.orgId,
+      },
+    })
+
+    if (!payment) {
+      throw new Error('Payment not found')
+    }
+
+    // Get all unpaid attendances for this player, ordered by session date (oldest first)
+    const unpaidAttendances = await prisma.attendance.findMany({
+      where: {
+        playerId: payment.playerId,
+        status: 'unpaid',
+      },
+      include: {
+        session: true,
+      },
+      orderBy: {
+        session: {
+          startsAt: 'asc', // Oldest session first
+        },
+      },
+    })
+
+    let remainingAmount = payment.amountPence
+    const allocatedAttendances: string[] = []
+
+    // Use a transaction to ensure all updates happen atomically
+    await prisma.$transaction(async (tx) => {
+      for (const attendance of unpaidAttendances) {
+        // Only allocate if we have enough to cover the full fee
+        if (remainingAmount >= attendance.feeAppliedPence) {
+          // Mark attendance as paid and link to this payment
+          await tx.attendance.update({
+            where: { id: attendance.id },
+            data: {
+              status: 'paid',
+              paymentId: payment.id,
+            },
+          })
+
+          // Create audit log for this allocation
+          await tx.auditLog.create({
+            data: {
+              orgId: currentUser.orgId,
+              actorUserId: currentUser.id,
+              action: 'MARK_PAID',
+              entityType: 'Attendance',
+              entityId: attendance.id,
+              before: { status: 'unpaid', paymentId: null },
+              after: { status: 'paid', paymentId: payment.id },
+            },
+          })
+
+          remainingAmount -= attendance.feeAppliedPence
+          allocatedAttendances.push(attendance.id)
+        } else {
+          // Not enough remaining to pay this session fully
+          break
+        }
+      }
+    })
+
+    return {
+      success: true,
+      data: {
+        paymentId: payment.id,
+        paymentAmount: payment.amountPence,
+        allocatedCount: allocatedAttendances.length,
+        allocatedAttendances,
+        remainingCredit: remainingAmount,
+      },
+    }
+  } catch (error) {
+    console.error('Allocate payment error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to allocate payment',
     }
   }
 }
@@ -245,6 +351,220 @@ export async function getPlayerBalance(playerId: string) {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to calculate player balance' 
+    }
+  }
+}
+
+/**
+ * Deletes a manual payment and reverts all allocations
+ * Marks all linked attendances back to unpaid status
+ */
+export async function deletePayment(paymentId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get the payment with all linked attendances
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
+        orgId: currentUser.orgId,
+      },
+      include: {
+        attendance: {
+          include: {
+            session: true,
+          },
+        },
+        player: true,
+      },
+    })
+
+    if (!payment) {
+      throw new Error('Payment not found')
+    }
+
+    // Use transaction to ensure atomicity
+    await prisma.$transaction(async (tx) => {
+      // Unlink and mark all attendances as unpaid
+      for (const attendance of payment.attendance) {
+        await tx.attendance.update({
+          where: { id: attendance.id },
+          data: {
+            status: 'unpaid',
+            paymentId: null,
+          },
+        })
+
+        // Create audit log for reverting payment
+        await tx.auditLog.create({
+          data: {
+            orgId: currentUser.orgId,
+            actorUserId: currentUser.id,
+            action: 'UNDO_PAID',
+            entityType: 'Attendance',
+            entityId: attendance.id,
+            before: { status: 'paid', paymentId: payment.id },
+            after: { status: 'unpaid', paymentId: null },
+          },
+        })
+      }
+
+      // Delete the payment
+      await tx.payment.delete({
+        where: { id: paymentId },
+      })
+
+      // Create audit log for payment deletion
+      await tx.auditLog.create({
+        data: {
+          orgId: currentUser.orgId,
+          actorUserId: currentUser.id,
+          action: 'DELETE_PAYMENT',
+          entityType: 'Payment',
+          entityId: payment.id,
+          before: payment,
+        },
+      })
+    })
+
+    revalidatePath('/dashboard/payments')
+    revalidatePath(`/dashboard/players/${payment.playerId}`)
+
+    // Revalidate all affected session pages
+    const uniqueSessionIds = [...new Set(payment.attendance.map(a => a.sessionId))]
+    uniqueSessionIds.forEach(sessionId => {
+      revalidatePath(`/dashboard/sessions/${sessionId}`)
+    })
+
+    return {
+      success: true,
+      data: {
+        deletedPaymentId: paymentId,
+        revertedAttendances: payment.attendance.length,
+      }
+    }
+  } catch (error) {
+    console.error('Delete payment error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete payment',
+    }
+  }
+}
+
+/**
+ * Updates a manual payment and reallocates if amount or player changed
+ */
+export async function updatePayment(
+  paymentId: string,
+  data: {
+    amountPence?: number
+    method?: PaymentMethod
+    occurredOn?: string
+    notes?: string | null
+  }
+) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    // Get existing payment
+    const existingPayment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
+        orgId: currentUser.orgId,
+      },
+      include: {
+        attendance: true,
+      },
+    })
+
+    if (!existingPayment) {
+      throw new Error('Payment not found')
+    }
+
+    const amountChanged = data.amountPence !== undefined && data.amountPence !== existingPayment.amountPence
+
+    // If amount changed, we need to reallocate
+    if (amountChanged) {
+      await prisma.$transaction(async (tx) => {
+        // First, unlink all current allocations
+        await tx.attendance.updateMany({
+          where: {
+            paymentId: paymentId,
+          },
+          data: {
+            status: 'unpaid',
+            paymentId: null,
+          },
+        })
+
+        // Update the payment
+        await tx.payment.update({
+          where: { id: paymentId },
+          data: {
+            amountPence: data.amountPence,
+            method: data.method,
+            occurredOn: data.occurredOn ? new Date(data.occurredOn) : undefined,
+            notes: data.notes !== undefined ? data.notes : undefined,
+          },
+        })
+
+        // Create audit log for update
+        await tx.auditLog.create({
+          data: {
+            orgId: currentUser.orgId,
+            actorUserId: currentUser.id,
+            action: 'UPDATE_PAYMENT',
+            entityType: 'Payment',
+            entityId: paymentId,
+            before: existingPayment,
+            after: { ...existingPayment, ...data },
+          },
+        })
+      })
+
+      // Reallocate with new amount
+      await allocatePaymentToSessions(paymentId)
+    } else {
+      // Just update the payment fields without reallocation
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          method: data.method,
+          occurredOn: data.occurredOn ? new Date(data.occurredOn) : undefined,
+          notes: data.notes !== undefined ? data.notes : undefined,
+        },
+      })
+
+      // Create audit log
+      await prisma.auditLog.create({
+        data: {
+          orgId: currentUser.orgId,
+          actorUserId: currentUser.id,
+          action: 'UPDATE_PAYMENT',
+          entityType: 'Payment',
+          entityId: paymentId,
+          before: existingPayment,
+          after: { ...existingPayment, ...data },
+        },
+      })
+    }
+
+    revalidatePath('/dashboard/payments')
+    revalidatePath(`/dashboard/players/${existingPayment.playerId}`)
+
+    return { success: true, data: { paymentId } }
+  } catch (error) {
+    console.error('Update payment error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update payment',
     }
   }
 }

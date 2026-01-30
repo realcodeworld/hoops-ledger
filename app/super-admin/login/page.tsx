@@ -2,6 +2,8 @@ import { SuperAdminLoginForm } from './super-admin-login-form'
 import { getSuperAdminSession } from '@/lib/super-admin-auth'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SuperAdminLoginPage() {
   const superAdmin = await getSuperAdminSession()
 

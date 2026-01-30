@@ -1,10 +1,22 @@
 import { AdminLayout } from '@/components/hoops/admin-layout'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CreditCard, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import { getPayments } from '@/lib/actions/payments'
+import { PaymentsTable } from '@/components/hoops/payments-table'
+import { getCurrentUser } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
-export default function PaymentsPage() {
+export default async function PaymentsPage() {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) {
+    redirect('/auth/login')
+  }
+
+  const result = await getPayments(100)
+  const payments = result.success && result.data ? result.data : []
+
   return (
     <AdminLayout currentPath="/dashboard/payments">
       <div className="space-y-6">
@@ -21,18 +33,24 @@ export default function PaymentsPage() {
           </Button>
         </div>
 
-        <Card className="bg-orange-50 border-orange-200">
-          <CardContent className="pt-6 text-center">
-            <CreditCard className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-orange-900 mb-2">Payment Tracking - Ready to Build</h3>
-            <p className="text-orange-700 mb-4">Complete server actions implemented for manual payment processing</p>
-            <div className="text-sm text-orange-600 space-y-1 text-left max-w-md mx-auto">
-              <p>✅ Mark attendance as paid/waived with audit trails</p>
-              <p>✅ Manual payment recording (cash, bank transfer, other)</p>
-              <p>✅ Real-time balance calculations</p>
-              <p>✅ Payment history and allocation tracking</p>
-              <p>✅ Undo functionality for corrections</p>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Payments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {payments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No payments recorded yet.</p>
+                <Button asChild className="mt-4" variant="outline">
+                  <Link href="/dashboard/payments/new">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Record First Payment
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <PaymentsTable payments={payments} />
+            )}
           </CardContent>
         </Card>
       </div>

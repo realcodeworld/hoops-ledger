@@ -4,6 +4,8 @@ import { RegisterForm } from './register-form'
 import { Logo } from '@/components/hoops/logo'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function RegisterPage() {
   const user = await getCurrentUser()
 

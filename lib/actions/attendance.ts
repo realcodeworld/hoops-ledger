@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { AttendanceStatus, PaymentMethod } from '@prisma/client'
+import { allocatePaymentToSessions } from './payments'
 
 const attendanceRowSchema = z.object({
   playerId: z.string().min(1),

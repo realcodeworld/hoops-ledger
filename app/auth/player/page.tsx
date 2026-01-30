@@ -4,6 +4,8 @@ import { PlayerLoginForm } from './player-login-form'
 import { Logo } from '@/components/hoops/logo'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PlayerLoginPage() {
   const player = await getCurrentPlayer()
 

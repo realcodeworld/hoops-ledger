@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: hoops-ledger
+    env: node
+    plan: starter
+    buildCommand: pnpm install && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hoops-ledger-db
+          property: connectionString
+      - key: APP_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+    healthCheckPath: /
+
+databases:
+  - name: hoops-ledger-db
+    plan: starter
+    databaseName: hoopsledger
+    user: hoopsledger

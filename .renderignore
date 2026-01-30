@@ -1,0 +1,45 @@
+# Render ignore file
+# Files and directories to exclude from deployment
+
+# Dependencies (installed during build)
+node_modules/
+
+# Build artifacts
+.next/
+out/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+.vscode/
+.idea/
+*.log
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+deploy.sh
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Prisma seed files (migrations should be included)
+prisma/seed*.ts
