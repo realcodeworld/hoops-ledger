@@ -356,6 +356,88 @@ export async function getPlayerBalance(playerId: string) {
 }
 
 /**
+ * Batch fetch player balances for multiple players in a single query
+ * Optimizes the N+1 query problem when displaying player lists
+ */
+export async function getPlayerBalancesBatch(playerIds: string[], orgId: string) {
+  try {
+    // Fetch all attendance aggregates in parallel
+    const [unpaidAttendances, allAttendances, payments] = await Promise.all([
+      // Unpaid fees per player
+      prisma.attendance.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+          status: 'unpaid',
+        },
+        _sum: {
+          feeAppliedPence: true,
+        },
+      }),
+      // All fees (unpaid + paid) per player
+      prisma.attendance.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+          status: { in: ['unpaid', 'paid'] },
+        },
+        _sum: {
+          feeAppliedPence: true,
+        },
+      }),
+      // All payments per player
+      prisma.payment.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+        },
+        _sum: {
+          amountPence: true,
+        },
+      }),
+    ])
+
+    // Create maps for quick lookup
+    const unpaidMap = new Map(unpaidAttendances.map(a => [a.playerId, a._sum.feeAppliedPence || 0]))
+    const totalFeesMap = new Map(allAttendances.map(a => [a.playerId, a._sum.feeAppliedPence || 0]))
+    const paymentsMap = new Map(payments.map(p => [p.playerId, p._sum.amountPence || 0]))
+
+    // Calculate balances for each player
+    const balances = new Map<string, {
+      balance: number
+      credit: number
+      unpaidBalance: number
+      totalFeesOwed: number
+      totalPaid: number
+    }>()
+
+    for (const playerId of playerIds) {
+      const totalFeesOwed = totalFeesMap.get(playerId) || 0
+      const totalPaid = paymentsMap.get(playerId) || 0
+      const unpaidBalance = unpaidMap.get(playerId) || 0
+      const credit = Math.max(0, totalPaid - totalFeesOwed)
+      const balance = unpaidBalance > 0 ? unpaidBalance : (credit > 0 ? -credit : 0)
+
+      balances.set(playerId, {
+        balance,
+        credit,
+        unpaidBalance,
+        totalFeesOwed,
+        totalPaid,
+      })
+    }
+
+    return { success: true, data: balances }
+  } catch (error) {
+    console.error('Get player balances batch error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to calculate player balances',
+    }
+  }
+}
+
+/**
  * Deletes a manual payment and reverts all allocations
  * Marks all linked attendances back to unpaid status
  */

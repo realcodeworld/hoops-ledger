@@ -20,16 +20,27 @@ export default async function PlayersPage() {
   const playersResult = await getPlayers()
   const players = playersResult.success ? playersResult.data : []
   
-  // Get player balances (in parallel for performance)
-  const playersWithBalances = await Promise.all(
-    (players || []).map(async (player) => {
-      const balanceResult = await getPlayerBalance(player.id)
-      const balance = balanceResult.success ? balanceResult.data?.balance || 0 : 0
-      const credit = balanceResult.success ? balanceResult.data?.credit || 0 : 0
-      const unpaidBalance = balanceResult.success ? balanceResult.data?.unpaidBalance || 0 : 0
-      return { ...player, balance, credit, unpaidBalance }
-    })
-  )
+  // Get player balances in batch (optimized to avoid N+1 queries)
+  const playerIds = (players || []).map(p => p.id)
+  const { getPlayerBalancesBatch } = await import('@/lib/actions/payments')
+  const balancesResult = await getPlayerBalancesBatch(playerIds, user.orgId)
+  const balancesMap = balancesResult.success && balancesResult.data ? balancesResult.data : new Map()
+  
+  const playersWithBalances = (players || []).map((player) => {
+    const balanceData = balancesMap.get(player.id) || {
+      balance: 0,
+      credit: 0,
+      unpaidBalance: 0,
+      totalFeesOwed: 0,
+      totalPaid: 0,
+    }
+    return {
+      ...player,
+      balance: balanceData.balance,
+      credit: balanceData.credit,
+      unpaidBalance: balanceData.unpaidBalance,
+    }
+  })
 
   return (
     <AdminLayout currentPath="/dashboard/players">

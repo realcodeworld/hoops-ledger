@@ -256,7 +256,7 @@ export default async function ReportsPage() {
                               </div>
                               <span className="text-gray-600">{player._count.attendance} sessions</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2 ml-8">
+                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                               <div
                                 className="bg-orange-500 h-2 rounded-full"
                                 style={{ width: `${percentage}%` }}

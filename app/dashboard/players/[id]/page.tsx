@@ -77,25 +77,26 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     notFound()
   }
 
-  // Calculate balance
-  const totalFeesOwed = await prisma.attendance.aggregate({
-    where: {
-      playerId: player.id,
-      status: { in: ['unpaid', 'paid'] },
-    },
-    _sum: {
-      feeAppliedPence: true,
-    },
-  })
-
-  const totalPayments = await prisma.payment.aggregate({
-    where: {
-      playerId: player.id,
-    },
-    _sum: {
-      amountPence: true,
-    },
-  })
+  // Calculate balance - combine queries for better performance
+  const [totalFeesOwed, totalPayments] = await Promise.all([
+    prisma.attendance.aggregate({
+      where: {
+        playerId: player.id,
+        status: { in: ['unpaid', 'paid'] },
+      },
+      _sum: {
+        feeAppliedPence: true,
+      },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        playerId: player.id,
+      },
+      _sum: {
+        amountPence: true,
+      },
+    }),
+  ])
 
   const totalOwed = totalFeesOwed._sum.feeAppliedPence || 0
   const totalPaid = totalPayments._sum.amountPence || 0

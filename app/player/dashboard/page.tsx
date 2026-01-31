@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { logout } from '@/lib/actions/auth'
-import { LogOut, Calendar, CreditCard, TrendingUp } from 'lucide-react'
+import { LogOut, Calendar, CreditCard } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -42,19 +42,20 @@ export default async function PlayerDashboardPage() {
     redirect('/')
   }
 
-  // Calculate financial summary
-  const totalOwed = await prisma.attendance.aggregate({
-    where: {
-      playerId: player.id,
-      status: { in: ['unpaid', 'paid'] },
-    },
-    _sum: { feeAppliedPence: true },
-  })
-
-  const totalPaid = await prisma.payment.aggregate({
-    where: { playerId: player.id },
-    _sum: { amountPence: true },
-  })
+  // Calculate financial summary - combine queries for better performance
+  const [totalOwed, totalPaid] = await Promise.all([
+    prisma.attendance.aggregate({
+      where: {
+        playerId: player.id,
+        status: { in: ['unpaid', 'paid'] },
+      },
+      _sum: { feeAppliedPence: true },
+    }),
+    prisma.payment.aggregate({
+      where: { playerId: player.id },
+      _sum: { amountPence: true },
+    }),
+  ])
 
   const totalOwedAmount = totalOwed._sum.feeAppliedPence || 0
   const totalPaidAmount = totalPaid._sum.amountPence || 0
@@ -88,7 +89,7 @@ export default async function PlayerDashboardPage() {
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Your dashboard</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-sm border">
             <div className="flex items-center">
               <Calendar className="w-8 h-8 text-primary" />
@@ -106,18 +107,6 @@ export default async function PlayerDashboardPage() {
                 <p className="text-sm font-medium text-gray-500">{credit > 0 ? 'In Credit' : 'Unpaid'}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <TrendingUp className="w-8 h-8 text-primary" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Paid</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  <CurrencyDisplay amountPence={totalPaidAmount} />
                 </p>
               </div>
             </div>

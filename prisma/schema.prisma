@@ -45,6 +45,7 @@ model User {
   updatedAt    DateTime  @updatedAt
   lastLoginAt  DateTime?
 
+  @@index([orgId])
   @@map("users")
 }
 
@@ -72,6 +73,9 @@ model Player {
   attendance Attendance[]
   payments   Payment[]
 
+  @@index([orgId])
+  @@index([orgId, isActive])
+  @@index([pricingRuleId])
   @@map("players")
 }
 
@@ -92,6 +96,9 @@ model Session {
   attendance Attendance[]
   payments   Payment[]
 
+  @@index([orgId])
+  @@index([orgId, startsAt])
+  @@index([startsAt])
   @@map("sessions")
 }
 
@@ -107,6 +114,7 @@ model PricingRule {
   sessions Session[]
   players  Player[]
 
+  @@index([orgId])
   @@map("pricing_rules")
 }
 
@@ -127,6 +135,12 @@ model Attendance {
   updatedAt        DateTime         @updatedAt
 
   @@unique([sessionId, playerId])
+  @@index([playerId])
+  @@index([playerId, status])
+  @@index([sessionId])
+  @@index([status])
+  @@index([paymentId])
+  @@index([checkedInAt])
   @@map("attendance")
 }
 
@@ -154,6 +168,11 @@ model Payment {
 
   attendance Attendance[]
 
+  @@index([orgId])
+  @@index([orgId, occurredOn])
+  @@index([playerId])
+  @@index([sessionId])
+  @@index([occurredOn])
   @@map("payments")
 }
 
@@ -173,6 +192,9 @@ model MagicLink {
   consumedAt DateTime?
   createdAt  DateTime  @default(now())
 
+  @@index([token])
+  @@index([playerId])
+  @@index([orgId])
   @@map("magic_links")
 }
 
@@ -188,6 +210,10 @@ model AuditLog {
   after       Json?
   createdAt   DateTime @default(now())
 
+  @@index([orgId])
+  @@index([orgId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
   @@map("audit_logs")
 }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -40,6 +41,7 @@ interface PlayersListProps {
 
 export function PlayersList({ players, currency }: PlayersListProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
 
   const filteredPlayers = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -105,7 +107,18 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               </TableRow>
             ) : (
               filteredPlayers.map((player) => (
-                <TableRow key={player.id}>
+                <TableRow 
+                  key={player.id}
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={(e) => {
+                    // Don't navigate if clicking on the actions dropdown
+                    const target = e.target as HTMLElement
+                    if (target.closest('[data-action-dropdown]')) {
+                      return
+                    }
+                    router.push(`/dashboard/players/${player.id}`)
+                  }}
+                >
                   <TableCell>
                     <div>
                       <div className="font-medium">{player.name}</div>
@@ -176,7 +189,11 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                   <TableCell className="text-right tabular-nums">
                     {player._count.attendance}
                   </TableCell>
-                  <TableCell className="w-[100px]">
+                  <TableCell 
+                    className="w-[100px]"
+                    onClick={(e) => e.stopPropagation()}
+                    data-action-dropdown
+                  >
                     <PlayerActionsDropdown player={player} />
                   </TableCell>
                 </TableRow>
@@ -205,7 +222,18 @@ export function PlayersList({ players, currency }: PlayersListProps) {
           </div>
         ) : (
           filteredPlayers.map((player) => (
-            <div key={player.id} className="border rounded-lg p-4 space-y-3">
+            <div 
+              key={player.id} 
+              className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-colors"
+              onClick={(e) => {
+                // Don't navigate if clicking on the actions dropdown
+                const target = e.target as HTMLElement
+                if (target.closest('[data-action-dropdown]')) {
+                  return
+                }
+                router.push(`/dashboard/players/${player.id}`)
+              }}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium truncate">{player.name}</h3>
@@ -213,7 +241,12 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                     <p className="text-sm text-gray-500 truncate">{player.notes}</p>
                   )}
                 </div>
-                <PlayerActionsDropdown player={player} />
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  data-action-dropdown
+                >
+                  <PlayerActionsDropdown player={player} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
