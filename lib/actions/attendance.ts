@@ -581,16 +581,6 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
       throw new Error('Player or session not found')
     }
 
-    // Check session capacity
-    if (session.capacity) {
-      const currentAttendance = await prisma.attendance.count({
-        where: { sessionId },
-      })
-
-      if (currentAttendance >= session.capacity) {
-        throw new Error('Session is at full capacity')
-      }
-    }
 
     // Calculate fee based on player's pricing rule
     let feeAppliedPence = 0

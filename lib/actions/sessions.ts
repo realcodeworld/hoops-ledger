@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { formatSessionName } from '@/lib/utils'
 
 const createSessionSchema = z.object({
   name: z.string().nullable().transform(val => val || ''),
@@ -12,8 +13,6 @@ const createSessionSchema = z.object({
   date: z.string().min(1, 'Date is required'),
   startTime: z.string().min(1, 'Start time is required'),
   endTime: z.string().nullable().transform(val => val || ''),
-  capacity: z.string().nullable().transform(val => val || ''),
-  allowGuests: z.boolean().default(true),
   notes: z.string().nullable().transform(val => val || ''),
   pricingRuleId: z.string().nullable().transform(val => val || ''),
 })
@@ -35,8 +34,6 @@ export async function createSession(formData: FormData) {
       date: formData.get('date'),
       startTime: formData.get('startTime'),
       endTime: formData.get('endTime'),
-      capacity: formData.get('capacity'),
-      allowGuests: formData.get('allowGuests') === 'true',
       notes: formData.get('notes'),
       pricingRuleId: formData.get('pricingRuleId'),
     })
@@ -49,15 +46,16 @@ export async function createSession(formData: FormData) {
 
     console.log('Parsed dates:', { startsAt, endsAt })
 
+    // Auto-generate name from start time if not provided (DD/MM/YYYY @ HH:mm)
+    const sessionName = data.name || formatSessionName(startsAt)
+
     const session = await prisma.session.create({
       data: {
         orgId: currentUser.orgId,
-        name: data.name || null,
+        name: sessionName,
         venue: data.venue || null,
         startsAt,
         endsAt,
-        capacity: data.capacity ? parseInt(data.capacity) : null,
-        allowGuests: data.allowGuests,
         notes: data.notes || null,
         pricingRuleId: data.pricingRuleId || null,
       },
@@ -98,10 +96,9 @@ export async function updateSession(formData: FormData) {
       id: formData.get('id'),
       name: formData.get('name'),
       venue: formData.get('venue'),
-      startsAt: formData.get('startsAt'),
-      endsAt: formData.get('endsAt'),
-      capacity: formData.get('capacity'),
-      allowGuests: formData.get('allowGuests') === 'true',
+      date: formData.get('date'),
+      startTime: formData.get('startTime'),
+      endTime: formData.get('endTime'),
       notes: formData.get('notes'),
       pricingRuleId: formData.get('pricingRuleId'),
     })
@@ -118,15 +115,20 @@ export async function updateSession(formData: FormData) {
       throw new Error('Session not found')
     }
 
+    // Combine date and time
+    const startsAt = new Date(`${data.date}T${data.startTime}`)
+    const endsAt = data.endTime ? new Date(`${data.date}T${data.endTime}`) : null
+
+    // Auto-generate name from start time if not provided
+    const sessionName = data.name || formatSessionName(startsAt)
+
     const updatedSession = await prisma.session.update({
       where: { id: data.id },
       data: {
-        name: data.name || null,
+        name: sessionName,
         venue: data.venue || null,
-        startsAt: new Date(`${data.date}T${data.startTime}`),
-        endsAt: data.endTime ? new Date(`${data.date}T${data.endTime}`) : null,
-        capacity: data.capacity ? parseInt(data.capacity) : null,
-        allowGuests: data.allowGuests,
+        startsAt,
+        endsAt,
         notes: data.notes || null,
         pricingRuleId: data.pricingRuleId || null,
       },

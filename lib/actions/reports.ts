@@ -192,14 +192,13 @@ export async function getOrganizationReport(days = 30) {
       },
     })
 
-    // Average session fill rate
-    const sessionsFillData = await prisma.session.findMany({
+    // Average attendance per session
+    const sessionsData = await prisma.session.findMany({
       where: {
         orgId: currentUser.orgId,
         startsAt: {
           gte: rangeStart,
         },
-        capacity: { not: null },
       },
       include: {
         _count: {
@@ -210,13 +209,10 @@ export async function getOrganizationReport(days = 30) {
       },
     })
 
-    const averageFillRate = sessionsFillData.length > 0
-      ? sessionsFillData.reduce((acc, session) => {
-          const fillRate = session.capacity 
-            ? (session._count.attendance / session.capacity) * 100 
-            : 0
-          return acc + fillRate
-        }, 0) / sessionsFillData.length
+    const averageAttendance = sessionsData.length > 0
+      ? sessionsData.reduce((acc, session) => {
+          return acc + session._count.attendance
+        }, 0) / sessionsData.length
       : 0
 
     // Player category mix
@@ -267,7 +263,7 @@ export async function getOrganizationReport(days = 30) {
         totalOutstanding: totalOutstanding._sum.feeAppliedPence || 0,
         sessionsInPeriod,
         attendanceInPeriod,
-        averageFillRate: Math.round(averageFillRate * 10) / 10, // Round to 1 decimal
+        averageAttendance: Math.round(averageAttendance * 10) / 10, // Round to 1 decimal
         categoryMix: categoryMix.map(item => ({
           pricingRuleId: item.pricingRuleId,
           count: item._count,

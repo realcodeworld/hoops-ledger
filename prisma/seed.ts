@@ -188,8 +188,6 @@ async function main() {
       venue: 'Main Court',
       startsAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0), // 6 PM today
       endsAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0),   // 8 PM today
-      capacity: 20,
-      allowGuests: true,
       notes: 'Bring water bottles',
     },
   })
@@ -201,8 +199,6 @@ async function main() {
       venue: 'Training Hall',
       startsAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 19, 0), // 7 PM tomorrow
       endsAt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 21, 0),   // 9 PM tomorrow
-      capacity: 15,
-      allowGuests: false,
     },
   })
 

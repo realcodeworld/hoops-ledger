@@ -83,8 +83,6 @@ model Session {
   venue         String?
   startsAt      DateTime
   endsAt        DateTime?
-  capacity      Int?
-  allowGuests   Boolean      @default(true)
   notes         String?
   pricingRuleId String?
   pricingRule   PricingRule? @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)

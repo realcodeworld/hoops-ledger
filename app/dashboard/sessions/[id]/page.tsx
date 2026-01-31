@@ -96,7 +96,6 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
                 <Users className="w-4 h-4 mr-2 text-gray-500 shrink-0" />
                 <span>
                   {totalAttending} attending
-                  {session.capacity && ` / ${session.capacity} max`}
                 </span>
               </div>
               <div className="flex items-center text-sm">

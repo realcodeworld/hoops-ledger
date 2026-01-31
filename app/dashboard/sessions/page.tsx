@@ -82,18 +82,11 @@ export default async function SessionsPage() {
                     </div>
                   </div>
                 </CardHeader>
-                {(session.notes || session.capacity) && (
+                {session.notes && (
                   <CardContent>
-                    {session.capacity && (
-                      <div className="text-sm text-gray-600">
-                        <strong>Capacity:</strong> {session.capacity} players
-                      </div>
-                    )}
-                    {session.notes && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        <strong>Notes:</strong> {session.notes}
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-600">
+                      <strong>Notes:</strong> {session.notes}
+                    </div>
                   </CardContent>
                 )}
               </Card>

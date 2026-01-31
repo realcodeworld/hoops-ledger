@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, DollarSign } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { createSession } from '@/lib/actions/sessions'
 import { getOrganizationSettings } from '@/lib/actions/settings'
@@ -70,7 +69,7 @@ export default async function NewSessionPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="venue">Venue</Label>
+                  <Label htmlFor="venue">Venue (Optional)</Label>
                   <Input
                     id="venue"
                     name="venue"
@@ -115,33 +114,7 @@ export default async function NewSessionPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="capacity">Capacity (Optional)</Label>
-                  <Input
-                    id="capacity"
-                    name="capacity"
-                    type="number"
-                    min="1"
-                    max="100"
-                    placeholder="e.g., 20"
-                    className="w-full"
-                  />
-                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="allowGuests">Guest Policy</Label>
-                <Select name="allowGuests" defaultValue="true">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Allow Guests</SelectItem>
-                    <SelectItem value="false">Members Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
