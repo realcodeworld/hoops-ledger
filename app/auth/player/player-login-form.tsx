@@ -98,6 +98,7 @@ export function PlayerLoginForm() {
 
           <Button
             type="submit"
+            size="lg"
             className="w-full"
             size="lg"
             disabled={isPending}

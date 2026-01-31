@@ -215,6 +215,7 @@ export function NewPlayerForm({ pricingRules, currency }: NewPlayerFormProps) {
         </Button>
         <Button 
           type="submit" 
+          size="lg"
           disabled={isSubmitting}
           className="tap-target"
         >

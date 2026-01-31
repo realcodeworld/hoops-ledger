@@ -202,7 +202,7 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+              <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto">
                 {isPending ? (
                   'Saving...'
                 ) : (

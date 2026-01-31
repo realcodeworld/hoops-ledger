@@ -248,7 +248,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
         
         <Dialog open={isAddingPlayer} onOpenChange={setIsAddingPlayer}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button size="lg" className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Add Player
             </Button>
@@ -275,6 +275,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
                   </Select>
                   {selectedPlayerToAdd && (
                     <Button 
+                      size="lg"
                       onClick={handleAddExistingPlayer}
                       className="w-full mt-2"
                     >
@@ -325,6 +326,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
 
                 {newPlayerName.trim() && newPlayerCategory && (
                   <Button
+                    size="lg"
                     onClick={handleCreateAndAddPlayer}
                     className="w-full"
                   >
@@ -614,16 +616,18 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
                 <Label>Payment Method</Label>
                 <div className="grid grid-cols-1 gap-3">
                   <Button
+                    size="lg"
                     onClick={() => handleMarkPaid(paymentDialog, 'cash')}
-                    className="flex items-center justify-center gap-3 h-12"
+                    className="flex items-center justify-center gap-3"
                     variant="outline"
                   >
                     <Banknote className="w-5 h-5" />
                     <span>Cash Payment</span>
                   </Button>
                   <Button
+                    size="lg"
                     onClick={() => handleMarkPaid(paymentDialog, 'bank_transfer')}
-                    className="flex items-center justify-center gap-3 h-12"
+                    className="flex items-center justify-center gap-3"
                     variant="outline"
                   >
                     <Building2 className="w-5 h-5" />

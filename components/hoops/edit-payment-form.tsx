@@ -155,7 +155,7 @@ export function EditPaymentForm({ payment }: EditPaymentFormProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <Button type="submit" className="w-full sm:w-auto" disabled={isPending}>
+        <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isPending}>
           {isPending ? 'Updating...' : 'Update Payment'}
         </Button>
         <Button asChild variant="outline" className="w-full sm:w-auto" disabled={isPending}>

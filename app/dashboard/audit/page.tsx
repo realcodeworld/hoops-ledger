@@ -2,14 +2,26 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
-import { Shield } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { getAuditLogs } from '@/lib/actions/audit'
+import { formatDateTime } from '@/lib/utils'
 
 export default async function AuditPage() {
   const user = await getCurrentUser()
-  
+
   if (!user) {
     redirect('/auth')
   }
+
+  const result = await getAuditLogs(undefined, undefined, undefined, 100)
+  const logs = result.success && result.data ? result.data : []
 
   return (
     <AdminLayout currentPath="/dashboard/audit">
@@ -19,20 +31,56 @@ export default async function AuditPage() {
           <p className="mt-2 text-gray-600">Track all system activities and changes.</p>
         </div>
 
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="pt-6 text-center">
-            <Shield className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-green-900 mb-2">Audit Trail - Ready to Build</h3>
-            <p className="text-green-700 mb-4">Complete audit logging system with detailed activity tracking</p>
-            <div className="text-sm text-green-600 space-y-1 text-left max-w-md mx-auto">
-              <p>✅ All user actions logged with timestamps</p>
-              <p>✅ Payment and attendance change tracking</p>
-              <p>✅ Player and session modification history</p>
-              <p>✅ Before/after state comparison</p>
-              <p>✅ Searchable and filterable audit trail</p>
-            </div>
-          </CardContent>
-        </Card>
+        {!result.success && (
+          <Card className="bg-amber-50 border-amber-200">
+            <CardContent className="pt-6">
+              <p className="text-amber-800">
+                {result.error === 'Insufficient permissions'
+                  ? 'Only admins can view audit logs.'
+                  : result.error ?? 'Failed to load audit logs.'}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {result.success && logs.length === 0 && (
+          <Card className="bg-gray-50 border-gray-200">
+            <CardContent className="pt-6 text-center text-gray-600">
+              No audit logs yet. Activity will appear here as changes are made.
+            </CardContent>
+          </Card>
+        )}
+
+        {result.success && logs.length > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Actor</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="whitespace-nowrap text-sm text-gray-600">
+                        {formatDateTime(log.createdAt)}
+                      </TableCell>
+                      <TableCell>{log.actorName}</TableCell>
+                      <TableCell>{log.action}</TableCell>
+                      <TableCell>{log.entityType}</TableCell>
+                      <TableCell className="font-mono text-xs">{log.entityId}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AdminLayout>
   )

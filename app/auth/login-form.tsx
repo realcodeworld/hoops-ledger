@@ -77,8 +77,8 @@ export function LoginForm() {
 
           <Button 
             type="submit" 
-            className="w-full" 
             size="lg"
+            className="w-full" 
             disabled={isPending}
           >
             {isPending ? (

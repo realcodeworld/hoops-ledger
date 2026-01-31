@@ -100,7 +100,7 @@ export function UpdatePasswordButton({ userId, userName }: UpdatePasswordButtonP
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" size="lg" disabled={isPending}>
               {isPending ? 'Updating...' : 'Update Password'}
             </Button>
           </DialogFooter>

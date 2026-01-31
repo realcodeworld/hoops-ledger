@@ -147,7 +147,7 @@ export function EditUserButton({ user }: EditUserButtonProps) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" size="lg" disabled={isPending}>
               {isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>

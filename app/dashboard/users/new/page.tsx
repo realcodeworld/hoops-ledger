@@ -103,7 +103,7 @@ export default async function NewUserPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button type="submit" className="w-full sm:w-auto">
+                <Button type="submit" size="lg" className="w-full sm:w-auto">
                   Create User
                 </Button>
                 <Button asChild variant="outline" className="w-full sm:w-auto">

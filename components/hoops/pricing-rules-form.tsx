@@ -135,6 +135,7 @@ export function PricingRulesForm({ pricingRule, currency, isAdmin }: PricingRule
           {isAdmin && (
             <Button
               type="submit"
+              size="lg"
               disabled={isPending}
               className="w-full md:w-auto"
             >

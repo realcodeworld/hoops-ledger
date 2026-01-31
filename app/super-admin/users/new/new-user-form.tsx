@@ -167,7 +167,8 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
               </Link>
               <Button
                 type="submit"
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                size="lg"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-base font-semibold"
                 disabled={isPending}
               >
                 {isPending ? 'Creating...' : 'Create User'}

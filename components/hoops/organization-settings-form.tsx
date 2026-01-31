@@ -128,6 +128,7 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
           {isAdmin && (
             <Button
               type="submit"
+              size="lg"
               disabled={isPending}
               className="w-full md:w-auto"
             >

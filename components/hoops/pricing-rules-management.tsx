@@ -190,7 +190,7 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
                 </div>
 
                 <div className="flex gap-2 pt-4">
-                  <Button type="submit" disabled={isPending} size="sm">
+                  <Button type="submit" disabled={isPending} size="lg">
                     {isPending ? 'Creating...' : 'Create Category'}
                   </Button>
                   <Button
