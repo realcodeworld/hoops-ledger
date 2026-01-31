@@ -109,7 +109,6 @@ export function RegisterForm() {
             type="submit"
             size="lg"
             className="w-full"
-            size="lg"
             disabled={isPending}
           >
             {isPending ? (

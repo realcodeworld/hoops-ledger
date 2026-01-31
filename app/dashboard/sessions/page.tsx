@@ -28,8 +28,9 @@ export default async function SessionsPage() {
             <Link href="/dashboard/sessions/new">
               <Plus className="w-4 h-4 mr-2" />
               New session
-            </Button>
-          </div>
+            </Link>
+          </Button>
+        </div>
         <div className="grid gap-6">
             {(sessions?.length || 0) === 0 ? (
             <Card>

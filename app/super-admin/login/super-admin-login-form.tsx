@@ -82,7 +82,6 @@ export function SuperAdminLoginForm() {
             type="submit"
             size="lg"
             className="w-full bg-red-600 hover:bg-red-700 text-base font-semibold"
-            size="lg"
             disabled={isPending}
           >
             {isPending ? (

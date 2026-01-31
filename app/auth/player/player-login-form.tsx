@@ -100,7 +100,6 @@ export function PlayerLoginForm() {
             type="submit"
             size="lg"
             className="w-full"
-            size="lg"
             disabled={isPending}
           >
             {isPending ? (
