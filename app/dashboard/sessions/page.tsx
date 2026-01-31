@@ -22,34 +22,24 @@ export default async function SessionsPage() {
   return (
     <AdminLayout currentPath="/dashboard/sessions">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Sessions</h1>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <Button asChild>
-              <Link href="/dashboard/sessions/new">
-                <Plus className="w-4 h-4 mr-2" />
-                New Session
-              </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sessions</h1>
+          <Button asChild>
+            <Link href="/dashboard/sessions/new">
+              <Plus className="w-4 h-4 mr-2" />
+              New session
             </Button>
           </div>
-        </div>
-
-        {/* Sessions List */}
         <div className="grid gap-6">
-          {(sessions?.length || 0) === 0 ? (
+            {(sessions?.length || 0) === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No sessions yet
-                </h3>
+                <p className="text-gray-500 mb-6">No sessions yet</p>
                 <Button asChild>
                   <Link href="/dashboard/sessions/new">
                     <Plus className="w-4 h-4 mr-2" />
-                    Create First Session
+                    New session
                   </Link>
                 </Button>
               </CardContent>
@@ -62,7 +52,7 @@ export default async function SessionsPage() {
                     <div>
                       <CardTitle className="flex items-center">
                         <Calendar className="w-5 h-5 mr-2 text-primary" />
-                        {session.name || `Training Session - ${formatDate(session.startsAt)}`}
+                        {session.name || formatDate(session.startsAt)}
                       </CardTitle>
                       <div className="flex items-center mt-2 text-sm text-gray-500 space-x-4">
                         <div className="flex items-center">

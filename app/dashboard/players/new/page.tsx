@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { NewPlayerForm } from './new-player-form'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -34,17 +34,10 @@ export default async function NewPlayerPage() {
           </Button>
         </div>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add New Player</h1>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Add player</h1>
 
-        {/* Form */}
         <Card>
-          <CardHeader>
-            <CardTitle>Player Information</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <NewPlayerForm
               pricingRules={organization.pricingRules}
               currency={organization.currency}

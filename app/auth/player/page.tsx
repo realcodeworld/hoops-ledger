@@ -19,11 +19,8 @@ export default async function PlayerLoginPage() {
         <div className="text-center">
           <Logo size="lg" className="justify-center" />
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Player Login
+            Player login
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Enter your email to receive a secure login link
-          </p>
         </div>
         <PlayerLoginForm />
 

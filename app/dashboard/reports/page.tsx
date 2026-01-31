@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart3, TrendingUp, Users, Calendar, CreditCard, DollarSign } from 'lucide-react'
+import { BarChart3, Users, Calendar, CreditCard, DollarSign } from 'lucide-react'
 import { getOrganizationReport } from '@/lib/actions/reports'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { prisma } from '@/lib/prisma'
@@ -63,10 +63,7 @@ export default async function ReportsPage() {
   return (
     <AdminLayout currentPath="/dashboard/reports">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="mt-2 text-gray-600 text-sm sm:text-base">Financial reports and attendance analytics for the last 30 days.</p>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h1>
 
         {!report ? (
           <Card className="bg-red-50 border-red-200">
@@ -80,16 +77,13 @@ export default async function ReportsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue (30 days)</CardTitle>
+                  <CardTitle className="text-sm font-medium">Revenue</CardTitle>
                   <DollarSign className="h-4 w-4 text-success" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
                     <CurrencyDisplay amountPence={report.revenueInPeriod} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Collected in period
-                  </p>
                 </CardContent>
               </Card>
 
@@ -102,9 +96,6 @@ export default async function ReportsPage() {
                   <div className="text-2xl font-bold">
                     <CurrencyDisplay amountPence={report.totalOutstanding} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Unpaid fees
-                  </p>
                 </CardContent>
               </Card>
 
@@ -115,22 +106,16 @@ export default async function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{report.sessionsInPeriod}</div>
-                  <p className="text-xs text-muted-foreground">
-                    In last 30 days
-                  </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Attendance</CardTitle>
+                  <CardTitle className="text-sm font-medium">Attendance</CardTitle>
                   <Users className="h-4 w-4 text-purple-500" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{report.attendanceInPeriod}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Session registrations
-                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -139,10 +124,7 @@ export default async function ReportsPage() {
               {/* Monthly Revenue Trend */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <TrendingUp className="w-5 h-5 mr-2" />
-                    Revenue Trend (6 Months)
-                  </CardTitle>
+                  <CardTitle>Revenue trend</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -176,10 +158,7 @@ export default async function ReportsPage() {
               {/* Payment Methods */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Payment Methods
-                  </CardTitle>
+                  <CardTitle>Payment methods</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -223,10 +202,7 @@ export default async function ReportsPage() {
               {/* Player Categories */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="w-5 h-5 mr-2" />
-                    Active Players by Category
-                  </CardTitle>
+                  <CardTitle>Players by category</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -260,10 +236,7 @@ export default async function ReportsPage() {
               {/* Top Players */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="w-5 h-5 mr-2" />
-                    Top Players by Attendance
-                  </CardTitle>
+                  <CardTitle>Top attendance</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">

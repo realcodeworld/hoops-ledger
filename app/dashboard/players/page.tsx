@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Users, Plus, Search, Mail, Phone, Shield, Link as LinkIcon } from 'lucide-react'
+import { Users, Plus, Mail, Phone } from 'lucide-react'
 import { getPlayers } from '@/lib/actions/players'
 import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
@@ -25,12 +24,6 @@ export default async function PlayersPage() {
   const playersResult = await getPlayers()
   const players = playersResult.success ? playersResult.data : []
   
-  // Calculate summary stats
-  const totalPlayers = players?.length || 0
-  const activePlayers = players?.filter(p => p.isActive).length || 0
-  const playersWithEmail = players?.filter(p => p.email).length || 0
-  const exemptPlayers = players?.filter(p => p.isExempt).length || 0
-
   // Get player balances (in parallel for performance)
   const playersWithBalances = await Promise.all(
     (players || []).map(async (player) => {
@@ -45,103 +38,18 @@ export default async function PlayersPage() {
   return (
     <AdminLayout currentPath="/dashboard/players">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Players</h1>
-          </div>
-          <div>
-            <Button asChild className="w-full sm:w-auto">
-              <Link href="/dashboard/players/new">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Player
-              </Link>
-            </Button>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Players</h1>
+          <Button asChild className="w-full sm:w-auto">
+            <Link href="/dashboard/players/new">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Player
+            </Link>
+          </Button>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalPlayers}</div>
-              <p className="text-xs text-muted-foreground">
-                {activePlayers} active
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">With Email</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{playersWithEmail}</div>
-              <p className="text-xs text-muted-foreground">
-                Can receive magic links
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Exempt Players</CardTitle>
-              <Shield className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{exemptPlayers}</div>
-              <p className="text-xs text-muted-foreground">
-                No fees charged
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Categories</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm space-y-1">
-                <div className="flex justify-between">
-                  <span>Student:</span>
-                  <span>{(players || []).filter(p => p.pricingRule?.name?.toLowerCase().includes('student')).length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Standard:</span>
-                  <span>{(players || []).filter(p => p.pricingRule?.name?.toLowerCase().includes('standard')).length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Guest:</span>
-                  <span>{(players || []).filter(p => p.pricingRule?.name?.toLowerCase().includes('guest')).length}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Players Table */}
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-              <CardTitle>Player Directory</CardTitle>
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search players..."
-                    className="pl-9 w-64"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <Table>
@@ -340,16 +248,11 @@ export default async function PlayersPage() {
             {(players?.length || 0) === 0 && (
               <div className="text-center py-12">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No players yet
-                </h3>
-                <p className="text-gray-500 mb-6">
-                  Start building your club by adding your first player.
-                </p>
+                <p className="text-gray-500 mb-6">No players yet</p>
                 <Button asChild>
                   <Link href="/dashboard/players/new">
                     <Plus className="w-4 h-4 mr-2" />
-                    Add First Player
+                    Add Player
                   </Link>
                 </Button>
               </div>

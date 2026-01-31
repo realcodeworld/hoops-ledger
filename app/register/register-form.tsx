@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { registerUser } from '@/lib/actions/auth'
 import { UserPlus } from 'lucide-react'
 
@@ -35,10 +35,7 @@ export function RegisterForm() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Get Started</CardTitle>
-        <CardDescription>
-          Create your organization and admin account
-        </CardDescription>
+        <CardTitle>Organization & admin</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">

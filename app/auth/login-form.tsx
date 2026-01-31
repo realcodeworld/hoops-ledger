@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { loginUser } from '@/lib/actions/auth'
 import { LogIn } from 'lucide-react'
 
@@ -35,10 +35,7 @@ export function LoginForm() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>
-          Enter your credentials to access the admin dashboard
-        </CardDescription>
+        <CardTitle>Sign in</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">

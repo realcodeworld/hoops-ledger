@@ -21,9 +21,6 @@ export default async function AuthPage() {
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
             Admin Login
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to manage your basketball club
-          </p>
         </div>
         <LoginForm />
         

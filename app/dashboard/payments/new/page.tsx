@@ -64,7 +64,7 @@ export default async function NewPaymentPage({ searchParams }: NewPaymentPagePro
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Record New Payment</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Record payment</h1>
           </div>
         </div>
 

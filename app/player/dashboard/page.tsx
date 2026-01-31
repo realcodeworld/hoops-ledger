@@ -86,12 +86,7 @@ export default async function PlayerDashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Your Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            View your attendance history, balances, and session analytics
-          </p>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Your dashboard</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-2xl p-6 shadow-sm border">

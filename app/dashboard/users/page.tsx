@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth'
 import { AdminLayout } from '@/components/hoops/admin-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Shield, UserCog } from 'lucide-react'
@@ -26,12 +26,8 @@ export default async function UsersPage() {
   return (
     <AdminLayout currentPath="/dashboard/users">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="mt-2 text-gray-600 text-sm sm:text-base">Manage admin and supervisor accounts.</p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Users</h1>
           <Button asChild className="w-full sm:w-auto">
             <Link href="/dashboard/users/new">
               <Plus className="w-4 h-4 mr-2" />
@@ -40,12 +36,8 @@ export default async function UsersPage() {
           </Button>
         </div>
 
-        {/* Users List */}
         <Card>
-          <CardHeader>
-            <CardTitle>Users</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {users.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 No users found

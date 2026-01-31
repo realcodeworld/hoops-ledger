@@ -29,9 +29,6 @@ export default function HomePage() {
           </Button>
         </div>
 
-        <div className="mt-8 text-sm text-gray-500">
-          <p>Basketball club management made simple</p>
-        </div>
       </div>
     </div>
   )

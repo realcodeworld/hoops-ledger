@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, ArrowLeft, DollarSign } from 'lucide-react'
+import { ArrowLeft, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import { createSession } from '@/lib/actions/sessions'
 import { getOrganizationSettings } from '@/lib/actions/settings'
@@ -54,15 +54,8 @@ export default async function NewSessionPage() {
           </div>
         </div>
 
-        {/* Create Session Form */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-primary" />
-              Session Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form action={createSession} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -163,7 +156,7 @@ export default async function NewSessionPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button type="submit" size="lg" className="w-full sm:w-auto">
-                  Create Session
+                  Create session
                 </Button>
                 <Button asChild variant="outline" className="w-full sm:w-auto">
                   <Link href="/dashboard/sessions">Cancel</Link>

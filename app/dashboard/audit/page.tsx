@@ -26,10 +26,7 @@ export default async function AuditPage() {
   return (
     <AdminLayout currentPath="/dashboard/audit">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
-          <p className="mt-2 text-gray-600">Track all system activities and changes.</p>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit logs</h1>
 
         {!result.success && (
           <Card className="bg-amber-50 border-amber-200">
@@ -46,7 +43,7 @@ export default async function AuditPage() {
         {result.success && logs.length === 0 && (
           <Card className="bg-gray-50 border-gray-200">
             <CardContent className="pt-6 text-center text-gray-600">
-              No audit logs yet. Activity will appear here as changes are made.
+              No audit logs yet
             </CardContent>
           </Card>
         )}

@@ -5,7 +5,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { OrganizationSettingsForm } from '@/components/hoops/organization-settings-form'
 import { PricingRulesManagement } from '@/components/hoops/pricing-rules-management'
 import { getOrganizationSettings } from '@/lib/actions/settings'
-import { Settings, Users, Mail, Shield } from 'lucide-react'
 
 export default async function SettingsPage() {
   const user = await getCurrentUser()
@@ -25,53 +24,18 @@ export default async function SettingsPage() {
   return (
     <AdminLayout currentPath="/dashboard/settings">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
 
-        {/* Organization Profile Settings */}
         <OrganizationSettingsForm
           organization={organization}
           isAdmin={isAdmin}
         />
 
-        {/* Pricing Rules Management */}
         <PricingRulesManagement
           pricingRules={organization.pricingRules}
           currency={organization.currency}
           isAdmin={isAdmin}
         />
-
-        {/* Coming Soon Features */}
-        <Card className="bg-purple-50 border-purple-200">
-          <CardContent className="pt-6">
-            <div className="flex items-center mb-4">
-              <Settings className="w-6 h-6 text-purple-500 mr-2" />
-              <h3 className="text-xl font-semibold text-purple-900">Additional Features - Coming Soon</h3>
-            </div>
-            <p className="text-purple-700 mb-4">More organization management features are in development:</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              <div className="bg-white rounded-lg p-4 border border-purple-200">
-                <Users className="w-5 h-5 text-purple-500 mb-2" />
-                <h4 className="font-medium text-purple-900 mb-1">User Management</h4>
-                <p className="text-purple-600">Add and manage admin and supervisor accounts</p>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 border border-purple-200">
-                <Mail className="w-5 h-5 text-purple-500 mb-2" />
-                <h4 className="font-medium text-purple-900 mb-1">Notifications</h4>
-                <p className="text-purple-600">Email preferences and notification settings</p>
-              </div>
-
-              <div className="bg-white rounded-lg p-4 border border-purple-200">
-                <Shield className="w-5 h-5 text-purple-500 mb-2" />
-                <h4 className="font-medium text-purple-900 mb-1">Security</h4>
-                <p className="text-purple-600">Password policies and authentication settings</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AdminLayout>
   )

@@ -1,5 +1,5 @@
 import { AdminLayout } from '@/components/hoops/admin-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -11,7 +11,7 @@ import { redirect } from 'next/navigation'
 export default async function PaymentsPage() {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    redirect('/auth/login')
+    redirect('/auth')
   }
 
   const result = await getPayments(100)
@@ -21,10 +21,7 @@ export default async function PaymentsPage() {
     <AdminLayout currentPath="/dashboard/payments">
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
-            <p className="mt-2 text-gray-600 text-sm sm:text-base">Manual payment tracking and balance management.</p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
           <Button asChild className="w-full sm:w-auto">
             <Link href="/dashboard/payments/new">
               <Plus className="w-4 h-4 mr-2" />
@@ -34,17 +31,14 @@ export default async function PaymentsPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {payments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <p>No payments recorded yet.</p>
+                <p>No payments yet</p>
                 <Button asChild className="mt-4" variant="outline">
                   <Link href="/dashboard/payments/new">
                     <Plus className="w-4 h-4 mr-2" />
-                    Record First Payment
+                    Record payment
                   </Link>
                 </Button>
               </div>
