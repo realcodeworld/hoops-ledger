@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { OrganizationSettingsForm } from '@/components/hoops/organization-settings-form'
 import { PricingRulesManagement } from '@/components/hoops/pricing-rules-management'
+import { ChangePasswordForm } from '@/components/hoops/change-password-form'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 
 export default async function SettingsPage() {
@@ -26,16 +27,24 @@ export default async function SettingsPage() {
       <div className="space-y-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
 
-        <OrganizationSettingsForm
-          organization={organization}
-          isAdmin={isAdmin}
-        />
+        {/* Change Password - Available to all users */}
+        <ChangePasswordForm />
 
-        <PricingRulesManagement
-          pricingRules={organization.pricingRules}
-          currency={organization.currency}
-          isAdmin={isAdmin}
-        />
+        {/* Organization Settings - Admin only */}
+        {isAdmin && (
+          <>
+            <OrganizationSettingsForm
+              organization={organization}
+              isAdmin={isAdmin}
+            />
+
+            <PricingRulesManagement
+              pricingRules={organization.pricingRules}
+              currency={organization.currency}
+              isAdmin={isAdmin}
+            />
+          </>
+        )}
       </div>
     </AdminLayout>
   )
