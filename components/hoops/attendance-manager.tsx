@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2, Trash2 } from 'lucide-react'
 import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount, removePlayerFromSession } from '@/lib/actions/attendance'
 import { createQuickPlayer } from '@/lib/actions/players'
+import { SearchablePlayerSelect } from './searchable-player-select'
 
 interface AttendanceRecord {
   id: string
@@ -59,7 +60,6 @@ interface AttendanceManagerProps {
 }
 
 export function AttendanceManager({ sessionId, attendance, availablePlayers, pricingRules }: AttendanceManagerProps) {
-  const [selectedPlayerToAdd, setSelectedPlayerToAdd] = useState<string>('')
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerCategory, setNewPlayerCategory] = useState<string>('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
@@ -175,18 +175,6 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
     setNoteText('')
   }
 
-  const handleAddExistingPlayer = async () => {
-    if (selectedPlayerToAdd) {
-      try {
-        await addPlayerToSession(sessionId, selectedPlayerToAdd)
-        setSelectedPlayerToAdd('')
-        setIsAddingPlayer(false)
-        window.location.reload()
-      } catch (error) {
-        console.error('Failed to add player:', error)
-      }
-    }
-  }
 
   const handleCreateAndAddPlayer = async () => {
     if (newPlayerName.trim() && newPlayerCategory) {
@@ -222,27 +210,18 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Label htmlFor="player-filter" className="sr-only">Add player to session</Label>
-          <Select value="" onValueChange={async (playerId) => {
-            if (playerId && playerId !== 'all') {
+          <SearchablePlayerSelect
+            players={availablePlayersForSession}
+            placeholder="Select a player to add to session"
+            onSelect={async (playerId) => {
               try {
                 await addPlayerToSession(sessionId, playerId)
                 window.location.reload()
               } catch (error) {
                 console.error('Failed to add player:', error)
               }
-            }
-          }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a player to add to session" />
-            </SelectTrigger>
-            <SelectContent>
-              {availablePlayersForSession.map((player) => (
-                <SelectItem key={player.id} value={player.id}>
-                  {player.name} ({player.pricingRule?.name || 'No Category'})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            }}
+          />
         </div>
 
         
@@ -261,27 +240,19 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
               {availablePlayersForSession.length > 0 && (
                 <div>
                   <Label htmlFor="existing-player">Select Existing Player</Label>
-                  <Select value={selectedPlayerToAdd} onValueChange={setSelectedPlayerToAdd}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose from existing players" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availablePlayersForSession.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} ({player.pricingRule?.name || 'No Category'})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedPlayerToAdd && (
-                    <Button 
-                      size="lg"
-                      onClick={handleAddExistingPlayer}
-                      className="w-full mt-2"
-                    >
-                      Add Selected Player
-                    </Button>
-                  )}
+                  <SearchablePlayerSelect
+                    players={availablePlayersForSession}
+                    placeholder="Choose from existing players"
+                    onSelect={async (playerId) => {
+                      try {
+                        await addPlayerToSession(sessionId, playerId)
+                        setIsAddingPlayer(false)
+                        window.location.reload()
+                      } catch (error) {
+                        console.error('Failed to add player:', error)
+                      }
+                    }}
+                  />
                 </div>
               )}
               
@@ -339,7 +310,6 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
                 variant="outline"
                 onClick={() => {
                   setIsAddingPlayer(false)
-                  setSelectedPlayerToAdd('')
                   setNewPlayerName('')
                   setNewPlayerCategory('')
                 }}
