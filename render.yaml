@@ -3,7 +3,7 @@ services:
     name: hoops-ledger
     env: node
     plan: free
-    buildCommand: pnpm install && pnpm build
+    buildCommand: pnpm install && pnpm prisma migrate deploy && pnpm build
     startCommand: pnpm start
     envVars:
       - key: NODE_ENV
@@ -16,6 +16,10 @@ services:
         sync: false
       - key: SESSION_SECRET
         generateValue: true
+      - key: MIGRATION_TOKEN
+        generateValue: true
+      - key: AUTO_RUN_MIGRATIONS
+        value: "false"
     healthCheckPath: /
 
 databases:
