@@ -153,11 +153,6 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
 
         {/* Match results */}
         <MatchList sessionId={id} matches={matches} />
-        <MatchResultForm
-          sessionId={id}
-          players={players || []}
-          attendeeIds={attendeeIds}
-        />
 
         {/* Attendance Management */}
         <Card>
@@ -173,6 +168,13 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             />
           </CardContent>
         </Card>
+
+        {/* Record match result */}
+        <MatchResultForm
+          sessionId={id}
+          players={players || []}
+          attendeeIds={attendeeIds}
+        />
       </div>
     </AdminLayout>
   )

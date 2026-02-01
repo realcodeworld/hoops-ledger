@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Mail, Phone, Search, Users } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Mail, Phone, Search, Users, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { PlayerActionsDropdown } from '@/app/dashboard/players/player-actions-dropdown'
@@ -13,6 +21,9 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Plus, MailPlus } from 'lucide-react'
 import { emailBulkBalanceRemindersToAdmin } from '@/lib/actions/balance-reminders'
+
+type SortKey = 'name' | 'category' | 'status' | 'balance' | 'sessions'
+type SortDir = 'asc' | 'desc'
 
 interface PlayerWithBalance {
   id: string
@@ -46,26 +57,107 @@ function canEmailReminder(player: PlayerWithBalance): boolean {
 
 export function PlayersList({ players, currency }: PlayersListProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('name')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
   const router = useRouter()
 
+  const categoryOptions = useMemo(() => {
+    const names = new Set(players.map((p) => p.pricingRule?.name ?? 'No Category').filter(Boolean))
+    return Array.from(names).sort()
+  }, [players])
+
   const filteredPlayers = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return players
+    let result = players
+
+    if (statusFilter !== 'all') {
+      result = result.filter((p) =>
+        statusFilter === 'active' ? p.isActive : !p.isActive
+      )
+    }
+    if (categoryFilter !== 'all') {
+      const label = categoryFilter === 'No Category' ? '' : categoryFilter
+      result = result.filter((p) => (p.pricingRule?.name ?? 'No Category') === categoryFilter)
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      result = result.filter((player) => {
+        const nameMatch = player.name.toLowerCase().includes(query)
+        const emailMatch = player.email?.toLowerCase().includes(query) || false
+        const phoneMatch = player.phone?.toLowerCase().includes(query) || false
+        const notesMatch = player.notes?.toLowerCase().includes(query) || false
+        return nameMatch || emailMatch || phoneMatch || notesMatch
+      })
     }
 
-    const query = searchQuery.toLowerCase().trim()
-    return players.filter((player) => {
-      const nameMatch = player.name.toLowerCase().includes(query)
-      const emailMatch = player.email?.toLowerCase().includes(query) || false
-      const phoneMatch = player.phone?.toLowerCase().includes(query) || false
-      const notesMatch = player.notes?.toLowerCase().includes(query) || false
-      
-      return nameMatch || emailMatch || phoneMatch || notesMatch
+    const sorted = [...result].sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case 'name':
+          cmp = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+          break
+        case 'category':
+          cmp = (a.pricingRule?.name ?? '').localeCompare(b.pricingRule?.name ?? '', undefined, { sensitivity: 'base' })
+          break
+        case 'status':
+          cmp = (a.isActive ? 1 : 0) - (b.isActive ? 1 : 0)
+          break
+        case 'balance':
+          cmp = (a.unpaidBalance - a.credit) - (b.unpaidBalance - b.credit)
+          break
+        case 'sessions':
+          cmp = (a._count?.attendance ?? 0) - (b._count?.attendance ?? 0)
+          break
+        default:
+          break
+      }
+      return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [players, searchQuery])
+    return sorted
+  }, [players, searchQuery, statusFilter, categoryFilter, sortKey, sortDir])
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
+
+  function SortHeader({
+    columnKey,
+    children,
+    className,
+  }: {
+    columnKey: SortKey
+    children: React.ReactNode
+    className?: string
+  }) {
+    const isActive = sortKey === columnKey
+    return (
+      <button
+        type="button"
+        onClick={() => handleSort(columnKey)}
+        className={`flex items-center gap-1 font-medium hover:text-gray-900 transition-colors ${className ?? ''}`}
+      >
+        {children}
+        {isActive ? (
+          sortDir === 'asc' ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )
+        ) : (
+          <ArrowUpDown className="w-4 h-4 opacity-50" />
+        )}
+      </button>
+    )
+  }
 
   const selectablePlayers = useMemo(
     () => filteredPlayers.filter(canEmailReminder),
@@ -137,16 +229,56 @@ export function PlayersList({ players, currency }: PlayersListProps) {
         </div>
       )}
 
-      {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-        <Input
-          type="text"
-          placeholder="Search players by name, email, or phone..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and filters */}
+      <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search players by name, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="status-filter" className="text-sm text-gray-500 whitespace-nowrap">
+              Status
+            </Label>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}
+            >
+              <SelectTrigger id="status-filter" className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="category-filter" className="text-sm text-gray-500 whitespace-nowrap">
+              Category
+            </Label>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger id="category-filter" className="w-[140px]">
+                <SelectValue placeholder="All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {categoryOptions.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Desktop Table */}
@@ -165,12 +297,26 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                   />
                 )}
               </TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead>
+                <SortHeader columnKey="name">Player</SortHeader>
+              </TableHead>
+              <TableHead>
+                <SortHeader columnKey="category">Category</SortHeader>
+              </TableHead>
               <TableHead>Contact</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
-              <TableHead className="text-right">Sessions</TableHead>
+              <TableHead>
+                <SortHeader columnKey="status">Status</SortHeader>
+              </TableHead>
+              <TableHead className="text-right">
+                <SortHeader columnKey="balance" className="justify-end">
+                  Balance
+                </SortHeader>
+              </TableHead>
+              <TableHead className="text-right">
+                <SortHeader columnKey="sessions" className="justify-end">
+                  Sessions
+                </SortHeader>
+              </TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
