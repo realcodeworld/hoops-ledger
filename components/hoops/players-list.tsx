@@ -11,7 +11,8 @@ import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { PlayerActionsDropdown } from '@/app/dashboard/players/player-actions-dropdown'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, MailPlus } from 'lucide-react'
+import { emailBulkBalanceRemindersToAdmin } from '@/lib/actions/balance-reminders'
 
 interface PlayerWithBalance {
   id: string
@@ -39,8 +40,15 @@ interface PlayersListProps {
   currency: string
 }
 
+function canEmailReminder(player: PlayerWithBalance): boolean {
+  return !!(player.phone && player.unpaidBalance > 0)
+}
+
 export function PlayersList({ players, currency }: PlayersListProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [bulkPending, setBulkPending] = useState(false)
   const router = useRouter()
 
   const filteredPlayers = useMemo(() => {
@@ -59,8 +67,76 @@ export function PlayersList({ players, currency }: PlayersListProps) {
     })
   }, [players, searchQuery])
 
+  const selectablePlayers = useMemo(
+    () => filteredPlayers.filter(canEmailReminder),
+    [filteredPlayers]
+  )
+  const selectedCount = selectedIds.size
+
+  function toggleSelect(playerId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(playerId)) next.delete(playerId)
+      else next.add(playerId)
+      return next
+    })
+  }
+
+  function selectAllSelectable() {
+    if (selectedIds.size === selectablePlayers.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(selectablePlayers.map((p) => p.id)))
+    }
+  }
+
+  async function handleBulkEmailReminders() {
+    if (selectedCount === 0) return
+    setBulkPending(true)
+    setBulkMessage(null)
+    const result = await emailBulkBalanceRemindersToAdmin([...selectedIds])
+    setBulkPending(false)
+    if (result.success) {
+      setBulkMessage({ type: 'success', text: result.message || `Emailed ${result.results?.filter((r) => r.included).length ?? 0} reminder(s) to you` })
+      setSelectedIds(new Set())
+    } else {
+      setBulkMessage({ type: 'error', text: result.error || 'Failed to email reminders' })
+    }
+    setTimeout(() => setBulkMessage(null), 5000)
+  }
+
   return (
     <div className="space-y-4">
+      {/* Bulk actions bar */}
+      {selectablePlayers.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkEmailReminders}
+            disabled={bulkPending || selectedCount === 0}
+          >
+            <MailPlus className="w-4 h-4 mr-2" />
+            {bulkPending ? 'Sending...' : `Email reminders to me${selectedCount > 0 ? ` (${selectedCount})` : ''}`}
+          </Button>
+          {selectedCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+              disabled={bulkPending}
+            >
+              Clear selection
+            </Button>
+          )}
+          {bulkMessage && (
+            <p className={`text-sm ${bulkMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              {bulkMessage.text}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -78,6 +154,17 @@ export function PlayersList({ players, currency }: PlayersListProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                {selectablePlayers.length > 0 && (
+                  <input
+                    type="checkbox"
+                    checked={selectedCount === selectablePlayers.length && selectablePlayers.length > 0}
+                    onChange={selectAllSelectable}
+                    className="rounded border-gray-300"
+                    aria-label="Select all with phone and unpaid balance"
+                  />
+                )}
+              </TableHead>
               <TableHead>Player</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Contact</TableHead>
@@ -90,7 +177,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
           <TableBody>
             {filteredPlayers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-12">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 mb-2">
                     {searchQuery ? 'No players found matching your search' : 'No players yet'}
@@ -111,14 +198,28 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                   key={player.id}
                   className="cursor-pointer hover:bg-gray-50"
                   onClick={(e) => {
-                    // Don't navigate if clicking on the actions dropdown
                     const target = e.target as HTMLElement
-                    if (target.closest('[data-action-dropdown]')) {
+                    if (target.closest('[data-action-dropdown]') || target.closest('[data-reminder-checkbox]')) {
                       return
                     }
                     router.push(`/dashboard/players/${player.id}`)
                   }}
                 >
+                  <TableCell
+                    className="w-12"
+                    onClick={(e) => e.stopPropagation()}
+                    data-reminder-checkbox
+                  >
+                    {canEmailReminder(player) ? (
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(player.id)}
+                        onChange={() => toggleSelect(player.id)}
+                        className="rounded border-gray-300"
+                        aria-label={`Select ${player.name} for reminder`}
+                      />
+                    ) : null}
+                  </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{player.name}</div>
@@ -226,20 +327,36 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               key={player.id} 
               className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-colors"
               onClick={(e) => {
-                // Don't navigate if clicking on the actions dropdown
                 const target = e.target as HTMLElement
-                if (target.closest('[data-action-dropdown]')) {
+                if (target.closest('[data-action-dropdown]') || target.closest('[data-reminder-checkbox]')) {
                   return
                 }
                 router.push(`/dashboard/players/${player.id}`)
               }}
             >
               <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {canEmailReminder(player) && (
+                    <div
+                      className="flex-shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                      data-reminder-checkbox
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(player.id)}
+                        onChange={() => toggleSelect(player.id)}
+                        className="rounded border-gray-300"
+                        aria-label={`Select ${player.name} for reminder`}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
                   <h3 className="font-medium truncate">{player.name}</h3>
                   {player.notes && (
                     <p className="text-sm text-gray-500 truncate">{player.notes}</p>
                   )}
+                  </div>
                 </div>
                 <div 
                   onClick={(e) => e.stopPropagation()}

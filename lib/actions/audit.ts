@@ -9,13 +9,17 @@ const auditFilterSchema = z.object({
   entityId: z.string().optional(),
   action: z.string().optional(),
   limit: z.number().int().min(1).max(500).optional().default(50),
+  fromDate: z.string().optional(),
+  toDate: z.string().optional(),
 })
 
 export async function getAuditLogs(
   entityType?: string,
   entityId?: string,
   action?: string,
-  limit = 50
+  limit = 50,
+  fromDate?: string,
+  toDate?: string
 ) {
   try {
     const currentUser = await getCurrentUser()
@@ -33,6 +37,8 @@ export async function getAuditLogs(
       entityId,
       action,
       limit,
+      fromDate,
+      toDate,
     })
 
     const whereClause: any = {
@@ -49,6 +55,18 @@ export async function getAuditLogs(
 
     if (filters.action) {
       whereClause.action = filters.action
+    }
+
+    if (filters.fromDate || filters.toDate) {
+      whereClause.createdAt = {}
+      if (filters.fromDate) {
+        whereClause.createdAt.gte = new Date(filters.fromDate)
+      }
+      if (filters.toDate) {
+        const to = new Date(filters.toDate)
+        to.setHours(23, 59, 59, 999)
+        whereClause.createdAt.lte = to
+      }
     }
 
     const auditLogs = await prisma.auditLog.findMany({
@@ -84,6 +102,36 @@ export async function getAuditLogs(
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to fetch audit logs' 
+    }
+  }
+}
+
+export async function getAuditLogActions() {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+    if (currentUser.role !== 'admin') {
+      throw new Error('Insufficient permissions')
+    }
+
+    const logs = await prisma.auditLog.findMany({
+      where: { orgId: currentUser.orgId },
+      distinct: ['action'],
+      select: { action: true },
+      orderBy: { action: 'asc' },
+    })
+
+    return {
+      success: true,
+      data: logs.map((l) => l.action),
+    }
+  } catch (error) {
+    console.error('Get audit log actions error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch actions',
     }
   }
 }

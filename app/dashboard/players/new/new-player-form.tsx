@@ -98,6 +98,20 @@ export function NewPlayerForm({ pricingRules, currency }: NewPlayerFormProps) {
         </p>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="phone">Phone (Optional)</Label>
+        <Input
+          id="phone"
+          name="phone"
+          type="tel"
+          placeholder="+447700900123"
+          disabled={isSubmitting}
+        />
+        <p className="text-xs text-gray-500">
+          E.164 only (e.g. +447700900123)
+        </p>
+      </div>
+
       {error && (
         <Card className="bg-red-50 border-red-200 p-4">
           <p className="text-sm text-red-700">{error}</p>

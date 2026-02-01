@@ -139,10 +139,14 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
                   id="phone"
                   name="phone"
                   type="tel"
+                  placeholder="+447700900123"
                   defaultValue={player.phone || ''}
                   disabled={isPending}
                   className="w-full"
                 />
+                <p className="text-xs text-gray-500">
+                  E.164 only (e.g. +447700900123)
+                </p>
               </div>
             </div>
 

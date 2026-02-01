@@ -46,3 +46,22 @@ export function formatSessionName(date: Date | string): string {
   const minutes = String(d.getMinutes()).padStart(2, '0')
   return `${day}/${month}/${year} @ ${hours}:${minutes}`
 }
+
+/** E.164: optional +, then 1–15 digits; no spaces or other chars */
+const E164_REGEX = /^\+?[0-9]{1,15}$/
+
+export function isValidE164(phone: string): boolean {
+  if (!phone || typeof phone !== 'string') return false
+  const digitsOnly = phone.replace(/^\s*\+/, '').replace(/\D/g, '')
+  const normalized = (phone.trim().startsWith('+') ? '+' : '') + digitsOnly
+  return E164_REGEX.test(normalized)
+}
+
+export function normalizeToE164(phone: string): string | null {
+  if (!phone || typeof phone !== 'string') return null
+  const trimmed = phone.trim()
+  const digitsOnly = trimmed.replace(/\D/g, '')
+  if (digitsOnly.length === 0 || digitsOnly.length > 15) return null
+  const normalized = '+' + digitsOnly
+  return E164_REGEX.test(normalized) ? normalized : null
+}

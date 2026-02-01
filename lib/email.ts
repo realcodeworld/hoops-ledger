@@ -70,3 +70,44 @@ export async function sendMagicLinkEmail(
     }
   }
 }
+
+export type BalanceReminderPayload = {
+  phone_number: string
+  name: string
+  message: string
+}
+
+export async function sendBalanceReminderToAdmin(
+  toAdminEmail: string,
+  payload: BalanceReminderPayload | BalanceReminderPayload[]
+) {
+  try {
+    const isArray = Array.isArray(payload)
+    const subject = isArray
+      ? `Balance reminders (${payload.length} players)`
+      : `Balance reminder: ${payload.name}`
+    const body = JSON.stringify(payload, null, 2)
+
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'HoopsLedger <noreply@hoopscollect.xyz>',
+      to: [toAdminEmail],
+      subject,
+      html: `
+        <pre style="font-family: monospace; white-space: pre-wrap; word-wrap: break-word;">${body.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+      `,
+    })
+
+    if (error) {
+      console.error('Resend error:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Balance reminder email error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send email',
+    }
+  }
+}

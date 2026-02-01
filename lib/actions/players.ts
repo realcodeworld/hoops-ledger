@@ -4,11 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
+import { isValidE164, normalizeToE164 } from '@/lib/utils'
 
 const createPlayerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
+  phone: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || isValidE164(val), {
+      message: 'Phone must be E.164 (e.g. +447700900123)',
+    }),
   pricingRuleId: z.string().min(1, 'Pricing category is required'),
   isExempt: z.boolean().default(false),
   notes: z.string().optional().or(z.literal('')),
@@ -38,11 +45,15 @@ export async function createPlayer(formData: FormData) {
       notes: formData.get('notes') || undefined,
     })
 
+    const phoneToStore = data.phone?.trim()
+      ? normalizeToE164(data.phone.trim()) ?? null
+      : null
+
     const player = await prisma.player.create({
       data: {
         ...data,
         email: data.email || null,
-        phone: data.phone || null,
+        phone: phoneToStore,
         notes: data.notes || null,
         orgId: currentUser.orgId,
       },
@@ -102,12 +113,16 @@ export async function updatePlayer(formData: FormData) {
       throw new Error('Player not found')
     }
 
+    const phoneToStore = data.phone?.trim()
+      ? normalizeToE164(data.phone.trim()) ?? null
+      : null
+
     const updatedPlayer = await prisma.player.update({
       where: { id: data.id },
       data: {
         name: data.name,
         email: data.email || null,
-        phone: data.phone || null,
+        phone: phoneToStore,
         pricingRuleId: data.pricingRuleId,
         isExempt: data.isExempt,
         isActive: data.isActive,
