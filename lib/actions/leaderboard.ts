@@ -173,3 +173,173 @@ export async function getLeaderboard(): Promise<{
     }
   }
 }
+
+export interface WinStreakEntry {
+  playerId: string
+  name: string
+  longestWinStreak: number
+  rank: number
+}
+
+export interface AttendanceStreakEntry {
+  playerId: string
+  name: string
+  longestAttendanceStreak: number
+  rank: number
+}
+
+/**
+ * Longest consecutive match wins per player (matches ordered by createdAt).
+ * Only includes players with at least one match; excludes hideFromLeaderboard.
+ */
+export async function getWinStreaks(): Promise<{
+  success: boolean
+  data?: WinStreakEntry[]
+  error?: string
+}> {
+  try {
+    const user = await getCurrentUser()
+    const player = user ? null : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
+    const orgId = user?.orgId ?? player?.orgId
+    if (!orgId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const players = await prisma.player.findMany({
+      where: {
+        orgId,
+        isActive: true,
+        hideFromLeaderboard: false,
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })
+    const playerIds = new Set(players.map((p) => p.id))
+
+    const matchPlayers = await prisma.matchPlayer.findMany({
+      where: {
+        match: { orgId },
+        playerId: { in: [...playerIds] },
+      },
+      include: {
+        match: { select: { winningTeam: true, createdAt: true } },
+      },
+      orderBy: { match: { createdAt: 'asc' } },
+    })
+
+    const byPlayer = new Map<string, { won: boolean }[]>()
+    for (const mp of matchPlayers) {
+      if (!byPlayer.has(mp.playerId)) byPlayer.set(mp.playerId, [])
+      byPlayer.get(mp.playerId)!.push({
+        won: mp.match.winningTeam === mp.team,
+      })
+    }
+
+    const entries: WinStreakEntry[] = players
+      .map((p) => {
+        const results = byPlayer.get(p.id) ?? []
+        let maxStreak = 0
+        let current = 0
+        for (const { won } of results) {
+          if (won) {
+            current++
+            if (current > maxStreak) maxStreak = current
+          } else {
+            current = 0
+          }
+        }
+        return { playerId: p.id, name: p.name, longestWinStreak: maxStreak, rank: 0 }
+      })
+      .filter((e) => e.longestWinStreak > 0)
+    entries.sort((a, b) => b.longestWinStreak - a.longestWinStreak)
+    entries.forEach((e, i) => {
+      e.rank = i + 1
+    })
+    return { success: true, data: entries }
+  } catch (error) {
+    console.error('Get win streaks error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch win streaks',
+    }
+  }
+}
+
+/**
+ * Longest consecutive sessions attended per player (sessions ordered by startsAt).
+ * Only includes players with at least one attendance; excludes hideFromLeaderboard.
+ */
+export async function getAttendanceStreaks(): Promise<{
+  success: boolean
+  data?: AttendanceStreakEntry[]
+  error?: string
+}> {
+  try {
+    const user = await getCurrentUser()
+    const player = user ? null : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
+    const orgId = user?.orgId ?? player?.orgId
+    if (!orgId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    const players = await prisma.player.findMany({
+      where: {
+        orgId,
+        isActive: true,
+        hideFromLeaderboard: false,
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })
+    const playerIds = new Set(players.map((p) => p.id))
+
+    const [sessions, attendances] = await Promise.all([
+      prisma.session.findMany({
+        where: { orgId },
+        select: { id: true },
+        orderBy: { startsAt: 'asc' },
+      }),
+      prisma.attendance.findMany({
+        where: {
+          session: { orgId },
+          playerId: { in: [...playerIds] },
+        },
+        select: { playerId: true, sessionId: true },
+      }),
+    ])
+    const orderedSessionIds = sessions.map((s) => s.id)
+    const attendedByPlayer = new Map<string, Set<string>>()
+    for (const a of attendances) {
+      if (!attendedByPlayer.has(a.playerId)) attendedByPlayer.set(a.playerId, new Set())
+      attendedByPlayer.get(a.playerId)!.add(a.sessionId)
+    }
+
+    const entries: AttendanceStreakEntry[] = players
+      .map((p) => {
+        const attended = attendedByPlayer.get(p.id) ?? new Set()
+        let maxStreak = 0
+        let current = 0
+        for (const sid of orderedSessionIds) {
+          if (attended.has(sid)) {
+            current++
+            if (current > maxStreak) maxStreak = current
+          } else {
+            current = 0
+          }
+        }
+        return { playerId: p.id, name: p.name, longestAttendanceStreak: maxStreak, rank: 0 }
+      })
+      .filter((e) => e.longestAttendanceStreak > 0)
+    entries.sort((a, b) => b.longestAttendanceStreak - a.longestAttendanceStreak)
+    entries.forEach((e, i) => {
+      e.rank = i + 1
+    })
+    return { success: true, data: entries }
+  } catch (error) {
+    console.error('Get attendance streaks error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch attendance streaks',
+    }
+  }
+}

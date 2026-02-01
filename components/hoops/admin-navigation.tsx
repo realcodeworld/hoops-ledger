@@ -48,7 +48,7 @@ export function AdminNavigation({ currentPath, userRole = 'supervisor' }: AdminN
             href={item.href}
             className={`flex items-center px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
               isActive
-                ? 'bg-orange-500 text-white'
+                ? 'bg-orange-600 text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Logo } from '@/components/hoops/logo'
 import { Button } from '@/components/ui/button'
@@ -7,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { logout } from '@/lib/actions/auth'
 import { LogOut, Calendar, CreditCard, Trophy, Gamepad2 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { getLeaderboard, getPlayerTotalPoints } from '@/lib/actions/leaderboard'
+import { getLeaderboard, getPlayerTotalPoints, getWinStreaks, getAttendanceStreaks } from '@/lib/actions/leaderboard'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
+import { LeaderboardView } from '@/components/hoops/leaderboard-view'
 import { format } from 'date-fns'
 
 export default async function PlayerDashboardPage() {
@@ -80,9 +82,14 @@ export default async function PlayerDashboardPage() {
 
   const sessionsAttended = playerData.attendance.length
 
-  const leaderboardResult = await getLeaderboard()
+  const [leaderboardResult, winStreaksResult, attendanceStreaksResult] = await Promise.all([
+    getLeaderboard(),
+    getWinStreaks(),
+    getAttendanceStreaks(),
+  ])
   const leaderboardEntries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
-  const myRank = leaderboardEntries.find((e) => e.playerId === player.id)?.rank ?? null
+  const winStreaks = winStreaksResult.success ? winStreaksResult.data ?? [] : []
+  const attendanceStreaks = attendanceStreaksResult.success ? attendanceStreaksResult.data ?? [] : []
   const myPoints = await getPlayerTotalPoints(player.id)
 
   // Match history: one entry per match, sorted by match date desc
@@ -146,52 +153,18 @@ export default async function PlayerDashboardPage() {
         </div>
 
         {/* Leaderboard */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center flex-wrap gap-2">
-              <Trophy className="w-5 h-5 mr-2 text-primary" />
-              Leaderboard
-              {myRank != null ? (
-                <span className="text-base font-normal text-gray-500">
-                  You&apos;re #{myRank} ({myPoints} pts)
-                </span>
-              ) : (
-                <span className="text-base font-normal text-gray-500">
-                  Your points: {myPoints} pts
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {leaderboardEntries.length === 0 ? (
-              <p className="text-gray-500 text-sm">No leaderboard yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {leaderboardEntries.map((entry) => (
-                  <div
-                    key={entry.playerId}
-                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${
-                      entry.playerId === player.id ? 'bg-orange-50 ring-1 ring-orange-200' : 'bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums">
-                        #{entry.rank}
-                      </span>
-                      <span className={`font-medium ${entry.playerId === player.id ? 'text-orange-800' : 'text-gray-900'}`}>
-                        {entry.name}
-                        {entry.playerId === player.id ? ' (you)' : ''}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {entry.totalPoints} pts
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <div className="mb-8">
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-100" />}>
+            <LeaderboardView
+              entries={leaderboardEntries}
+              winStreaks={winStreaks}
+              attendanceStreaks={attendanceStreaks}
+              basePath="/player/dashboard"
+              currentPlayerId={player.id}
+              currentPlayerPoints={myPoints}
+            />
+          </Suspense>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Session History */}

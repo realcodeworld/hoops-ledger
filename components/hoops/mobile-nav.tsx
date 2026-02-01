@@ -87,7 +87,7 @@ export function MobileNav({ user, currentPath }: MobileNavProps) {
                     onClick={() => setIsOpen(false)}
                     className={`flex items-center px-3 py-2 rounded-xl text-sm font-medium transition-colors tap-target ${
                       isActive
-                        ? 'bg-orange-500 text-white'
+                        ? 'bg-orange-600 text-white shadow-sm'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
