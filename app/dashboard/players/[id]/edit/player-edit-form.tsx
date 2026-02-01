@@ -176,6 +176,21 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
                   Active member
                 </Label>
               </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="hideFromLeaderboard"
+                  name="hideFromLeaderboard"
+                  value="true"
+                  defaultChecked={player.hideFromLeaderboard}
+                  disabled={isPending}
+                  className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                />
+                <Label htmlFor="hideFromLeaderboard" className="text-sm font-medium">
+                  Hide from leaderboard
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">

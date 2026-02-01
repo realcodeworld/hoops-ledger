@@ -15,7 +15,8 @@ import {
   BarChart3,
   Settings,
   Shield,
-  UserCog
+  UserCog,
+  Trophy
 } from 'lucide-react'
 import type { UserRole } from '@prisma/client'
 
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['admin', 'supervisor'] },
   { name: 'Players', href: '/dashboard/players', icon: Users, roles: ['admin', 'supervisor'] },
   { name: 'Sessions', href: '/dashboard/sessions', icon: Calendar, roles: ['admin', 'supervisor'] },
+  { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Trophy, roles: ['admin', 'supervisor'] },
   { name: 'Payments', href: '/dashboard/payments', icon: CreditCard, roles: ['admin', 'supervisor'] },
   { name: 'Reports', href: '/dashboard/reports', icon: BarChart3, roles: ['admin', 'supervisor'] },
   { name: 'Users', href: '/dashboard/users', icon: UserCog, roles: ['admin'] },

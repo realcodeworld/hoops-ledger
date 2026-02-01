@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { logout } from '@/lib/actions/auth'
-import { LogOut, Calendar, CreditCard } from 'lucide-react'
+import { LogOut, Calendar, CreditCard, Trophy } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { getLeaderboard, getPlayerTotalPoints } from '@/lib/actions/leaderboard'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
 
@@ -65,6 +66,11 @@ export default async function PlayerDashboardPage() {
 
   const sessionsAttended = playerData.attendance.length
 
+  const leaderboardResult = await getLeaderboard()
+  const leaderboardEntries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
+  const myRank = leaderboardEntries.find((e) => e.playerId === player.id)?.rank ?? null
+  const myPoints = await getPlayerTotalPoints(player.id)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
@@ -112,6 +118,54 @@ export default async function PlayerDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Leaderboard */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center flex-wrap gap-2">
+              <Trophy className="w-5 h-5 mr-2 text-primary" />
+              Leaderboard
+              {myRank != null ? (
+                <span className="text-base font-normal text-gray-500">
+                  You&apos;re #{myRank} ({myPoints} pts)
+                </span>
+              ) : (
+                <span className="text-base font-normal text-gray-500">
+                  Your points: {myPoints} pts
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {leaderboardEntries.length === 0 ? (
+              <p className="text-gray-500 text-sm">No leaderboard yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {leaderboardEntries.map((entry) => (
+                  <div
+                    key={entry.playerId}
+                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${
+                      entry.playerId === player.id ? 'bg-orange-50 ring-1 ring-orange-200' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums">
+                        #{entry.rank}
+                      </span>
+                      <span className={`font-medium ${entry.playerId === player.id ? 'text-orange-800' : 'text-gray-900'}`}>
+                        {entry.name}
+                        {entry.playerId === player.id ? ' (you)' : ''}
+                      </span>
+                    </div>
+                    <span className="font-semibold text-gray-900 tabular-nums">
+                      {entry.totalPoints} pts
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Session History */}

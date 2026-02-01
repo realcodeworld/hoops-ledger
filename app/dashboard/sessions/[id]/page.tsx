@@ -8,8 +8,11 @@ import { Calendar, ArrowLeft, Clock, MapPin, Users, CreditCard } from 'lucide-re
 import Link from 'next/link'
 import { getSessionDetail } from '@/lib/actions/sessions'
 import { getPlayers } from '@/lib/actions/players'
+import { getSessionMatches } from '@/lib/actions/matches'
 import { formatTime, formatDate } from '@/lib/utils'
 import { AttendanceManager } from '@/components/hoops/attendance-manager'
+import { MatchResultForm } from '@/components/hoops/match-result-form'
+import { MatchList } from '@/components/hoops/match-list'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 
 interface SessionDetailPageProps {
@@ -27,9 +30,10 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
 
   const { id } = await params
 
-  const [sessionResult, playersResult, orgSettings] = await Promise.all([
+  const [sessionResult, playersResult, matchesResult, orgSettings] = await Promise.all([
     getSessionDetail(id),
     getPlayers(),
+    getSessionMatches(id),
     getOrganizationSettings()
   ])
 
@@ -39,7 +43,9 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
 
   const session = sessionResult.data!
   const players = playersResult.success ? playersResult.data : []
+  const matches = matchesResult.success && matchesResult.data ? matchesResult.data : []
   const pricingRules = orgSettings?.pricingRules || []
+  const attendeeIds = (session.attendance ?? []).map((a) => a.playerId)
 
   const totalAttending = session.attendance?.length || 0
   const paidCount = session.attendance?.filter(a => a.status === 'paid').length || 0
@@ -144,6 +150,14 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
             </div>
           </CardContent>
         </Card>
+
+        {/* Match results */}
+        <MatchList sessionId={id} matches={matches} />
+        <MatchResultForm
+          sessionId={id}
+          players={players || []}
+          attendeeIds={attendeeIds}
+        />
 
         {/* Attendance Management */}
         <Card>

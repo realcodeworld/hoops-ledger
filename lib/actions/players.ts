@@ -17,6 +17,7 @@ const createPlayerSchema = z.object({
 const updatePlayerSchema = createPlayerSchema.extend({
   id: z.string().min(1),
   isActive: z.boolean().default(true),
+  hideFromLeaderboard: z.boolean().default(false),
 }).omit({ pricingRuleId: true }).extend({
   pricingRuleId: z.string().min(1, 'Pricing category is required'),
 })
@@ -85,6 +86,7 @@ export async function updatePlayer(formData: FormData) {
       pricingRuleId: formData.get('pricingRuleId'),
       isExempt: formData.get('isExempt') === 'true',
       isActive: formData.get('isActive') === 'true',
+      hideFromLeaderboard: formData.get('hideFromLeaderboard') === 'true',
       notes: formData.get('notes') || undefined,
     })
 
@@ -109,6 +111,7 @@ export async function updatePlayer(formData: FormData) {
         pricingRuleId: data.pricingRuleId,
         isExempt: data.isExempt,
         isActive: data.isActive,
+        hideFromLeaderboard: data.hideFromLeaderboard,
         notes: data.notes || null,
       },
     })
@@ -127,6 +130,7 @@ export async function updatePlayer(formData: FormData) {
     })
 
     revalidatePath('/dashboard/players')
+    revalidatePath('/dashboard/leaderboard')
     return { success: true, data: updatedPlayer }
   } catch (error) {
     console.error('Update player error:', error)
