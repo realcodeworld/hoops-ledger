@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -14,8 +14,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SearchablePlayerSelect } from '@/components/hoops/searchable-player-select'
-import { Trophy, Plus, X } from 'lucide-react'
-import { createMatchResult } from '@/lib/actions/matches'
+import { updateMatch } from '@/lib/actions/matches'
+import { formatDate } from '@/lib/utils'
+import { X } from 'lucide-react'
+import type { MatchTeam } from '@prisma/client'
+
+interface Session {
+  id: string
+  name: string | null
+  startsAt: Date
+}
 
 interface Player {
   id: string
@@ -25,33 +33,48 @@ interface Player {
   pricingRule?: { name: string; feePence: number } | null
 }
 
-interface MatchResultFormProps {
-  /** When provided, the new match will be linked to this session */
-  sessionId?: string | null
+interface MatchEditFormProps {
+  matchId: string
+  currentLabel: string | null
+  currentSessionId: string | null
+  currentTeamAScore: number | null
+  currentTeamBScore: number | null
+  currentWinningTeam: MatchTeam
+  currentTeamAPlayerIds: string[]
+  currentTeamBPlayerIds: string[]
+  sessions: Session[]
   players: Player[]
-  /** Optional: only show players who attended this session */
-  attendeeIds?: string[]
 }
 
-export function MatchResultForm({
-  sessionId,
+export function MatchEditForm({
+  matchId,
+  currentLabel,
+  currentSessionId,
+  currentTeamAScore,
+  currentTeamBScore,
+  currentWinningTeam,
+  currentTeamAPlayerIds,
+  currentTeamBPlayerIds,
+  sessions,
   players,
-  attendeeIds,
-}: MatchResultFormProps) {
+}: MatchEditFormProps) {
   const router = useRouter()
-  const [teamAIds, setTeamAIds] = useState<string[]>([])
-  const [teamBIds, setTeamBIds] = useState<string[]>([])
-  const [winningTeam, setWinningTeam] = useState<'A' | 'B'>('A')
-  const [label, setLabel] = useState('')
-  const [teamAScore, setTeamAScore] = useState<string>('')
-  const [teamBScore, setTeamBScore] = useState<string>('')
+  const [label, setLabel] = useState(currentLabel ?? '')
+  const [sessionId, setSessionId] = useState(currentSessionId ?? '')
+  const [teamAScore, setTeamAScore] = useState(
+    currentTeamAScore != null ? String(currentTeamAScore) : ''
+  )
+  const [teamBScore, setTeamBScore] = useState(
+    currentTeamBScore != null ? String(currentTeamBScore) : ''
+  )
+  const [teamAIds, setTeamAIds] = useState<string[]>(currentTeamAPlayerIds)
+  const [teamBIds, setTeamBIds] = useState<string[]>(currentTeamBPlayerIds)
+  const [winningTeam, setWinningTeam] = useState<MatchTeam>(currentWinningTeam)
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const selectedIds = [...teamAIds, ...teamBIds]
-  const availablePlayers = attendeeIds
-    ? players.filter((p) => attendeeIds.includes(p.id) && !selectedIds.includes(p.id))
-    : players.filter((p) => !selectedIds.includes(p.id))
+  const availablePlayers = players.filter((p) => !selectedIds.includes(p.id))
 
   const addToTeamA = (playerId: string) => {
     if (!teamAIds.includes(playerId) && !teamBIds.includes(playerId)) {
@@ -77,31 +100,23 @@ export function MatchResultForm({
     setError(null)
     setIsPending(true)
     try {
-      const scoreA = teamAScore.trim() ? parseInt(teamAScore, 10) : undefined
-      const scoreB = teamBScore.trim() ? parseInt(teamBScore, 10) : undefined
-      const result = await createMatchResult(
-        teamAIds,
-        teamBIds,
+      const scoreA = teamAScore.trim() ? parseInt(teamAScore, 10) : null
+      const scoreB = teamBScore.trim() ? parseInt(teamBScore, 10) : null
+      const result = await updateMatch(matchId, {
+        label: label.trim() || null,
+        sessionId: sessionId || null,
+        teamAScore: scoreA != null && !Number.isNaN(scoreA) ? scoreA : null,
+        teamBScore: scoreB != null && !Number.isNaN(scoreB) ? scoreB : null,
+        teamAPlayerIds: teamAIds,
+        teamBPlayerIds: teamBIds,
         winningTeam,
-        label.trim() || undefined,
-        sessionId ?? undefined,
-        scoreA != null && !Number.isNaN(scoreA) ? scoreA : undefined,
-        scoreB != null && !Number.isNaN(scoreB) ? scoreB : undefined
-      )
+      })
       if (!result.success) {
-        setError(result.error ?? 'Failed to record match')
+        setError(result.error ?? 'Failed to update match')
         return
       }
-      setTeamAIds([])
-      setTeamBIds([])
-      setWinningTeam('A')
-      setLabel('')
-      setTeamAScore('')
-      setTeamBScore('')
+      router.push(`/dashboard/matches/${matchId}`)
       router.refresh()
-      if (!sessionId && result.data?.id) {
-        router.push(`/dashboard/matches/${result.data.id}`)
-      }
     } finally {
       setIsPending(false)
     }
@@ -110,10 +125,7 @@ export function MatchResultForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Trophy className="w-5 h-5 mr-2 text-primary" />
-          Record match result
-        </CardTitle>
+        <CardTitle>Match details</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -177,7 +189,8 @@ export function MatchResultForm({
               <Label htmlFor="winner">Winner</Label>
               <Select
                 value={winningTeam}
-                onValueChange={(v) => setWinningTeam(v as 'A' | 'B')}
+                onValueChange={(v) => setWinningTeam(v as MatchTeam)}
+                disabled={isPending}
               >
                 <SelectTrigger id="winner">
                   <SelectValue />
@@ -188,7 +201,18 @@ export function MatchResultForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 min-w-[120px]">
+            <div className="space-y-2">
+              <Label htmlFor="label">Label (e.g. Game 1)</Label>
+              <Input
+                id="label"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="Optional"
+                disabled={isPending}
+                className="min-w-[160px]"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="teamAScore">Team A score</Label>
               <Input
                 id="teamAScore"
@@ -197,9 +221,11 @@ export function MatchResultForm({
                 value={teamAScore}
                 onChange={(e) => setTeamAScore(e.target.value)}
                 placeholder="Optional"
+                disabled={isPending}
+                className="min-w-[100px]"
               />
             </div>
-            <div className="space-y-2 min-w-[120px]">
+            <div className="space-y-2">
               <Label htmlFor="teamBScore">Team B score</Label>
               <Input
                 id="teamBScore"
@@ -208,17 +234,29 @@ export function MatchResultForm({
                 value={teamBScore}
                 onChange={(e) => setTeamBScore(e.target.value)}
                 placeholder="Optional"
+                disabled={isPending}
+                className="min-w-[100px]"
               />
             </div>
-            <div className="space-y-2 min-w-[160px]">
-              <Label htmlFor="label">Label (e.g. Game 1)</Label>
-              <Input
-                id="label"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="Optional"
-              />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sessionId">Session (optional)</Label>
+            <select
+              id="sessionId"
+              value={sessionId}
+              onChange={(e) => setSessionId(e.target.value)}
+              disabled={isPending}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">None</option>
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name || formatDate(s.startsAt)}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500">Link this match to a session or leave as standalone.</p>
           </div>
 
           {error && (
@@ -226,9 +264,11 @@ export function MatchResultForm({
               {error}
             </p>
           )}
-
-          <Button type="submit" disabled={isPending || teamAIds.length === 0 || teamBIds.length === 0}>
-            {isPending ? 'Saving...' : 'Save match result'}
+          <Button
+            type="submit"
+            disabled={isPending || teamAIds.length === 0 || teamBIds.length === 0}
+          >
+            {isPending ? 'Saving...' : 'Save changes'}
           </Button>
         </form>
       </CardContent>

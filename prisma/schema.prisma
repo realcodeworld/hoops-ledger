@@ -110,13 +110,15 @@ model Session {
 
 model Match {
   id                String    @id @default(cuid())
-  sessionId         String
-  session           Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId         String?
+  session           Session?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   orgId             String
   org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   winningTeam       MatchTeam
-  teamATotalPoints  Int
+  teamATotalPoints  Int       // leaderboard points total for team (used for match win points)
   teamBTotalPoints  Int
+  teamAScore        Int?      // optional match score (e.g. 21) for display
+  teamBScore        Int?      // optional match score (e.g. 18) for display
   label             String?   // e.g. "Game 1", "Game 2"
   createdAt         DateTime  @default(now())
 

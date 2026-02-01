@@ -20,8 +20,10 @@ import {
   DollarSign,
   Users,
   FileText,
-  Plus
+  Plus,
+  Gamepad2,
 } from 'lucide-react'
+import { formatDateTime } from '@/lib/utils'
 
 interface PlayerDetailsPageProps {
   params: Promise<{ id: string }>
@@ -65,6 +67,20 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
         },
         take: 10,
       },
+      matchPlayers: {
+        include: {
+          match: {
+            include: {
+              session: { select: { id: true, name: true, startsAt: true } },
+              matchPlayers: {
+                include: { player: { select: { id: true, name: true } } },
+              },
+            },
+          },
+        },
+        orderBy: { match: { createdAt: 'desc' } },
+        take: 20,
+      },
       _count: {
         select: {
           attendance: true,
@@ -104,6 +120,18 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
   const balanceDifference = totalOwed - totalPaid
   const unpaid = Math.max(0, balanceDifference)
   const credit = Math.max(0, -balanceDifference)
+
+  // Match history: one entry per match (player's matchPlayers), sorted by match date desc
+  const matchHistory = (player.matchPlayers ?? [])
+    .map((mp) => ({
+      match: mp.match,
+      playerTeam: mp.team,
+      won: mp.match.winningTeam === mp.team,
+    }))
+    .sort(
+      (a, b) =>
+        new Date(b.match.createdAt).getTime() - new Date(a.match.createdAt).getTime()
+    )
 
   return (
     <AdminLayout currentPath="/dashboard/players">
@@ -298,6 +326,90 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                 ) : (
                   <div className="text-center py-6 text-gray-500">
                     No sessions attended yet
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Match history */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Gamepad2 className="w-5 h-5 mr-2 text-primary" />
+                  Match history
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {matchHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {matchHistory.map(({ match, playerTeam, won }) => {
+                      const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
+                      const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
+                      const teamLabel = playerTeam === 'A' ? 'Team A' : 'Team B'
+                      const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+                      const hasScore =
+                        match.teamAScore != null && match.teamBScore != null
+                      const scoreBracket = hasScore
+                        ? ` [${match.teamAScore}–${match.teamBScore}]`
+                        : ''
+                      const titleLabel = match.label ? ` ${match.label}` : ''
+                      const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
+                      return (
+                        <Link
+                          key={match.id}
+                          href={`/dashboard/matches/${match.id}`}
+                          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{cardTitle}</div>
+                            <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0">
+                              <span>{formatDateTime(match.createdAt)}</span>
+                              {match.session && (
+                                <>
+                                  <span>·</span>
+                                  <span className="truncate">
+                                    {match.session.name || formatDateTime(match.session.startsAt)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm">
+                              <div>
+                                <span className="font-medium text-blue-700">Team A:</span>{' '}
+                                <span className="text-gray-600">
+                                  {teamAPlayers.map((mp) => mp.player.name).join(', ')}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-amber-700">Team B:</span>{' '}
+                                <span className="text-gray-600">
+                                  {teamBPlayers.map((mp) => mp.player.name).join(', ')}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-sm mt-1">
+                              <span className={playerTeam === 'A' ? 'text-blue-700' : 'text-amber-700'}>
+                                {teamLabel}
+                              </span>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={won ? 'default' : 'secondary'}
+                            className={
+                              won
+                                ? 'bg-green-600 hover:bg-green-600 shrink-0'
+                                : 'bg-gray-500 hover:bg-gray-500 shrink-0'
+                            }
+                          >
+                            {won ? 'Won' : 'Lost'}
+                          </Badge>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    No matches yet
                   </div>
                 )}
               </CardContent>

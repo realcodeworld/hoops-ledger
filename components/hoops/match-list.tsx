@@ -30,6 +30,8 @@ interface MatchWithPlayers {
   winningTeam: MatchTeam
   teamATotalPoints: number
   teamBTotalPoints: number
+  teamAScore: number | null
+  teamBScore: number | null
   label: string | null
   createdAt: Date
   matchPlayers: MatchPlayer[]
@@ -72,7 +74,12 @@ export function MatchList({ sessionId, matches }: MatchListProps) {
             const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
             const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
             const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
-            const displayLabel = match.label || `Game ${index + 1}`
+            const hasScore = match.teamAScore != null && match.teamBScore != null
+            const scoreBracket = hasScore
+              ? ` [${match.teamAScore}–${match.teamBScore}]`
+              : ''
+            const titleLabel = match.label ? ` ${match.label}` : ` Game ${index + 1}`
+            const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
 
             return (
               <div
@@ -80,7 +87,7 @@ export function MatchList({ sessionId, matches }: MatchListProps) {
                 className="p-4 rounded-lg border bg-gray-50 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{displayLabel}</span>
+                  <span className="font-medium text-gray-900">{cardTitle}</span>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -125,23 +132,14 @@ export function MatchList({ sessionId, matches }: MatchListProps) {
                     <p className="text-gray-600">
                       {teamAPlayers.map((mp) => mp.player.name).join(', ')}
                     </p>
-                    <p className="text-gray-500 tabular-nums">
-                      {match.teamATotalPoints} pts
-                    </p>
                   </div>
                   <div>
                     <p className="font-medium text-amber-700">Team B</p>
                     <p className="text-gray-600">
                       {teamBPlayers.map((mp) => mp.player.name).join(', ')}
                     </p>
-                    <p className="text-gray-500 tabular-nums">
-                      {match.teamBTotalPoints} pts
-                    </p>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-green-700">
-                  Winner: {winnerLabel}
-                </p>
               </div>
             )
           })}
