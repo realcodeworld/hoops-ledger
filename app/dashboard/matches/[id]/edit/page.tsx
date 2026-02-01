@@ -32,8 +32,8 @@ export default async function MatchEditPage({ params }: MatchEditPageProps) {
   }
 
   const match = matchResult.data
-  const sessions = sessionsResult.success ? sessionsResult.data : []
-  const players = playersResult.success ? playersResult.data : []
+  const sessions = sessionsResult.success ? sessionsResult.data ?? [] : []
+  const players = playersResult.success ? playersResult.data ?? [] : []
   const teamAPlayerIds = match.matchPlayers
     .filter((mp) => mp.team === 'A')
     .map((mp) => mp.playerId)
@@ -64,7 +64,7 @@ export default async function MatchEditPage({ params }: MatchEditPageProps) {
           currentWinningTeam={match.winningTeam}
           currentTeamAPlayerIds={teamAPlayerIds}
           currentTeamBPlayerIds={teamBPlayerIds}
-          sessions={sessions || []}
+          sessions={sessions}
           players={players}
         />
       </div>
