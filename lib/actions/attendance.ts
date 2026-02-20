@@ -680,3 +680,118 @@ export async function removePlayerFromSession(attendanceId: string) {
     }
   }
 }
+
+export async function addMultiplePlayersToSession(
+  sessionId: string,
+  playerIds: string[]
+): Promise<{ success: boolean; added: number; errors: string[]; error?: string }> {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    if (!playerIds.length) {
+      return { success: true, added: 0, errors: [] }
+    }
+
+    const session = await prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        orgId: currentUser.orgId,
+      },
+    })
+
+    if (!session) {
+      throw new Error('Session not found')
+    }
+
+    const existingAttendance = await prisma.attendance.findMany({
+      where: {
+        sessionId,
+        playerId: { in: playerIds },
+      },
+      select: { playerId: true },
+    })
+
+    const existingPlayerIds = new Set(existingAttendance.map((a) => a.playerId))
+    const newPlayerIds = playerIds.filter((id) => !existingPlayerIds.has(id))
+
+    if (newPlayerIds.length === 0) {
+      return { 
+        success: true, 
+        added: 0, 
+        errors: ['All selected players are already in this session'] 
+      }
+    }
+
+    const players = await prisma.player.findMany({
+      where: {
+        id: { in: newPlayerIds },
+        orgId: currentUser.orgId,
+      },
+      include: { pricingRule: true },
+    })
+
+    const validPlayerIds = new Set(players.map((p) => p.id))
+    const invalidPlayerIds = newPlayerIds.filter((id) => !validPlayerIds.has(id))
+    const errors: string[] = []
+
+    if (invalidPlayerIds.length > 0) {
+      errors.push(`${invalidPlayerIds.length} player(s) not found or not in your organization`)
+    }
+
+    const attendanceRecords = players.map((player) => {
+      let feeAppliedPence = 0
+      if (player.pricingRule && !player.isExempt) {
+        feeAppliedPence = player.pricingRule.feePence
+      }
+
+      return {
+        sessionId,
+        playerId: player.id,
+        feeAppliedPence,
+        status: player.isExempt ? ('exempt' as AttendanceStatus) : ('unpaid' as AttendanceStatus),
+      }
+    })
+
+    const createdRecords = await prisma.$transaction(async (tx) => {
+      const records = await tx.attendance.createMany({
+        data: attendanceRecords,
+      })
+
+      await tx.auditLog.create({
+        data: {
+          orgId: currentUser.orgId,
+          actorUserId: currentUser.id,
+          action: 'BULK_ADD_PLAYERS_TO_SESSION',
+          entityType: 'Session',
+          entityId: sessionId,
+          after: {
+            sessionId,
+            playerIds: players.map((p) => p.id),
+            count: records.count,
+          },
+        },
+      })
+
+      return records
+    })
+
+    revalidatePath(`/dashboard/sessions/${sessionId}`)
+
+    return {
+      success: true,
+      added: createdRecords.count,
+      errors,
+    }
+  } catch (error) {
+    console.error('Bulk add players to session error:', error)
+    return {
+      success: false,
+      added: 0,
+      errors: [],
+      error: error instanceof Error ? error.message : 'Failed to add players to session',
+    }
+  }
+}

@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2, Trash2 } from 'lucide-react'
+import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2, Trash2, Users } from 'lucide-react'
 import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount, removePlayerFromSession } from '@/lib/actions/attendance'
 import { createQuickPlayer } from '@/lib/actions/players'
-import { SearchablePlayerSelect } from './searchable-player-select'
+import { BulkAddPlayersSheet } from './bulk-add-players-sheet'
 
 interface AttendanceRecord {
   id: string
@@ -63,6 +63,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerCategory, setNewPlayerCategory] = useState<string>('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [noteText, setNoteText] = useState('')
   const [paymentDialog, setPaymentDialog] = useState<string | null>(null)
@@ -206,105 +207,70 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
 
   return (
     <div className="space-y-4">
-      {/* Player Filter and Add Players */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <Label htmlFor="player-filter" className="sr-only">Add player to session</Label>
-          <SearchablePlayerSelect
-            players={availablePlayersForSession}
-            placeholder="Select a player to add to session"
-            onSelect={async (playerId) => {
-              try {
-                await addPlayerToSession(sessionId, playerId)
-                window.location.reload()
-              } catch (error) {
-                console.error('Failed to add player:', error)
-              }
-            }}
-          />
-        </div>
-
+      {/* Add Players Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button 
+          size="lg" 
+          className="flex-1 h-12"
+          onClick={() => setIsBulkAddOpen(true)}
+          disabled={availablePlayersForSession.length === 0}
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Add Players
+          {availablePlayersForSession.length > 0 && (
+            <span className="ml-2 text-xs opacity-80">
+              ({availablePlayersForSession.length} available)
+            </span>
+          )}
+        </Button>
         
         <Dialog open={isAddingPlayer} onOpenChange={setIsAddingPlayer}>
           <DialogTrigger asChild>
-            <Button size="lg" className="w-full sm:w-auto">
+            <Button size="lg" variant="outline" className="sm:w-auto h-12">
               <Plus className="w-4 h-4 mr-2" />
-              Add Player
+              New Player
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Add Player to Session</DialogTitle>
+              <DialogTitle>Create New Player</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {availablePlayersForSession.length > 0 && (
-                <div>
-                  <Label htmlFor="existing-player">Select Existing Player</Label>
-                  <SearchablePlayerSelect
-                    players={availablePlayersForSession}
-                    placeholder="Choose from existing players"
-                    onSelect={async (playerId) => {
-                      try {
-                        await addPlayerToSession(sessionId, playerId)
-                        setIsAddingPlayer(false)
-                        window.location.reload()
-                      } catch (error) {
-                        console.error('Failed to add player:', error)
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or create new player
-                  </span>
-                </div>
+              <div>
+                <Label htmlFor="new-player-name">Player Name</Label>
+                <Input
+                  id="new-player-name"
+                  type="text"
+                  placeholder="Enter player name"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                />
               </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="new-player-name">Player Name</Label>
-                  <Input
-                    id="new-player-name"
-                    type="text"
-                    placeholder="Enter player name"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                  />
-                </div>
 
-                <div>
-                  <Label htmlFor="new-player-category">Category</Label>
-                  <Select value={newPlayerCategory} onValueChange={setNewPlayerCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pricingRules.map((rule) => (
-                        <SelectItem key={rule.id} value={rule.id}>
-                          {rule.name} - £{(rule.feePence / 100).toFixed(2)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {newPlayerName.trim() && newPlayerCategory && (
-                  <Button
-                    size="lg"
-                    onClick={handleCreateAndAddPlayer}
-                    className="w-full"
-                  >
-                    Create & Add Player
-                  </Button>
-                )}
+              <div>
+                <Label htmlFor="new-player-category">Category</Label>
+                <Select value={newPlayerCategory} onValueChange={setNewPlayerCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {pricingRules.map((rule) => (
+                      <SelectItem key={rule.id} value={rule.id}>
+                        {rule.name} - £{(rule.feePence / 100).toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              <Button
+                size="lg"
+                onClick={handleCreateAndAddPlayer}
+                className="w-full"
+                disabled={!newPlayerName.trim() || !newPlayerCategory}
+              >
+                Create & Add to Session
+              </Button>
               
               <Button
                 variant="outline"
@@ -321,6 +287,13 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
           </DialogContent>
         </Dialog>
       </div>
+
+      <BulkAddPlayersSheet
+        sessionId={sessionId}
+        players={availablePlayersForSession}
+        open={isBulkAddOpen}
+        onOpenChange={setIsBulkAddOpen}
+      />
 
       {/* Attendance List */}
       <div className="space-y-2">
