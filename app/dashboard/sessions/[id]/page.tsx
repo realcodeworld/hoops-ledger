@@ -4,7 +4,7 @@ import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, ArrowLeft, Clock, MapPin, Users, CreditCard } from 'lucide-react'
+import { Calendar, ArrowLeft, Clock, MapPin, Users, CreditCard, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { getSessionDetail } from '@/lib/actions/sessions'
 import { getPlayers } from '@/lib/actions/players'
@@ -68,10 +68,22 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
               Back to Sessions
             </Link>
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
-              {session.name || `Training Session - ${formatDate(session.startsAt!)}`}
-            </h1>
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
+                {session.name || `Training Session - ${formatDate(session.startsAt!)}`}
+              </h1>
+              {session.status === 'cancelled' && (
+                <Badge variant="outline" className="border-red-500 text-red-600 bg-red-50">
+                  Cancelled
+                </Badge>
+              )}
+            </div>
+            {session.status === 'cancelled' && session.cancelledReason && (
+              <p className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                <span className="font-medium">Cancellation note:</span> {session.cancelledReason}
+              </p>
+            )}
           </div>
         </div>
 

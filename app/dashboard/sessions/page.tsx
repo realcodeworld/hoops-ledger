@@ -7,6 +7,7 @@ import { Calendar, Plus, Clock, MapPin, Users } from 'lucide-react'
 import { getSessions } from '@/lib/actions/sessions'
 import { formatTime, formatDate } from '@/lib/utils'
 import Link from 'next/link'
+import { SessionActions } from '@/components/hoops/session-actions'
 
 export default async function SessionsPage() {
   const user = await getCurrentUser()
@@ -15,7 +16,6 @@ export default async function SessionsPage() {
     redirect('/auth')
   }
 
-  // Fetch sessions data
   const sessionsResult = await getSessions()
   const sessions = sessionsResult.success ? sessionsResult.data : []
 
@@ -24,7 +24,7 @@ export default async function SessionsPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sessions</h1>
-          <Button asChild>
+          <Button asChild className="h-11">
             <Link href="/dashboard/sessions/new">
               <Plus className="w-4 h-4 mr-2" />
               New session
@@ -32,12 +32,12 @@ export default async function SessionsPage() {
           </Button>
         </div>
         <div className="grid gap-6">
-            {(sessions?.length || 0) === 0 ? (
+          {(sessions?.length || 0) === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 mb-4" />
                 <p className="text-gray-500 mb-6">No sessions yet</p>
-                <Button asChild>
+                <Button asChild className="h-11">
                   <Link href="/dashboard/sessions/new">
                     <Plus className="w-4 h-4 mr-2" />
                     New session
@@ -49,13 +49,15 @@ export default async function SessionsPage() {
             sessions?.map((session) => (
               <Card key={session.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <CardTitle className="flex items-center">
-                        <Calendar className="w-5 h-5 mr-2 text-primary" />
-                        {session.name || formatDate(session.startsAt)}
+                        <Calendar className="w-5 h-5 mr-2 text-primary shrink-0" />
+                        <span className="truncate">
+                          {session.name || formatDate(session.startsAt)}
+                        </span>
                       </CardTitle>
-                      <div className="flex items-center mt-2 text-sm text-gray-500 space-x-4">
+                      <div className="flex flex-wrap items-center mt-2 text-sm text-gray-500 gap-x-4 gap-y-1">
                         <div className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
                           {formatTime(session.startsAt)}
@@ -73,13 +75,7 @@ export default async function SessionsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/dashboard/sessions/${session.id}`}>
-                          View
-                        </Link>
-                      </Button>
-                    </div>
+                    <SessionActions session={session} />
                   </div>
                 </CardHeader>
                 {session.notes && (
@@ -93,7 +89,6 @@ export default async function SessionsPage() {
             ))
           )}
         </div>
-
       </div>
     </AdminLayout>
   )

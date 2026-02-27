@@ -168,6 +168,9 @@ export async function getSessions() {
     const sessions = await prisma.session.findMany({
       where: {
         orgId: currentUser.orgId,
+        status: {
+          not: 'cancelled',
+        },
       },
       include: {
         pricingRule: true,
@@ -272,6 +275,119 @@ export async function getTodaySessions() {
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to fetch today\'s sessions' 
+    }
+  }
+}
+
+export async function deleteSession(sessionId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    const session = await prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        orgId: currentUser.orgId,
+      },
+      include: {
+        _count: {
+          select: {
+            attendance: true,
+          },
+        },
+      },
+    })
+
+    if (!session) {
+      throw new Error('Session not found')
+    }
+
+    if (session._count.attendance > 0) {
+      return {
+        success: false,
+        error: 'Cannot delete a session with attendees',
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          orgId: currentUser.orgId,
+          actorUserId: currentUser.id,
+          action: 'DELETE_SESSION',
+          entityType: 'Session',
+          entityId: session.id,
+          before: session,
+        },
+      })
+
+      await tx.session.delete({
+        where: { id: session.id },
+      })
+    })
+
+    revalidatePath('/dashboard/sessions')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Delete session error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete session',
+    }
+  }
+}
+
+export async function cancelSession(sessionId: string, reason?: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    const existingSession = await prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        orgId: currentUser.orgId,
+      },
+    })
+
+    if (!existingSession) {
+      throw new Error('Session not found')
+    }
+
+    const updatedSession = await prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+        cancelledReason: reason?.trim() || null,
+      },
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        orgId: currentUser.orgId,
+        actorUserId: currentUser.id,
+        action: 'CANCEL_SESSION',
+        entityType: 'Session',
+        entityId: sessionId,
+        before: existingSession,
+        after: updatedSession,
+      },
+    })
+
+    revalidatePath('/dashboard/sessions')
+    revalidatePath(`/dashboard/sessions/${sessionId}`)
+
+    return { success: true, data: updatedSession }
+  } catch (error) {
+    console.error('Cancel session error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to cancel session',
     }
   }
 }

@@ -85,18 +85,21 @@ model Player {
 }
 
 model Session {
-  id            String       @id @default(cuid())
-  orgId         String
-  org           Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  name          String?
-  venue         String?
-  startsAt      DateTime
-  endsAt        DateTime?
-  notes         String?
-  pricingRuleId String?
-  pricingRule   PricingRule? @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id              String        @id @default(cuid())
+  orgId           String
+  org             Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name            String?
+  venue           String?
+  startsAt        DateTime
+  endsAt          DateTime?
+  notes           String?
+  pricingRuleId   String?
+  pricingRule     PricingRule?  @relation(fields: [pricingRuleId], references: [id], onDelete: SetNull)
+  status          SessionStatus @default(scheduled)
+  cancelledAt     DateTime?
+  cancelledReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   attendance Attendance[]
   payments   Payment[]
@@ -105,6 +108,7 @@ model Session {
   @@index([orgId])
   @@index([orgId, startsAt])
   @@index([startsAt])
+  @@index([status])
   @@map("sessions")
 }
 
@@ -245,6 +249,12 @@ enum PaymentMethod {
   cash
   bank_transfer
   other
+}
+
+enum SessionStatus {
+  scheduled
+  completed
+  cancelled
 }
 
 model MagicLink {

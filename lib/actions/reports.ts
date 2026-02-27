@@ -84,6 +84,9 @@ export async function getPlayerReport(playerId: string, days = 30) {
       where: {
         orgId: currentUser.orgId,
         startsAt: { lte: new Date() },
+        status: {
+          not: 'cancelled',
+        },
       },
       include: {
         attendance: {

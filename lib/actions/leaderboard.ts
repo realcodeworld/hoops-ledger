@@ -295,7 +295,12 @@ export async function getAttendanceStreaks(): Promise<{
 
     const [sessions, attendances] = await Promise.all([
       prisma.session.findMany({
-        where: { orgId },
+        where: { 
+          orgId,
+          status: {
+            not: 'cancelled',
+          },
+        },
         select: { id: true },
         orderBy: { startsAt: 'asc' },
       }),
