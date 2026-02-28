@@ -13,10 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SearchablePlayerSelect } from '@/components/hoops/searchable-player-select'
+import { TeamPlayerSelectSheet } from '@/components/hoops/team-player-select-sheet'
 import { updateMatch } from '@/lib/actions/matches'
 import { formatDate } from '@/lib/utils'
-import { X } from 'lucide-react'
+import { X, Users } from 'lucide-react'
 import type { MatchTeam } from '@prisma/client'
 
 interface Session {
@@ -70,22 +70,17 @@ export function MatchEditForm({
   const [teamAIds, setTeamAIds] = useState<string[]>(currentTeamAPlayerIds)
   const [teamBIds, setTeamBIds] = useState<string[]>(currentTeamBPlayerIds)
   const [winningTeam, setWinningTeam] = useState<MatchTeam>(currentWinningTeam)
+  const [teamASheetOpen, setTeamASheetOpen] = useState(false)
+  const [teamBSheetOpen, setTeamBSheetOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selectedIds = [...teamAIds, ...teamBIds]
-  const availablePlayers = players.filter((p) => !selectedIds.includes(p.id))
+  const availableForTeamA = players.filter((p) => !teamBIds.includes(p.id))
+  const availableForTeamB = players.filter((p) => !teamAIds.includes(p.id))
+  const allAssigned =
+    players.length > 0 &&
+    players.every((p) => teamAIds.includes(p.id) || teamBIds.includes(p.id))
 
-  const addToTeamA = (playerId: string) => {
-    if (!teamAIds.includes(playerId) && !teamBIds.includes(playerId)) {
-      setTeamAIds((prev) => [...prev, playerId])
-    }
-  }
-  const addToTeamB = (playerId: string) => {
-    if (!teamAIds.includes(playerId) && !teamBIds.includes(playerId)) {
-      setTeamBIds((prev) => [...prev, playerId])
-    }
-  }
   const removeFromTeamA = (playerId: string) => {
     setTeamAIds((prev) => prev.filter((id) => id !== playerId))
   }
@@ -150,11 +145,21 @@ export function MatchEditForm({
                   </span>
                 ))}
               </div>
-              <SearchablePlayerSelect
-                players={availablePlayers}
-                placeholder="Add to Team A"
-                onSelect={addToTeamA}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[48px] h-12"
+                onClick={() => setTeamASheetOpen(true)}
+                disabled={allAssigned}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Select players for Team A
+              </Button>
+              {allAssigned && (
+                <p className="text-xs text-muted-foreground">
+                  All eligible players are already assigned to teams
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Team B</Label>
@@ -176,13 +181,42 @@ export function MatchEditForm({
                   </span>
                 ))}
               </div>
-              <SearchablePlayerSelect
-                players={availablePlayers}
-                placeholder="Add to Team B"
-                onSelect={addToTeamB}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[48px] h-12"
+                onClick={() => setTeamBSheetOpen(true)}
+                disabled={allAssigned}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Select players for Team B
+              </Button>
+              {allAssigned && (
+                <p className="text-xs text-muted-foreground">
+                  All eligible players are already assigned to teams
+                </p>
+              )}
             </div>
           </div>
+
+          <TeamPlayerSelectSheet
+            teamLabel="Team A"
+            players={players}
+            availablePlayers={availableForTeamA}
+            selectedIds={teamAIds}
+            open={teamASheetOpen}
+            onOpenChange={setTeamASheetOpen}
+            onChange={setTeamAIds}
+          />
+          <TeamPlayerSelectSheet
+            teamLabel="Team B"
+            players={players}
+            availablePlayers={availableForTeamB}
+            selectedIds={teamBIds}
+            open={teamBSheetOpen}
+            onOpenChange={setTeamBSheetOpen}
+            onChange={setTeamBIds}
+          />
 
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2 min-w-[140px]">

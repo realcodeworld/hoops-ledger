@@ -47,6 +47,21 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
   const pricingRules = orgSettings?.pricingRules || []
   const attendeeIds = (session.attendance ?? []).map((a) => a.playerId)
 
+  /** Normalize session matches into reuse options: one entry per team (A/B) per match */
+  const previousMatches = matches.flatMap((match, index) => {
+    const label = match.label?.trim() || `Game ${index + 1}`
+    const teamAPlayerIds = (match.matchPlayers ?? [])
+      .filter((mp) => mp.team === 'A')
+      .map((mp) => mp.playerId)
+    const teamBPlayerIds = (match.matchPlayers ?? [])
+      .filter((mp) => mp.team === 'B')
+      .map((mp) => mp.playerId)
+    const options: { label: string; team: 'A' | 'B'; playerIds: string[] }[] = []
+    if (teamAPlayerIds.length > 0) options.push({ label, team: 'A', playerIds: teamAPlayerIds })
+    if (teamBPlayerIds.length > 0) options.push({ label, team: 'B', playerIds: teamBPlayerIds })
+    return options
+  })
+
   const totalAttending = session.attendance?.length || 0
   const paidCount = session.attendance?.filter(a => a.status === 'paid').length || 0
   const unpaidCount = session.attendance?.filter(a => a.status === 'unpaid').length || 0
@@ -186,6 +201,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
           sessionId={id}
           players={players || []}
           attendeeIds={attendeeIds}
+          previousMatches={previousMatches}
         />
       </div>
     </AdminLayout>

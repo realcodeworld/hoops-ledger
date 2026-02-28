@@ -13,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { SearchablePlayerSelect } from '@/components/hoops/searchable-player-select'
-import { Trophy, Plus, X } from 'lucide-react'
+import { TeamPlayerSelectSheet } from '@/components/hoops/team-player-select-sheet'
+import { ReuseTeamSheet, type ReuseTeamOption } from '@/components/hoops/reuse-team-sheet'
+import { Trophy, Users, X, Copy } from 'lucide-react'
 import { createMatchResult } from '@/lib/actions/matches'
 
 interface Player {
@@ -31,12 +32,15 @@ interface MatchResultFormProps {
   players: Player[]
   /** Optional: only show players who attended this session */
   attendeeIds?: string[]
+  /** Optional: teams from previous matches in this session for reuse */
+  previousMatches?: ReuseTeamOption[]
 }
 
 export function MatchResultForm({
   sessionId,
   players,
   attendeeIds,
+  previousMatches = [],
 }: MatchResultFormProps) {
   const router = useRouter()
   const [teamAIds, setTeamAIds] = useState<string[]>([])
@@ -48,21 +52,18 @@ export function MatchResultForm({
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selectedIds = [...teamAIds, ...teamBIds]
-  const availablePlayers = attendeeIds
-    ? players.filter((p) => attendeeIds.includes(p.id) && !selectedIds.includes(p.id))
-    : players.filter((p) => !selectedIds.includes(p.id))
+  const [teamASheetOpen, setTeamASheetOpen] = useState(false)
+  const [teamBSheetOpen, setTeamBSheetOpen] = useState(false)
+  const [reuseSheetOpen, setReuseSheetOpen] = useState(false)
 
-  const addToTeamA = (playerId: string) => {
-    if (!teamAIds.includes(playerId) && !teamBIds.includes(playerId)) {
-      setTeamAIds((prev) => [...prev, playerId])
-    }
-  }
-  const addToTeamB = (playerId: string) => {
-    if (!teamAIds.includes(playerId) && !teamBIds.includes(playerId)) {
-      setTeamBIds((prev) => [...prev, playerId])
-    }
-  }
+  const showReuse = Boolean(sessionId && previousMatches.length > 0)
+
+  const basePool = attendeeIds
+    ? players.filter((p) => attendeeIds.includes(p.id))
+    : players
+  const availableForTeamA = basePool.filter((p) => !teamBIds.includes(p.id))
+  const availableForTeamB = basePool.filter((p) => !teamAIds.includes(p.id))
+
   const removeFromTeamA = (playerId: string) => {
     setTeamAIds((prev) => prev.filter((id) => id !== playerId))
   }
@@ -70,7 +71,16 @@ export function MatchResultForm({
     setTeamBIds((prev) => prev.filter((id) => id !== playerId))
   }
 
+  const allAssigned =
+    basePool.length > 0 &&
+    basePool.every((p) => teamAIds.includes(p.id) || teamBIds.includes(p.id))
+
   const getPlayerName = (id: string) => players.find((p) => p.id === id)?.name ?? id
+
+  const handleReuseSelect = (team: 'A' | 'B', playerIds: string[]) => {
+    if (team === 'A') setTeamAIds(playerIds)
+    else setTeamBIds(playerIds)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -117,6 +127,17 @@ export function MatchResultForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {showReuse && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-[48px] h-12"
+              onClick={() => setReuseSheetOpen(true)}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Reuse a team from this session
+            </Button>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>Team A</Label>
@@ -138,11 +159,21 @@ export function MatchResultForm({
                   </span>
                 ))}
               </div>
-              <SearchablePlayerSelect
-                players={availablePlayers}
-                placeholder="Add to Team A"
-                onSelect={addToTeamA}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[48px] h-12"
+                onClick={() => setTeamASheetOpen(true)}
+                disabled={allAssigned}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Select players for Team A
+              </Button>
+              {allAssigned && (
+                <p className="text-xs text-muted-foreground">
+                  All eligible players are already assigned to teams
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Team B</Label>
@@ -164,13 +195,49 @@ export function MatchResultForm({
                   </span>
                 ))}
               </div>
-              <SearchablePlayerSelect
-                players={availablePlayers}
-                placeholder="Add to Team B"
-                onSelect={addToTeamB}
-              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full min-h-[48px] h-12"
+                onClick={() => setTeamBSheetOpen(true)}
+                disabled={allAssigned}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Select players for Team B
+              </Button>
+              {allAssigned && (
+                <p className="text-xs text-muted-foreground">
+                  All eligible players are already assigned to teams
+                </p>
+              )}
             </div>
           </div>
+
+          <TeamPlayerSelectSheet
+            teamLabel="Team A"
+            players={players}
+            availablePlayers={availableForTeamA}
+            selectedIds={teamAIds}
+            open={teamASheetOpen}
+            onOpenChange={setTeamASheetOpen}
+            onChange={setTeamAIds}
+          />
+          <TeamPlayerSelectSheet
+            teamLabel="Team B"
+            players={players}
+            availablePlayers={availableForTeamB}
+            selectedIds={teamBIds}
+            open={teamBSheetOpen}
+            onOpenChange={setTeamBSheetOpen}
+            onChange={setTeamBIds}
+          />
+
+          <ReuseTeamSheet
+            options={previousMatches}
+            open={reuseSheetOpen}
+            onOpenChange={setReuseSheetOpen}
+            onSelect={handleReuseSelect}
+          />
 
           <div className="flex flex-wrap gap-4 items-end">
             <div className="space-y-2 min-w-[140px]">
