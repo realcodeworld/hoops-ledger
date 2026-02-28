@@ -1,16 +1,16 @@
 import { redirect } from 'next/navigation'
-import { Suspense } from 'react'
+import Link from 'next/link'
 import { getCurrentPlayer } from '@/lib/auth'
-import { Logo } from '@/components/hoops/logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { logout } from '@/lib/actions/auth'
-import { LogOut, Calendar, CreditCard, Trophy, Gamepad2 } from 'lucide-react'
+import { CreditCard, Trophy, Gamepad2, ArrowRight } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
-import { getLeaderboard, getPlayerTotalPoints, getWinStreaks, getAttendanceStreaks } from '@/lib/actions/leaderboard'
+import {
+  getLeaderboard,
+  getPlayerTotalPoints,
+  getWinStreaks,
+} from '@/lib/actions/leaderboard'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
-import { LeaderboardView } from '@/components/hoops/leaderboard-view'
 import { format } from 'date-fns'
 
 export default async function PlayerDashboardPage() {
@@ -20,24 +20,15 @@ export default async function PlayerDashboardPage() {
     redirect('/')
   }
 
-  // Get player with attendance, payment, and match data
   const playerData = await prisma.player.findUnique({
     where: { id: player.id },
     include: {
       org: true,
       attendance: {
-        include: {
-          session: true,
-        },
-        orderBy: {
-          checkedInAt: 'desc',
-        },
+        include: { session: true },
+        orderBy: { checkedInAt: 'desc' as const },
       },
-      payments: {
-        orderBy: {
-          occurredOn: 'desc',
-        },
-      },
+      payments: { orderBy: { occurredOn: 'desc' as const } },
       matchPlayers: {
         include: {
           match: {
@@ -49,7 +40,7 @@ export default async function PlayerDashboardPage() {
             },
           },
         },
-        orderBy: { match: { createdAt: 'desc' } },
+        orderBy: { match: { createdAt: 'desc' as const } },
         take: 20,
       },
     },
@@ -59,7 +50,6 @@ export default async function PlayerDashboardPage() {
     redirect('/')
   }
 
-  // Calculate financial summary - combine queries for better performance
   const [totalOwed, totalPaid] = await Promise.all([
     prisma.attendance.aggregate({
       where: {
@@ -79,20 +69,8 @@ export default async function PlayerDashboardPage() {
   const balanceDifference = totalOwedAmount - totalPaidAmount
   const unpaid = Math.max(0, balanceDifference)
   const credit = Math.max(0, -balanceDifference)
+  const hasUnpaidBalance = unpaid > 0
 
-  const sessionsAttended = playerData.attendance.length
-
-  const [leaderboardResult, winStreaksResult, attendanceStreaksResult] = await Promise.all([
-    getLeaderboard(),
-    getWinStreaks(),
-    getAttendanceStreaks(),
-  ])
-  const leaderboardEntries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
-  const winStreaks = winStreaksResult.success ? winStreaksResult.data ?? [] : []
-  const attendanceStreaks = attendanceStreaksResult.success ? attendanceStreaksResult.data ?? [] : []
-  const myPoints = await getPlayerTotalPoints(player.id)
-
-  // Match history: one entry per match, sorted by match date desc
   const matchHistory = (playerData.matchPlayers ?? [])
     .map((mp) => ({
       match: mp.match,
@@ -101,238 +79,137 @@ export default async function PlayerDashboardPage() {
     }))
     .sort(
       (a, b) =>
-        new Date(b.match.createdAt).getTime() - new Date(a.match.createdAt).getTime()
+        new Date(b.match.createdAt).getTime() -
+        new Date(a.match.createdAt).getTime()
     )
 
+  const wins = matchHistory.filter((m) => m.won).length
+  const losses = matchHistory.length - wins
+  const lastMatch = matchHistory[0]
+
+  const [leaderboardResult, winStreaksResult] = await Promise.all([
+    getLeaderboard(),
+    getWinStreaks(),
+  ])
+  const leaderboardEntries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
+  const winStreaks = winStreaksResult.success ? winStreaksResult.data ?? [] : []
+  const myPoints = await getPlayerTotalPoints(player.id)
+
+  const myPointsEntry = leaderboardEntries.find((e) => e.playerId === player.id)
+  const myWinEntry = winStreaks.find((e) => e.playerId === player.id)
+  const pointsRank = myPointsEntry?.rank ?? null
+  const maxStreak = myWinEntry?.maxWinStreak ?? 0
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Logo size="sm" />
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">
-                Welcome, {player.name}
-              </span>
-              <form action={logout}>
-                <Button type="submit" variant="ghost" size="sm">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </header>
+    <>
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
+        Your dashboard
+      </h1>
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Your dashboard</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <Calendar className="w-8 h-8 text-primary" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Sessions Attended</p>
-                <p className="text-2xl font-bold text-gray-900">{sessionsAttended}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 shadow-sm border">
-            <div className="flex items-center">
-              <CreditCard className="w-8 h-8 text-success" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">{credit > 0 ? 'In Credit' : 'Unpaid'}</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Leaderboard */}
-        <div className="mb-8">
-          <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-100" />}>
-            <LeaderboardView
-              entries={leaderboardEntries}
-              winStreaks={winStreaks}
-              attendanceStreaks={attendanceStreaks}
-              basePath="/player/dashboard"
-              currentPlayerId={player.id}
-              currentPlayerPoints={myPoints}
-            />
-          </Suspense>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Session History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Session History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {playerData.attendance.length === 0 ? (
-                <p className="text-gray-500 text-sm">No sessions attended yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {playerData.attendance.map((attendance) => (
-                    <div
-                      key={attendance.id}
-                      className="p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {attendance.session.name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(attendance.session.startsAt), 'PPP')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <CurrencyDisplay amountPence={attendance.feeAppliedPence} />
-                          </div>
-                          <Badge variant={attendance.status}>
-                            {attendance.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      {attendance.notes && (
-                        <p className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                          Note: {attendance.notes}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Payment History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {playerData.payments.length === 0 ? (
-                <p className="text-gray-500 text-sm">No payments recorded yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {playerData.payments.map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">
-                          {payment.method === 'cash' ? 'Cash Payment' :
-                           payment.method === 'bank_transfer' ? 'Bank Transfer' :
-                           'Other Payment'}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {format(new Date(payment.occurredOn), 'PPP')}
-                        </p>
-                        {payment.notes && (
-                          <p className="text-xs text-gray-400 mt-1">{payment.notes}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-green-600">
-                          <CurrencyDisplay amountPence={payment.amountPence} />
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Match history */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Gamepad2 className="w-5 h-5 mr-2 text-primary" />
-              Match history
+      {/* Personalized: balance first if they owe */}
+      {hasUnpaidBalance && (
+        <Card className="mb-6 border-amber-200 bg-amber-50/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center text-lg">
+              <CreditCard className="w-5 h-5 mr-2 text-amber-600" />
+              Amount due
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {matchHistory.length === 0 ? (
-              <p className="text-gray-500 text-sm">No matches yet</p>
-            ) : (
-              <div className="space-y-4">
-                {matchHistory.map(({ match, won }) => {
-                  const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
-                  const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
-                  const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
-                  const hasScore =
-                    match.teamAScore != null && match.teamBScore != null
-                  const scoreBracket = hasScore
-                    ? ` [${match.teamAScore}–${match.teamBScore}]`
-                    : ''
-                  const titleLabel = match.label ? ` ${match.label}` : ''
-                  const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
-                  return (
-                    <Card key={match.id} className="overflow-hidden">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <CardTitle className="flex items-center text-lg">
-                              <Trophy className="w-5 h-5 mr-2 text-primary shrink-0" />
-                              <span className="truncate">{cardTitle}</span>
-                            </CardTitle>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {format(new Date(match.createdAt), 'PPP')}
-                              {match.session && (
-                                <>
-                                  {' · '}
-                                  {match.session.name ||
-                                    format(new Date(match.session.startsAt), 'PPP')}
-                                </>
-                              )}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={won ? 'default' : 'secondary'}
-                            className={
-                              won
-                                ? 'bg-green-600 hover:bg-green-600 shrink-0'
-                                : 'bg-gray-500 hover:bg-gray-500 shrink-0'
-                            }
-                          >
-                            {won ? 'Won' : 'Lost'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="font-medium text-blue-700">Team A</p>
-                            <p className="text-gray-600">
-                              {teamAPlayers.map((mp) => mp.player.name).join(', ')}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-amber-700">Team B</p>
-                            <p className="text-gray-600">
-                              {teamBPlayers.map((mp) => mp.player.name).join(', ')}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
+            <p className="text-2xl font-bold text-gray-900 mb-2">
+              <CurrencyDisplay amountPence={unpaid} />
+            </p>
+            <Button asChild>
+              <Link href="/player/payments">
+                View payments
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      )}
+
+      {/* Match summary */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center text-lg">
+            <Gamepad2 className="w-5 h-5 mr-2 text-primary" />
+            Matches
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {matchHistory.length === 0 ? (
+            <p className="text-gray-500 text-sm mb-3">No matches yet</p>
+          ) : (
+            <>
+              <p className="text-sm text-gray-700 mb-1">
+                Record: <span className="font-semibold">{wins} W</span> –{' '}
+                <span className="font-semibold">{losses} L</span>
+              </p>
+              {lastMatch && (
+                <p className="text-sm text-gray-600 mb-3">
+                  Last match:{' '}
+                  <span
+                    className={
+                      lastMatch.won
+                        ? 'text-green-600 font-medium'
+                        : 'text-gray-600'
+                    }
+                  >
+                    {lastMatch.won ? 'Won' : 'Lost'}
+                  </span>
+                  {' · '}
+                  {format(new Date(lastMatch.match.createdAt), 'PPP')}
+                </p>
+              )}
+            </>
+          )}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/player/matches">
+              View match history
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Compact leaderboard widget */}
+      <Card className="mb-6">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center text-lg">
+            <Trophy className="w-5 h-5 mr-2 text-primary" />
+            Leaderboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pointsRank != null ? (
+            <p className="text-sm text-gray-700 mb-1">
+              You&apos;re #{pointsRank} on points
+              {myPoints != null && ` (${myPoints} pts)`}
+            </p>
+          ) : (
+            <p className="text-sm text-gray-500 mb-1">Record matches to appear on the leaderboard</p>
+          )}
+          {maxStreak > 0 && (
+            <p className="text-sm text-gray-600 mb-3">Best win streak: {maxStreak}</p>
+          )}
+          <Button asChild variant="outline" size="sm">
+            <Link href="/player/leaderboard">
+              See full leaderboard
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Optional: quick link to payments when no balance due */}
+      {!hasUnpaidBalance && (
+        <p className="text-sm text-gray-500">
+          <Link href="/player/payments" className="text-primary hover:underline">
+            View payment history
+          </Link>
+        </p>
+      )}
+    </>
   )
 }
