@@ -188,7 +188,10 @@ export interface WinStreakEntry {
 export interface AttendanceStreakEntry {
   playerId: string
   name: string
-  longestAttendanceStreak: number
+  sessionsAttended: number
+  sessionsMissed: number
+  currentStreak: number
+  maxStreak: number
   rank: number
 }
 
@@ -343,9 +346,12 @@ export async function getAttendanceStreaks(): Promise<{
       attendedByPlayer.get(a.playerId)!.add(a.sessionId)
     }
 
+    const totalSessions = orderedSessionIds.length
     const entries: AttendanceStreakEntry[] = players
       .map((p) => {
         const attended = attendedByPlayer.get(p.id) ?? new Set()
+        const sessionsAttended = attended.size
+        const sessionsMissed = totalSessions - sessionsAttended
         let maxStreak = 0
         let current = 0
         for (const sid of orderedSessionIds) {
@@ -356,10 +362,27 @@ export async function getAttendanceStreaks(): Promise<{
             current = 0
           }
         }
-        return { playerId: p.id, name: p.name, longestAttendanceStreak: maxStreak, rank: 0 }
+        let currentStreak = 0
+        for (let i = orderedSessionIds.length - 1; i >= 0; i--) {
+          if (attended.has(orderedSessionIds[i]!)) currentStreak++
+          else break
+        }
+        return {
+          playerId: p.id,
+          name: p.name,
+          sessionsAttended,
+          sessionsMissed,
+          currentStreak,
+          maxStreak,
+          rank: 0,
+        }
       })
-      .filter((e) => e.longestAttendanceStreak > 0)
-    entries.sort((a, b) => b.longestAttendanceStreak - a.longestAttendanceStreak)
+      .filter((e) => e.sessionsAttended >= 1)
+    entries.sort((a, b) => {
+      if (b.maxStreak !== a.maxStreak) return b.maxStreak - a.maxStreak
+      if (b.sessionsAttended !== a.sessionsAttended) return b.sessionsAttended - a.sessionsAttended
+      return a.name.localeCompare(b.name)
+    })
     entries.forEach((e, i) => {
       e.rank = i + 1
     })

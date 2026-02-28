@@ -3,12 +3,23 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Trophy, Flame, CalendarCheck } from 'lucide-react'
 import type {
   LeaderboardEntry,
   WinStreakEntry,
   AttendanceStreakEntry,
 } from '@/lib/actions/leaderboard'
+
+const cellClass = 'px-2 py-2 sm:px-4 tabular-nums'
+const headClass = 'px-2 py-2 sm:px-4 text-muted-foreground font-medium'
 
 const TAB_POINTS = 'points'
 const TAB_WIN = 'win'
@@ -117,27 +128,36 @@ export function LeaderboardView({
             {entries.length === 0 ? (
               <p className="text-gray-500 text-sm">No players on the leaderboard yet.</p>
             ) : (
-              <div className="space-y-2">
-                {entries.map((entry) => (
-                  <div
-                    key={entry.playerId}
-                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${rowClass(entry.playerId)}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums">
-                        #{entry.rank}
-                      </span>
-                      <span className={`font-medium ${nameClass(entry.playerId)}`}>
-                        {entry.name}
-                        {youSuffix(entry.playerId)}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {entry.totalPoints} pts
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <Table className="min-w-[280px]">
+                <TableHeader>
+                  <TableRow className="border-b">
+                    <TableHead className={headClass}>#</TableHead>
+                    <TableHead className={headClass}>Player</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Points</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {entries.map((entry) => (
+                    <TableRow
+                      key={entry.playerId}
+                      className={`border-b ${rowClass(entry.playerId)}`}
+                    >
+                      <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                        {entry.rank}
+                      </TableCell>
+                      <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
+                        <span className="font-medium truncate block">
+                          {entry.name}
+                          {youSuffix(entry.playerId)}
+                        </span>
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                        {entry.totalPoints} pts
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -168,31 +188,52 @@ export function LeaderboardView({
             {winStreaks.length === 0 ? (
               <p className="text-gray-500 text-sm">No match results yet. Record match results to see game stats.</p>
             ) : (
-              <div className="space-y-2">
-                {winStreaks.map((entry) => (
-                  <div
-                    key={entry.playerId}
-                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2 px-3 rounded-lg ${rowClass(entry.playerId)}`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums shrink-0">
-                        #{entry.rank}
-                      </span>
-                      <span className={`font-medium min-w-0 truncate ${nameClass(entry.playerId)}`}>
-                        {entry.name}
-                        {youSuffix(entry.playerId)}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0 text-sm text-gray-700 tabular-nums">
-                      <span>{entry.gamesPlayed} GP</span>
-                      <span>{entry.wins} W</span>
-                      <span>{entry.losses} L</span>
-                      <span>Cur: {entry.currentWinStreak}</span>
-                      <span className="font-semibold text-gray-900">Max: {entry.maxWinStreak}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Table className="min-w-[400px]">
+                <TableHeader>
+                  <TableRow className="border-b">
+                    <TableHead className={headClass}>#</TableHead>
+                    <TableHead className={headClass}>Player</TableHead>
+                    <TableHead className={`${headClass} text-right`}>GP</TableHead>
+                    <TableHead className={`${headClass} text-right`}>W</TableHead>
+                    <TableHead className={`${headClass} text-right`}>L</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Cur</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Max</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {winStreaks.map((entry) => (
+                    <TableRow
+                      key={entry.playerId}
+                      className={`border-b ${rowClass(entry.playerId)}`}
+                    >
+                      <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                        {entry.rank}
+                      </TableCell>
+                      <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
+                        <span className="font-medium truncate block">
+                          {entry.name}
+                          {youSuffix(entry.playerId)}
+                        </span>
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.gamesPlayed}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.wins}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.losses}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.currentWinStreak}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                        {entry.maxWinStreak}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
@@ -203,11 +244,10 @@ export function LeaderboardView({
           <CardHeader>
             <CardTitle className="flex items-center flex-wrap gap-2">
               <CalendarCheck className="w-5 h-5 mr-2 text-green-600" />
-              Longest attendance streak
+              Session stats
               {currentPlayerId && myAtt && (
                 <span className="text-base font-normal text-gray-500">
-                  You&apos;re #{myAtt.rank} ({myAtt.longestAttendanceStreak}{' '}
-                  {myAtt.longestAttendanceStreak === 1 ? 'session' : 'sessions'})
+                  You&apos;re #{myAtt.rank} · {myAtt.sessionsAttended} attended, {myAtt.sessionsMissed} missed · Current: {myAtt.currentStreak} · Max: {myAtt.maxStreak}
                 </span>
               )}
               {currentPlayerId && !myAtt && (
@@ -217,35 +257,55 @@ export function LeaderboardView({
               )}
             </CardTitle>
             <p className="text-sm text-gray-500 mt-1">
-              Consecutive sessions attended (by session date)
+              Sessions attended, missed, and streaks (by session date)
             </p>
           </CardHeader>
           <CardContent>
             {attendanceStreaks.length === 0 ? (
-              <p className="text-gray-500 text-sm">No attendance streaks yet.</p>
+              <p className="text-gray-500 text-sm">No attendance yet. Attend sessions to see session stats.</p>
             ) : (
-              <div className="space-y-2">
-                {attendanceStreaks.map((entry) => (
-                  <div
-                    key={entry.playerId}
-                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${rowClass(entry.playerId)}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums">
-                        #{entry.rank}
-                      </span>
-                      <span className={`font-medium ${nameClass(entry.playerId)}`}>
-                        {entry.name}
-                        {youSuffix(entry.playerId)}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {entry.longestAttendanceStreak}{' '}
-                      {entry.longestAttendanceStreak === 1 ? 'session' : 'sessions'}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <Table className="min-w-[400px]">
+                <TableHeader>
+                  <TableRow className="border-b">
+                    <TableHead className={headClass}>#</TableHead>
+                    <TableHead className={headClass}>Player</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Attended</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Missed</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Cur</TableHead>
+                    <TableHead className={`${headClass} text-right`}>Max</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {attendanceStreaks.map((entry) => (
+                    <TableRow
+                      key={entry.playerId}
+                      className={`border-b ${rowClass(entry.playerId)}`}
+                    >
+                      <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                        {entry.rank}
+                      </TableCell>
+                      <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
+                        <span className="font-medium truncate block">
+                          {entry.name}
+                          {youSuffix(entry.playerId)}
+                        </span>
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.sessionsAttended}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.sessionsMissed}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right text-gray-700`}>
+                        {entry.currentStreak}
+                      </TableCell>
+                      <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                        {entry.maxStreak}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
