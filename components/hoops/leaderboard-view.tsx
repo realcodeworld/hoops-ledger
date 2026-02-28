@@ -81,7 +81,7 @@ export function LeaderboardView({
           className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${tabClass(TAB_WIN)}`}
           style={tab === TAB_WIN ? { backgroundColor: '#ea580c', color: '#fff' } : undefined}
         >
-          Win streak
+          Game stats
         </Link>
         <Link
           href={`${basePath}?tab=attendance`}
@@ -148,45 +148,48 @@ export function LeaderboardView({
           <CardHeader>
             <CardTitle className="flex items-center flex-wrap gap-2">
               <Flame className="w-5 h-5 mr-2 text-orange-500" />
-              Longest win streak
+              Game stats
               {currentPlayerId && myWin && (
                 <span className="text-base font-normal text-gray-500">
-                  You&apos;re #{myWin.rank} ({myWin.longestWinStreak}{' '}
-                  {myWin.longestWinStreak === 1 ? 'win' : 'wins'})
+                  You&apos;re #{myWin.rank} · {myWin.gamesPlayed} games, {myWin.wins} W, {myWin.losses} L · Current: {myWin.currentWinStreak} · Max: {myWin.maxWinStreak}
                 </span>
               )}
               {currentPlayerId && !myWin && (
                 <span className="text-base font-normal text-gray-500">
-                  Record match results to appear here.
+                  Record match results to see game stats.
                 </span>
               )}
             </CardTitle>
             <p className="text-sm text-gray-500 mt-1">
-              Consecutive match wins (by match date)
+              Games played, wins, losses, and streaks (by match date)
             </p>
           </CardHeader>
           <CardContent>
             {winStreaks.length === 0 ? (
-              <p className="text-gray-500 text-sm">No win streaks yet. Record some match results.</p>
+              <p className="text-gray-500 text-sm">No match results yet. Record match results to see game stats.</p>
             ) : (
               <div className="space-y-2">
                 {winStreaks.map((entry) => (
                   <div
                     key={entry.playerId}
-                    className={`flex items-center justify-between py-2 px-3 rounded-lg ${rowClass(entry.playerId)}`}
+                    className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2 px-3 rounded-lg ${rowClass(entry.playerId)}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-sm font-medium text-gray-500 w-8 tabular-nums shrink-0">
                         #{entry.rank}
                       </span>
-                      <span className={`font-medium ${nameClass(entry.playerId)}`}>
+                      <span className={`font-medium min-w-0 truncate ${nameClass(entry.playerId)}`}>
                         {entry.name}
                         {youSuffix(entry.playerId)}
                       </span>
                     </div>
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {entry.longestWinStreak} {entry.longestWinStreak === 1 ? 'win' : 'wins'}
-                    </span>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0 text-sm text-gray-700 tabular-nums">
+                      <span>{entry.gamesPlayed} GP</span>
+                      <span>{entry.wins} W</span>
+                      <span>{entry.losses} L</span>
+                      <span>Cur: {entry.currentWinStreak}</span>
+                      <span className="font-semibold text-gray-900">Max: {entry.maxWinStreak}</span>
+                    </div>
                   </div>
                 ))}
               </div>

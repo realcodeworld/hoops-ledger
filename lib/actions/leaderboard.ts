@@ -177,7 +177,11 @@ export async function getLeaderboard(): Promise<{
 export interface WinStreakEntry {
   playerId: string
   name: string
-  longestWinStreak: number
+  gamesPlayed: number
+  wins: number
+  losses: number
+  currentWinStreak: number
+  maxWinStreak: number
   rank: number
 }
 
@@ -238,6 +242,9 @@ export async function getWinStreaks(): Promise<{
     const entries: WinStreakEntry[] = players
       .map((p) => {
         const results = byPlayer.get(p.id) ?? []
+        const gamesPlayed = results.length
+        const wins = results.filter((r) => r.won).length
+        const losses = gamesPlayed - wins
         let maxStreak = 0
         let current = 0
         for (const { won } of results) {
@@ -248,10 +255,27 @@ export async function getWinStreaks(): Promise<{
             current = 0
           }
         }
-        return { playerId: p.id, name: p.name, longestWinStreak: maxStreak, rank: 0 }
+        let currentWinStreak = 0
+        for (let i = results.length - 1; i >= 0 && results[i]!.won; i--) {
+          currentWinStreak++
+        }
+        return {
+          playerId: p.id,
+          name: p.name,
+          gamesPlayed,
+          wins,
+          losses,
+          currentWinStreak,
+          maxWinStreak: maxStreak,
+          rank: 0,
+        }
       })
-      .filter((e) => e.longestWinStreak > 0)
-    entries.sort((a, b) => b.longestWinStreak - a.longestWinStreak)
+      .filter((e) => e.gamesPlayed >= 1)
+    entries.sort((a, b) => {
+      if (b.maxWinStreak !== a.maxWinStreak) return b.maxWinStreak - a.maxWinStreak
+      if (b.wins !== a.wins) return b.wins - a.wins
+      return a.name.localeCompare(b.name)
+    })
     entries.forEach((e, i) => {
       e.rank = i + 1
     })
