@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Mail, Phone, Search, Users, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Mail, Phone, Search, Users, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X } from 'lucide-react'
 import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { PlayerActionsDropdown } from '@/app/dashboard/players/player-actions-dropdown'
@@ -64,7 +65,13 @@ export function PlayersList({ players, currency }: PlayersListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const router = useRouter()
+
+  const activeFilterCount = [
+    statusFilter !== 'all',
+    categoryFilter !== 'all',
+  ].filter(Boolean).length
 
   const categoryOptions = useMemo(() => {
     const names = new Set(players.map((p) => p.pricingRule?.name ?? 'No Category').filter(Boolean))
@@ -199,28 +206,28 @@ export function PlayersList({ players, currency }: PlayersListProps) {
 
   return (
     <div className="space-y-4">
-      {/* Bulk actions bar */}
-      {selectablePlayers.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Bulk actions bar - only show when players are selected */}
+      {selectedCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2 py-2 px-3 bg-gray-50 rounded-lg">
+          <span className="text-sm text-gray-600">{selectedCount} selected</span>
           <Button
             variant="outline"
             size="sm"
             onClick={handleBulkEmailReminders}
-            disabled={bulkPending || selectedCount === 0}
+            disabled={bulkPending}
           >
-            <MailPlus className="w-4 h-4 mr-2" />
-            {bulkPending ? 'Sending...' : `Email reminders to me${selectedCount > 0 ? ` (${selectedCount})` : ''}`}
+            <MailPlus className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">{bulkPending ? 'Sending...' : 'Email reminders'}</span>
+            <span className="sm:hidden">{bulkPending ? '...' : 'Email'}</span>
           </Button>
-          {selectedCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedIds(new Set())}
-              disabled={bulkPending}
-            >
-              Clear selection
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedIds(new Set())}
+            disabled={bulkPending}
+          >
+            Clear
+          </Button>
           {bulkMessage && (
             <p className={`text-sm ${bulkMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
               {bulkMessage.text}
@@ -230,18 +237,41 @@ export function PlayersList({ players, currency }: PlayersListProps) {
       )}
 
       {/* Search and filters */}
-      <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            type="text"
-            placeholder="Search players by name, email, or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-3">
+        {/* Search row with filter toggle on mobile */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Search players..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {/* Filter toggle - mobile only */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowFilters(!showFilters)}
+            className="md:hidden relative shrink-0"
+            aria-label="Toggle filters"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+
+        {/* Filters - always visible on desktop, toggleable on mobile */}
+        <div className={cn(
+          "flex flex-wrap items-center gap-3",
+          !showFilters && "hidden md:flex"
+        )}>
           <div className="flex items-center gap-2">
             <Label htmlFor="status-filter" className="text-sm text-gray-500 whitespace-nowrap">
               Status
@@ -250,7 +280,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               value={statusFilter}
               onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}
             >
-              <SelectTrigger id="status-filter" className="w-[120px]">
+              <SelectTrigger id="status-filter" className="w-[110px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -265,7 +295,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               Category
             </Label>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger id="category-filter" className="w-[140px]">
+              <SelectTrigger id="category-filter" className="w-[130px]">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
@@ -278,6 +308,21 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               </SelectContent>
             </Select>
           </div>
+          {/* Clear filters button - only show when filters are active */}
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setStatusFilter('all')
+                setCategoryFilter('all')
+              }}
+              className="text-gray-500 h-8"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
