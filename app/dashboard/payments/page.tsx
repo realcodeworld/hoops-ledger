@@ -1,25 +1,16 @@
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getPayments } from '@/lib/actions/payments'
 import { PaymentsTable } from '@/components/hoops/payments-table'
-import { getCurrentUser } from '@/lib/auth'
-import { redirect } from 'next/navigation'
 
 export default async function PaymentsPage() {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    redirect('/auth')
-  }
-
   const result = await getPayments(100)
   const payments = result.success && result.data ? result.data : []
 
   return (
-    <AdminLayout currentPath="/dashboard/payments">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
           <Button asChild className="w-full sm:w-auto">
@@ -47,7 +38,6 @@ export default async function PaymentsPage() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

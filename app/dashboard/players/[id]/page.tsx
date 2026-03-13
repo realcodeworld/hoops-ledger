@@ -1,7 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -134,8 +133,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     )
 
   return (
-    <AdminLayout currentPath="/dashboard/players">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <Button asChild variant="outline" size="sm" className="w-fit">
@@ -451,6 +449,5 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
           </div>
         </div>
       </div>
-    </AdminLayout>
   )
 }

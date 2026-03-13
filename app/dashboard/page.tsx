@@ -1,6 +1,3 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, CreditCard, BarChart3, Plus } from 'lucide-react'
@@ -10,12 +7,6 @@ import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser()
-  
-  if (!user) {
-    redirect('/auth')
-  }
-
   // Fetch dashboard data
   const [playersResult, financialsResult] = await Promise.all([
     getPlayers(),
@@ -32,8 +23,7 @@ export default async function DashboardPage() {
   const activePlayers = (players || []).filter(p => p.isActive)
 
   return (
-    <AdminLayout currentPath="/dashboard">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
           <div className="flex space-x-3">
@@ -82,7 +72,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

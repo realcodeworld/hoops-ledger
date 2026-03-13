@@ -1,6 +1,4 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +10,6 @@ import { createSession } from '@/lib/actions/sessions'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 
 export default async function NewSessionPage() {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect('/auth')
-  }
-
   const organization = await getOrganizationSettings()
 
   if (!organization) {
@@ -38,8 +30,7 @@ export default async function NewSessionPage() {
   const currencySymbol = getCurrencySymbol(organization.currency)
 
   return (
-    <AdminLayout currentPath="/dashboard/sessions/new">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Button asChild variant="outline" size="sm" className="w-fit">
@@ -139,6 +130,5 @@ export default async function NewSessionPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   )
 }

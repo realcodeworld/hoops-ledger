@@ -1,9 +1,7 @@
-import { redirect, notFound } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
+import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Trophy, ArrowLeft, Calendar, Edit, Trash2 } from 'lucide-react'
+import { Trophy, ArrowLeft, Calendar, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { getMatchDetail } from '@/lib/actions/matches'
 import { formatDateTime } from '@/lib/utils'
@@ -14,12 +12,6 @@ interface MatchDetailPageProps {
 }
 
 export default async function MatchDetailPage({ params }: MatchDetailPageProps) {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect('/auth')
-  }
-
   const { id } = await params
   const result = await getMatchDetail(id)
 
@@ -39,8 +31,7 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
   const pageTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
 
   return (
-    <AdminLayout currentPath="/dashboard/matches">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <Button asChild variant="outline" size="sm" className="w-fit">
             <Link href="/dashboard/matches">
@@ -100,7 +91,6 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
             <p className="mt-4 font-medium text-green-700">Winner: {winnerLabel}</p>
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

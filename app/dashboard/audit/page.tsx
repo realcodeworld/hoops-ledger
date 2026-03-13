@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
@@ -42,9 +41,8 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
   const actions = actionsResult.success && actionsResult.data ? actionsResult.data : []
 
   return (
-    <AdminLayout currentPath="/dashboard/audit">
-      <div className="space-y-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit logs</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit logs</h1>
 
         {user.role === 'admin' && (
           <Card>
@@ -149,7 +147,6 @@ export default async function AuditPage({ searchParams }: AuditPageProps) {
             </CardContent>
           </Card>
         )}
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

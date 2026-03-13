@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { InstallPrompt } from '@/components/hoops/install-prompt'
+import { OfflineIndicator } from '@/components/hoops/offline-indicator'
 
 export const metadata: Metadata = {
   title: 'HoopsLedger',
@@ -8,6 +10,11 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon',
     apple: '/apple-icon',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'HoopsLedger',
   },
 }
 
@@ -26,7 +33,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <OfflineIndicator />
+        {children}
+        <InstallPrompt />
+      </body>
     </html>
   )
 }

@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
@@ -43,27 +42,25 @@ export default async function PlayersPage() {
   })
 
   return (
-    <AdminLayout currentPath="/dashboard/players">
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Players</h1>
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="/dashboard/players/new">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Player
-            </Link>
-          </Button>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            <PlayersList 
-              players={playersWithBalances} 
-              currency={user.org?.currency || 'GBP'}
-            />
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Players</h1>
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/dashboard/players/new">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Player
+          </Link>
+        </Button>
       </div>
-    </AdminLayout>
+
+      <Card>
+        <CardContent className="pt-6">
+          <PlayersList 
+            players={playersWithBalances} 
+            currency={user.org?.currency || 'GBP'}
+          />
+        </CardContent>
+      </Card>
+    </div>
   )
 }

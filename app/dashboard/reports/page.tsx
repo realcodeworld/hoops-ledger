@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, Users, Calendar, CreditCard, DollarSign } from 'lucide-react'
 import { getOrganizationReport } from '@/lib/actions/reports'
@@ -61,9 +60,8 @@ export default async function ReportsPage() {
   })
 
   return (
-    <AdminLayout currentPath="/dashboard/reports">
-      <div className="space-y-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h1>
 
         {!report ? (
           <Card className="bg-red-50 border-red-200">
@@ -272,7 +270,6 @@ export default async function ReportsPage() {
             </div>
           </>
         )}
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

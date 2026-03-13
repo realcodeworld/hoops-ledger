@@ -1,6 +1,4 @@
-import { redirect, notFound } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
+import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,12 +20,6 @@ interface SessionDetailPageProps {
 }
 
 export default async function SessionDetailPage({ params }: SessionDetailPageProps) {
-  const user = await getCurrentUser()
-  
-  if (!user) {
-    redirect('/auth')
-  }
-
   const { id } = await params
 
   const [sessionResult, playersResult, matchesResult, orgSettings] = await Promise.all([
@@ -73,8 +65,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
     .reduce((sum, a) => sum + a.feeAppliedPence, 0) || 0
 
   return (
-    <AdminLayout currentPath={`/dashboard/sessions/${id}`}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Button asChild variant="outline" size="sm" className="w-fit">
@@ -204,6 +195,5 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
           previousMatches={previousMatches}
         />
       </div>
-    </AdminLayout>
   )
 }

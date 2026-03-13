@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, DollarSign } from 'lucide-react'
@@ -15,7 +14,6 @@ interface NewPaymentPageProps {
 
 export default async function NewPaymentPage({ searchParams }: NewPaymentPageProps) {
   const user = await getCurrentUser()
-
   if (!user) {
     redirect('/auth')
   }
@@ -53,8 +51,7 @@ export default async function NewPaymentPage({ searchParams }: NewPaymentPagePro
   const currencySymbol = getCurrencySymbol(organization.currency)
 
   return (
-    <AdminLayout currentPath="/dashboard/payments">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <Button asChild variant="outline" size="sm" className="w-fit">
@@ -84,7 +81,6 @@ export default async function NewPaymentPage({ searchParams }: NewPaymentPagePro
             />
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

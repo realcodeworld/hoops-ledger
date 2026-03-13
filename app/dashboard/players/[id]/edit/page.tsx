@@ -2,7 +2,6 @@ import { redirect, notFound } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { PlayerEditForm } from './player-edit-form'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 
 interface PlayerEditPageProps {
@@ -40,12 +39,10 @@ export default async function PlayerEditPage({ params }: PlayerEditPageProps) {
   }
 
   return (
-    <AdminLayout currentPath="/dashboard/players">
-      <PlayerEditForm
-        player={player}
-        pricingRules={organization.pricingRules}
-        currency={organization.currency}
-      />
-    </AdminLayout>
+    <PlayerEditForm
+      player={player}
+      pricingRules={organization.pricingRules}
+      currency={organization.currency}
+    />
   )
 }

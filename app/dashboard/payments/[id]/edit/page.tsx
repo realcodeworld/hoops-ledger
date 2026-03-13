@@ -1,4 +1,3 @@
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
@@ -11,7 +10,7 @@ import { EditPaymentForm } from '@/components/hoops/edit-payment-form'
 export default async function EditPaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    redirect('/auth/login')
+    redirect('/auth')
   }
 
   const { id } = await params
@@ -37,8 +36,7 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <AdminLayout currentPath="/dashboard/payments">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button asChild variant="ghost" size="sm">
             <Link href="/dashboard/payments">
@@ -62,7 +60,6 @@ export default async function EditPaymentPage({ params }: { params: Promise<{ id
             <EditPaymentForm payment={payment} />
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,8 +23,7 @@ export default async function UsersPage() {
   const users = usersResult.success ? usersResult.data || [] : []
 
   return (
-    <AdminLayout currentPath="/dashboard/users">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Users</h1>
           <Button asChild className="w-full sm:w-auto">
@@ -91,7 +89,6 @@ export default async function UsersPage() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

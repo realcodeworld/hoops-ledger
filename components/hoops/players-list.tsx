@@ -451,7 +451,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
       </div>
 
       {/* Mobile Cards */}
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden divide-y divide-gray-100">
         {filteredPlayers.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -471,7 +471,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
           filteredPlayers.map((player) => (
             <div 
               key={player.id} 
-              className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-3 py-3 cursor-pointer active:bg-gray-50"
               onClick={(e) => {
                 const target = e.target as HTMLElement
                 if (target.closest('[data-action-dropdown]') || target.closest('[data-reminder-checkbox]')) {
@@ -480,119 +480,45 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                 router.push(`/dashboard/players/${player.id}`)
               }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {canEmailReminder(player) && (
-                    <div
-                      className="flex-shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                      data-reminder-checkbox
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(player.id)}
-                        onChange={() => toggleSelect(player.id)}
-                        className="rounded border-gray-300"
-                        aria-label={`Select ${player.name} for reminder`}
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate">{player.name}</h3>
-                  {player.notes && (
-                    <p className="text-sm text-gray-500 truncate">{player.notes}</p>
-                  )}
-                  </div>
-                </div>
-                <div 
+              {canEmailReminder(player) && (
+                <div
+                  className="shrink-0"
                   onClick={(e) => e.stopPropagation()}
-                  data-action-dropdown
+                  data-reminder-checkbox
                 >
-                  <PlayerActionsDropdown player={player} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-gray-500">Category</div>
-                  <div className="flex items-center space-x-1 mt-1">
-                    <CategoryBadge
-                      categoryName={player.pricingRule?.name || 'No Category'}
-                      feePence={player.pricingRule?.feePence}
-                      currency={currency}
-                    />
-                    {player.isExempt && (
-                      <Badge variant="exempt">Exempt</Badge>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-gray-500">Status</div>
-                  <div className="mt-1">
-                    <ActivityBadge isActive={player.isActive} />
-                  </div>
-                </div>
-
-                <div>
-                  {player.credit > 0 ? (
-                    <>
-                      <div className="text-gray-500">In Credit</div>
-                      <div className="mt-1 font-medium">
-                        <CurrencyDisplay
-                          amountPence={player.credit}
-                          className="text-green-600"
-                        />
-                      </div>
-                    </>
-                  ) : player.unpaidBalance > 0 ? (
-                    <>
-                      <div className="text-gray-500">Amount Due</div>
-                      <div className="mt-1 font-medium">
-                        <CurrencyDisplay
-                          amountPence={player.unpaidBalance}
-                          className="text-red-600"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-gray-500">Balance</div>
-                      <div className="mt-1 font-medium">
-                        <CurrencyDisplay
-                          amountPence={0}
-                          className="text-gray-500"
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  <div className="text-gray-500">Sessions</div>
-                  <div className="mt-1 font-medium">{player._count.attendance}</div>
-                </div>
-              </div>
-
-              {(player.email || player.phone) && (
-                <div className="pt-2 border-t">
-                  <div className="text-gray-500 text-sm mb-1">Contact</div>
-                  <div className="space-y-1">
-                    {player.email && (
-                      <div className="flex items-center text-sm">
-                        <Mail className="w-3 h-3 mr-2" />
-                        <span className="truncate">{player.email}</span>
-                      </div>
-                    )}
-                    {player.phone && (
-                      <div className="flex items-center text-sm">
-                        <Phone className="w-3 h-3 mr-2" />
-                        <span>{player.phone}</span>
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(player.id)}
+                    onChange={() => toggleSelect(player.id)}
+                    className="rounded border-gray-300 w-4 h-4"
+                    aria-label={`Select ${player.name} for reminder`}
+                  />
                 </div>
               )}
+
+              <span className="flex-1 min-w-0 font-medium truncate">{player.name}</span>
+
+              <div className="shrink-0 tabular-nums">
+                {player.credit > 0 ? (
+                  <span className="text-green-600">
+                    +<CurrencyDisplay amountPence={player.credit} />
+                  </span>
+                ) : player.unpaidBalance > 0 ? (
+                  <span className="text-red-600">
+                    <CurrencyDisplay amountPence={player.unpaidBalance} />
+                  </span>
+                ) : (
+                  <span className="text-gray-400">–</span>
+                )}
+              </div>
+
+              <div 
+                className="shrink-0 -mr-2"
+                onClick={(e) => e.stopPropagation()}
+                data-action-dropdown
+              >
+                <PlayerActionsDropdown player={player} />
+              </div>
             </div>
           ))
         )}

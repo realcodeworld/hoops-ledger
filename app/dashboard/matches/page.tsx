@@ -1,6 +1,3 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Gamepad2, Plus, Calendar, Trophy } from 'lucide-react'
@@ -9,18 +6,11 @@ import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function MatchesPage() {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect('/auth')
-  }
-
   const result = await getMatches()
   const matches = result.success && result.data ? result.data : []
 
   return (
-    <AdminLayout currentPath="/dashboard/matches">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Matches</h1>
           <Button asChild>
@@ -107,7 +97,6 @@ export default async function MatchesPage() {
             })}
           </div>
         )}
-      </div>
-    </AdminLayout>
+    </div>
   )
 }

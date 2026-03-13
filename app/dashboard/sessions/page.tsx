@@ -1,6 +1,3 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/auth'
-import { AdminLayout } from '@/components/hoops/admin-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Calendar, Plus, Clock, MapPin, Users } from 'lucide-react'
@@ -10,18 +7,11 @@ import Link from 'next/link'
 import { SessionActions } from '@/components/hoops/session-actions'
 
 export default async function SessionsPage() {
-  const user = await getCurrentUser()
-  
-  if (!user) {
-    redirect('/auth')
-  }
-
   const sessionsResult = await getSessions()
   const sessions = sessionsResult.success ? sessionsResult.data : []
 
   return (
-    <AdminLayout currentPath="/dashboard/sessions">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Sessions</h1>
           <Button asChild className="h-11">
@@ -90,6 +80,5 @@ export default async function SessionsPage() {
           )}
         </div>
       </div>
-    </AdminLayout>
   )
 }
