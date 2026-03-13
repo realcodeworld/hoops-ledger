@@ -34,7 +34,7 @@ export function PlayerBottomNav({ playerName }: PlayerBottomNavProps) {
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white md:relative md:bottom-auto md:border-t-0 md:bg-transparent"
         aria-label="Player navigation"
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-around px-2 md:justify-start md:gap-1 md:px-4">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-around px-2 md:justify-start md:gap-1 md:px-4">
           {items.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href
             return (
@@ -42,14 +42,14 @@ export function PlayerBottomNav({ playerName }: PlayerBottomNavProps) {
                 key={href}
                 href={href}
                 className={cn(
-                  'flex min-w-[64px] flex-col items-center justify-center gap-1 py-2 text-xs transition-colors md:min-w-0 md:flex-row md:gap-2 md:rounded-md md:px-3 md:py-2 md:text-sm',
+                  'flex min-w-[72px] flex-col items-center justify-center gap-1.5 py-2 text-[11px] transition-colors md:min-w-0 md:flex-row md:gap-2 md:rounded-md md:px-3 md:py-2 md:text-sm',
                   isActive
                     ? 'text-primary font-medium'
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-6 w-6 shrink-0 md:h-4 md:w-4" />
+                <Icon className="h-7 w-7 shrink-0 md:h-4 md:w-4" />
                 <span>{label}</span>
               </Link>
             )
@@ -57,9 +57,9 @@ export function PlayerBottomNav({ playerName }: PlayerBottomNavProps) {
 
           <button
             onClick={() => setMoreOpen(true)}
-            className="flex min-w-[64px] flex-col items-center justify-center gap-1 py-2 text-xs transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-100 md:min-w-0 md:flex-row md:gap-2 md:rounded-md md:px-3 md:py-2 md:text-sm"
+            className="flex min-w-[72px] flex-col items-center justify-center gap-1.5 py-2 text-[11px] transition-colors text-gray-500 hover:text-gray-900 hover:bg-gray-100 md:min-w-0 md:flex-row md:gap-2 md:rounded-md md:px-3 md:py-2 md:text-sm"
           >
-            <MoreHorizontal className="h-6 w-6 shrink-0 md:h-4 md:w-4" />
+            <MoreHorizontal className="h-7 w-7 shrink-0 md:h-4 md:w-4" />
             <span>More</span>
           </button>
         </div>
