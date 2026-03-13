@@ -5,24 +5,26 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { updatePricingRule, createPricingRule, deletePricingRule } from '@/lib/actions/settings'
 import { DollarSign, Save, Plus, Trash2, Edit, Info, AlertTriangle } from 'lucide-react'
 import { PricingRule } from '@prisma/client'
+import { getCurrencySymbol } from '@/lib/format'
 
 interface PricingRulesManagementProps {
   pricingRules: PricingRule[]
   currency: string
   isAdmin: boolean
-}
-
-const getCurrencySymbol = (currency: string) => {
-  switch (currency) {
-    case 'GBP': return '£'
-    case 'EUR': return '€'
-    case 'USD': return '$'
-    case 'AUD': return 'A$'
-    default: return currency
-  }
 }
 
 const formatPrice = (pence: number) => (pence / 100).toFixed(2)
@@ -87,9 +89,6 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
 
   async function handleDeleteRule(pricingRuleId: string) {
     if (!isAdmin) return
-
-    const confirmed = confirm('Are you sure you want to delete this pricing category? This action cannot be undone.')
-    if (!confirmed) return
 
     setIsPending(true)
     setMessage(null)
@@ -226,15 +225,36 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
                         <Edit className="w-4 h-4" />
                       </Button>
                       {pricingRules.length > 1 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteRule(rule.id)}
-                          disabled={isPending}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isPending}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete pricing category</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete &quot;{rule.name}&quot;? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteRule(rule.id)}
+                                disabled={isPending}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                {isPending ? 'Deleting...' : 'Delete'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   )}

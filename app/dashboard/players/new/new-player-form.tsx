@@ -6,29 +6,28 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { createPlayer } from '@/lib/actions/players'
 import { UserPlus } from 'lucide-react'
 import { PricingRule } from '@prisma/client'
+import { getCurrencySymbol } from '@/lib/format'
 
 interface NewPlayerFormProps {
   pricingRules: PricingRule[]
   currency: string
 }
 
-const getCurrencySymbol = (currency: string) => {
-  switch (currency) {
-    case 'GBP': return '£'
-    case 'EUR': return '€'
-    case 'USD': return '$'
-    case 'AUD': return 'A$'
-    default: return currency
-  }
-}
-
 export function NewPlayerForm({ pricingRules, currency }: NewPlayerFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pricingRuleId, setPricingRuleId] = useState('')
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
@@ -68,20 +67,24 @@ export function NewPlayerForm({ pricingRules, currency }: NewPlayerFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="pricingRuleId">Pricing Category *</Label>
-        <select
-          id="pricingRuleId"
-          name="pricingRuleId"
-          required
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        <input type="hidden" name="pricingRuleId" value={pricingRuleId} />
+        <Select
+          value={pricingRuleId}
+          onValueChange={setPricingRuleId}
           disabled={isSubmitting}
+          required
         >
-          <option value="">Select category</option>
-          {pricingRules.map((rule) => (
-            <option key={rule.id} value={rule.id}>
-              {rule.name} ({currencySymbol}{(rule.feePence / 100).toFixed(2)})
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="pricingRuleId">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {pricingRules.map((rule) => (
+              <SelectItem key={rule.id} value={rule.id}>
+                {rule.name} ({currencySymbol}{(rule.feePence / 100).toFixed(2)})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

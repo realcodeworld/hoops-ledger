@@ -13,7 +13,7 @@ export default async function MatchesPage() {
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Matches</h1>
-          <Button asChild>
+          <Button asChild size="sm" className="w-full sm:w-auto">
             <Link href="/dashboard/matches/new">
               <Plus className="w-4 h-4 mr-2" />
               New match
@@ -26,7 +26,7 @@ export default async function MatchesPage() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Gamepad2 className="w-12 h-12 text-gray-400 mb-4" />
               <p className="text-gray-500 mb-6">No matches yet</p>
-              <Button asChild>
+              <Button asChild size="sm" className="w-full sm:w-auto">
                 <Link href="/dashboard/matches/new">
                   <Plus className="w-4 h-4 mr-2" />
                   New match

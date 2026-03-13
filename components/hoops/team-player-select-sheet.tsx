@@ -13,6 +13,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { getCategoryBadgeClass } from '@/lib/format'
 
 interface Player {
   id: string
@@ -108,17 +109,6 @@ export function TeamPlayerSelectSheet({
   const handleOpenChange = (next: boolean) => {
     if (!next) setSearchQuery('')
     onOpenChange(next)
-  }
-
-  const getCategoryBadgeClass = (categoryName: string) => {
-    const lowerName = categoryName.toLowerCase()
-    if (lowerName.includes('student')) return 'bg-purple-100 text-purple-800'
-    if (lowerName.includes('standard')) return 'bg-orange-100 text-orange-800'
-    if (lowerName.includes('guest')) return 'bg-yellow-100 text-yellow-800'
-    if (lowerName.includes('junior') || lowerName.includes('u17') || lowerName.includes('u18')) {
-      return 'bg-blue-100 text-blue-800'
-    }
-    return 'bg-gray-100 text-gray-800'
   }
 
   const selectedCount = selectedSet.size

@@ -26,7 +26,7 @@ export default async function PlayerLeaderboardPage() {
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
         Leaderboard
       </h1>
-      <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-100" />}>
+      <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-gray-100" role="status" aria-label="Loading leaderboard"><span className="sr-only">Loading leaderboard data</span></div>}>
         <LeaderboardView
           entries={entries}
           winStreaks={winStreaks}

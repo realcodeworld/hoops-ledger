@@ -34,7 +34,7 @@ export default async function MatchEditPage({ params }: MatchEditPageProps) {
     .map((mp) => mp.playerId)
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <Button asChild variant="outline" size="sm">
           <Link href={`/dashboard/matches/${id}`}>

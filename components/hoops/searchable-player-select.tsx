@@ -96,24 +96,30 @@ export function SearchablePlayerSelect({
     }
   }
 
+  const listboxId = 'player-select-listbox'
+  const activeOptionId = filteredPlayers[selectedIndex] ? `player-option-${filteredPlayers[selectedIndex].id}` : undefined
+
   return (
     <div className={cn("relative", className)} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? listboxId : undefined}
         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className={cn("text-left", !searchQuery && "text-muted-foreground")}>
           {searchQuery || placeholder}
         </span>
-        <ChevronDown className="h-4 w-4 opacity-50" />
+        <ChevronDown className="h-4 w-4 opacity-50" aria-hidden="true" />
       </button>
 
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-md">
           <div className="p-2 border-b">
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" aria-hidden="true" />
               <Input
                 ref={inputRef}
                 type="text"
@@ -122,33 +128,45 @@ export function SearchablePlayerSelect({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="pl-8 h-8"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls={listboxId}
+                aria-activedescendant={activeOptionId}
+                aria-expanded={isOpen}
               />
             </div>
           </div>
-          <div className="max-h-[300px] overflow-y-auto">
+          <ul
+            id={listboxId}
+            role="listbox"
+            aria-label="Players"
+            className="max-h-[300px] overflow-y-auto"
+          >
             {filteredPlayers.length === 0 ? (
-              <div className="px-2 py-6 text-center text-sm text-gray-500">
+              <li className="px-2 py-6 text-center text-sm text-gray-500" role="option" aria-disabled="true">
                 {searchQuery ? 'No players found' : 'No players available'}
-              </div>
+              </li>
             ) : (
               filteredPlayers.map((player, index) => (
-                <button
+                <li
                   key={player.id}
-                  type="button"
+                  id={`player-option-${player.id}`}
+                  role="option"
+                  aria-selected={index === selectedIndex}
                   onClick={() => handleSelect(player.id)}
                   className={cn(
-                    "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-gray-50 focus:bg-gray-100",
+                    "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-gray-50",
                     index === selectedIndex && "bg-gray-100"
                   )}
                 >
-                  <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                  <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center" aria-hidden="true">
                     {index === selectedIndex && <Check className="h-4 w-4" />}
                   </span>
                   {player.name} ({player.pricingRule?.name || 'No Category'})
-                </button>
+                </li>
               ))
             )}
-          </div>
+          </ul>
         </div>
       )}
     </div>

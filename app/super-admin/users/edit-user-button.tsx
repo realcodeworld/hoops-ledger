@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { Pencil } from 'lucide-react'
 import { updateUserDetails } from '@/lib/actions/super-admin'
 
@@ -86,9 +87,9 @@ export function EditUserButton({ user }: EditUserButtonProps) {
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
+              <Label htmlFor="name">
                 Name
-              </label>
+              </Label>
               <Input
                 id="name"
                 type="text"
@@ -100,9 +101,9 @@ export function EditUserButton({ user }: EditUserButtonProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <Label htmlFor="email">
                 Email
-              </label>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -114,9 +115,9 @@ export function EditUserButton({ user }: EditUserButtonProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="role" className="text-sm font-medium">
+              <Label htmlFor="role">
                 Role
-              </label>
+              </Label>
               <Select
                 value={formData.role}
                 onValueChange={(value) => setFormData({ ...formData, role: value })}

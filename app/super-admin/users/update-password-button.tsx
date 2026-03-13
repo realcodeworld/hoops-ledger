@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { Key } from 'lucide-react'
 import { updateUserPassword } from '@/lib/actions/super-admin'
 
@@ -70,9 +71,9 @@ export function UpdatePasswordButton({ userId, userName }: UpdatePasswordButtonP
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password">
                 New Password
-              </label>
+              </Label>
               <Input
                 id="password"
                 type="password"

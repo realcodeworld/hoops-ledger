@@ -47,9 +47,10 @@ export function MagicLinkHandler() {
 
   if (status === 'loading') {
     return (
-      <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+      <div className="text-center py-8" role="status" aria-live="polite">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" aria-hidden="true"></div>
         <p className="mt-4 text-sm text-gray-500">Authenticating...</p>
+        <span className="sr-only">Verifying your login link, please wait</span>
       </div>
     )
   }

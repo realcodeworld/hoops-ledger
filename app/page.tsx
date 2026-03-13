@@ -16,7 +16,7 @@ export default function HomePage() {
         </p>
 
         <div className="space-y-4">
-          <Button asChild size="lg" className="w-full bg-orange-500 hover:bg-orange-600">
+          <Button asChild size="lg" className="w-full">
             <Link href="/auth">
               Admin Login
             </Link>

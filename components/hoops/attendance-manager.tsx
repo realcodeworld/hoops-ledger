@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { CreditCard, Plus, Edit3, Save, X, Banknote, Building2, Trash2, Users } from 'lucide-react'
 import { markPayment, addPlayerToSession, updateAttendanceNotes, markPaymentWithAmount, removePlayerFromSession } from '@/lib/actions/attendance'
@@ -69,6 +79,8 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
   const [paymentDialog, setPaymentDialog] = useState<string | null>(null)
   const [paymentAmount, setPaymentAmount] = useState('')
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Restore expanded player state after reload
   useEffect(() => {
@@ -194,14 +206,18 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
     }
   }
 
-  const handleRemovePlayer = async (attendanceId: string) => {
-    if (confirm('Are you sure you want to remove this player from the session? This will delete the attendance record and any associated payment.')) {
-      try {
-        await removePlayerFromSession(attendanceId)
-        window.location.reload()
-      } catch (error) {
-        console.error('Failed to remove player:', error)
-      }
+  const handleRemovePlayer = async () => {
+    if (!deleteConfirm) return
+    
+    setIsDeleting(true)
+    try {
+      await removePlayerFromSession(deleteConfirm.id)
+      setDeleteConfirm(null)
+      window.location.reload()
+    } catch (error) {
+      console.error('Failed to remove player:', error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -509,7 +525,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleRemovePlayer(record.id)
+                          setDeleteConfirm({ id: record.id, name: record.player.name })
                         }}
                         className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
@@ -607,6 +623,28 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
           </div>
         </div>
       </div>
+
+      {/* Remove Player Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove player from session</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {deleteConfirm?.name} from this session? This will delete the attendance record and any associated payment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemovePlayer}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Removing...' : 'Remove'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

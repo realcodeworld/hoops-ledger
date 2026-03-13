@@ -63,8 +63,8 @@ export function LeaderboardView({
 
   const tabClass = (t: TabValue) =>
     tab === t
-      ? 'border border-b-0 border-gray-200 -mb-px shadow-sm rounded-t-md'
-      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent'
+      ? 'bg-primary text-white border border-b-0 border-primary -mb-px shadow-sm rounded-t-md'
+      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-transparent rounded-t-md'
 
   const rowClass = (playerId: string) =>
     currentPlayerId && playerId === currentPlayerId
@@ -79,32 +79,38 @@ export function LeaderboardView({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-gray-200" role="tablist" aria-label="Leaderboard categories">
         <Link
           href={basePath}
-          className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${tabClass(TAB_POINTS)}`}
-          style={tab === TAB_POINTS ? { backgroundColor: '#ea580c', color: '#fff' } : undefined}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_POINTS)}`}
+          role="tab"
+          aria-selected={tab === TAB_POINTS}
+          aria-controls="tabpanel-points"
         >
           Points
         </Link>
         <Link
           href={`${basePath}?tab=win`}
-          className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${tabClass(TAB_WIN)}`}
-          style={tab === TAB_WIN ? { backgroundColor: '#ea580c', color: '#fff' } : undefined}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_WIN)}`}
+          role="tab"
+          aria-selected={tab === TAB_WIN}
+          aria-controls="tabpanel-win"
         >
           Game stats
         </Link>
         <Link
           href={`${basePath}?tab=attendance`}
-          className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${tabClass(TAB_ATTENDANCE)}`}
-          style={tab === TAB_ATTENDANCE ? { backgroundColor: '#ea580c', color: '#fff' } : undefined}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_ATTENDANCE)}`}
+          role="tab"
+          aria-selected={tab === TAB_ATTENDANCE}
+          aria-controls="tabpanel-attendance"
         >
           Attendance streak
         </Link>
       </div>
 
       {tab === TAB_POINTS && (
-        <Card>
+        <Card role="tabpanel" id="tabpanel-points" aria-labelledby="tab-points">
           <CardHeader>
             <CardTitle className="flex items-center flex-wrap gap-2">
               <Trophy className="w-5 h-5 mr-2 text-primary" />
@@ -164,7 +170,7 @@ export function LeaderboardView({
       )}
 
       {tab === TAB_WIN && (
-        <Card>
+        <Card role="tabpanel" id="tabpanel-win" aria-labelledby="tab-win">
           <CardHeader>
             <CardTitle className="flex items-center flex-wrap gap-2">
               <Flame className="w-5 h-5 mr-2 text-orange-500" />
@@ -240,7 +246,7 @@ export function LeaderboardView({
       )}
 
       {tab === TAB_ATTENDANCE && (
-        <Card>
+        <Card role="tabpanel" id="tabpanel-attendance" aria-labelledby="tab-attendance">
           <CardHeader>
             <CardTitle className="flex items-center flex-wrap gap-2">
               <CalendarCheck className="w-5 h-5 mr-2 text-green-600" />

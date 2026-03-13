@@ -17,7 +17,7 @@ export default async function NewPlayerPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Back Button */}
       <div>
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="outline" size="sm">
           <Link href="/dashboard/players">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Players

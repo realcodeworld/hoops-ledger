@@ -21,35 +21,40 @@ export interface LeaderboardEntry {
  * totalPoints = (attendanceCount * P1) + (paidCount * P2) + (matchParticipations * P3) + sum(PlayerPointEntry match_win)
  */
 export async function getPlayerTotalPoints(playerId: string): Promise<number> {
-  const [attendanceCount, paidCount, matchParticipationCount, pointEntrySum] = await Promise.all([
-    prisma.attendance.count({
-      where: { playerId },
-    }),
-    prisma.attendance.count({
-      where: {
-        playerId,
-        status: 'paid',
-      },
-    }),
-    prisma.matchPlayer.count({
-      where: { playerId },
-    }),
-    prisma.playerPointEntry.aggregate({
-      where: {
-        playerId,
-        source: POINT_SOURCE_MATCH_WIN,
-      },
-      _sum: { amount: true },
-    }),
-  ])
+  try {
+    const [attendanceCount, paidCount, matchParticipationCount, pointEntrySum] = await Promise.all([
+      prisma.attendance.count({
+        where: { playerId },
+      }),
+      prisma.attendance.count({
+        where: {
+          playerId,
+          status: 'paid',
+        },
+      }),
+      prisma.matchPlayer.count({
+        where: { playerId },
+      }),
+      prisma.playerPointEntry.aggregate({
+        where: {
+          playerId,
+          source: POINT_SOURCE_MATCH_WIN,
+        },
+        _sum: { amount: true },
+      }),
+    ])
 
-  const entryPoints = pointEntrySum._sum.amount ?? 0
-  return (
-    attendanceCount * POINTS_PER_ATTENDANCE +
-    paidCount * POINTS_PER_PAID_SESSION +
-    matchParticipationCount * POINTS_PER_MATCH_PARTICIPATION +
-    entryPoints
-  )
+    const entryPoints = pointEntrySum._sum.amount ?? 0
+    return (
+      attendanceCount * POINTS_PER_ATTENDANCE +
+      paidCount * POINTS_PER_PAID_SESSION +
+      matchParticipationCount * POINTS_PER_MATCH_PARTICIPATION +
+      entryPoints
+    )
+  } catch (error) {
+    console.error('Get player total points error:', error)
+    return 0
+  }
 }
 
 /**
@@ -59,69 +64,74 @@ export async function getPlayerTotalPoints(playerId: string): Promise<number> {
 export async function getAllPlayerTotals(
   orgId: string
 ): Promise<Map<string, number>> {
-  const players = await prisma.player.findMany({
-    where: { orgId, isActive: true },
-    select: { id: true },
-  })
-  const playerIds = players.map((p) => p.id)
+  try {
+    const players = await prisma.player.findMany({
+      where: { orgId, isActive: true },
+      select: { id: true },
+    })
+    const playerIds = players.map((p) => p.id)
 
-  const [attendanceCounts, paidCounts, matchParticipationCounts, pointSums] = await Promise.all([
-    prisma.attendance.groupBy({
-      by: ['playerId'],
-      where: { playerId: { in: playerIds } },
-      _count: { id: true },
-    }),
-    prisma.attendance.groupBy({
-      by: ['playerId'],
-      where: {
-        playerId: { in: playerIds },
-        status: 'paid',
-      },
-      _count: { id: true },
-    }),
-    prisma.matchPlayer.groupBy({
-      by: ['playerId'],
-      where: { playerId: { in: playerIds } },
-      _count: { id: true },
-    }),
-    prisma.playerPointEntry.groupBy({
-      by: ['playerId'],
-      where: {
-        playerId: { in: playerIds },
-        source: POINT_SOURCE_MATCH_WIN,
-      },
-      _sum: { amount: true },
-    }),
-  ])
+    const [attendanceCounts, paidCounts, matchParticipationCounts, pointSums] = await Promise.all([
+      prisma.attendance.groupBy({
+        by: ['playerId'],
+        where: { playerId: { in: playerIds } },
+        _count: { id: true },
+      }),
+      prisma.attendance.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+          status: 'paid',
+        },
+        _count: { id: true },
+      }),
+      prisma.matchPlayer.groupBy({
+        by: ['playerId'],
+        where: { playerId: { in: playerIds } },
+        _count: { id: true },
+      }),
+      prisma.playerPointEntry.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+          source: POINT_SOURCE_MATCH_WIN,
+        },
+        _sum: { amount: true },
+      }),
+    ])
 
-  const attendanceByPlayer = new Map(
-    attendanceCounts.map((r) => [r.playerId, r._count.id])
-  )
-  const paidByPlayer = new Map(
-    paidCounts.map((r) => [r.playerId, r._count.id])
-  )
-  const matchParticipationByPlayer = new Map(
-    matchParticipationCounts.map((r) => [r.playerId, r._count.id])
-  )
-  const entrySumByPlayer = new Map(
-    pointSums.map((r) => [r.playerId, r._sum.amount ?? 0])
-  )
-
-  const result = new Map<string, number>()
-  for (const id of playerIds) {
-    const att = attendanceByPlayer.get(id) ?? 0
-    const paid = paidByPlayer.get(id) ?? 0
-    const matchParts = matchParticipationByPlayer.get(id) ?? 0
-    const entries = entrySumByPlayer.get(id) ?? 0
-    result.set(
-      id,
-      att * POINTS_PER_ATTENDANCE +
-        paid * POINTS_PER_PAID_SESSION +
-        matchParts * POINTS_PER_MATCH_PARTICIPATION +
-        entries
+    const attendanceByPlayer = new Map(
+      attendanceCounts.map((r) => [r.playerId, r._count.id])
     )
+    const paidByPlayer = new Map(
+      paidCounts.map((r) => [r.playerId, r._count.id])
+    )
+    const matchParticipationByPlayer = new Map(
+      matchParticipationCounts.map((r) => [r.playerId, r._count.id])
+    )
+    const entrySumByPlayer = new Map(
+      pointSums.map((r) => [r.playerId, r._sum.amount ?? 0])
+    )
+
+    const result = new Map<string, number>()
+    for (const id of playerIds) {
+      const att = attendanceByPlayer.get(id) ?? 0
+      const paid = paidByPlayer.get(id) ?? 0
+      const matchParts = matchParticipationByPlayer.get(id) ?? 0
+      const entries = entrySumByPlayer.get(id) ?? 0
+      result.set(
+        id,
+        att * POINTS_PER_ATTENDANCE +
+          paid * POINTS_PER_PAID_SESSION +
+          matchParts * POINTS_PER_MATCH_PARTICIPATION +
+          entries
+      )
+    }
+    return result
+  } catch (error) {
+    console.error('Get all player totals error:', error)
+    return new Map()
   }
-  return result
 }
 
 /**

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { getOrganizationSettings } from '@/lib/actions/settings'
 import { NewPaymentForm } from './new-payment-form'
+import { getCurrencySymbol } from '@/lib/format'
 
 interface NewPaymentPageProps {
   searchParams: Promise<{ playerId?: string }>
@@ -37,18 +38,7 @@ export default async function NewPaymentPage({ searchParams }: NewPaymentPagePro
     },
   })
 
-  const formatPrice = (pence: number) => (pence / 100).toFixed(2)
-  const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'GBP': return '£'
-      case 'EUR': return '€'
-      case 'USD': return '$'
-      case 'AUD': return 'A$'
-      default: return currency
-    }
-  }
-
-  const currencySymbol = getCurrencySymbol(organization.currency)
+const currencySymbol = getCurrencySymbol(organization.currency)
 
   return (
     <div className="space-y-6">

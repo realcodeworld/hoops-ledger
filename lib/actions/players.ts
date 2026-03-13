@@ -288,6 +288,80 @@ export async function getPlayerDetail(playerId: string) {
   }
 }
 
+export async function deletePlayer(playerId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      throw new Error('Unauthorized')
+    }
+
+    const existingPlayer = await prisma.player.findFirst({
+      where: {
+        id: playerId,
+        orgId: currentUser.orgId,
+      },
+      include: {
+        _count: {
+          select: {
+            attendance: true,
+            payments: true,
+            matchPlayers: true,
+          },
+        },
+      },
+    })
+
+    if (!existingPlayer) {
+      throw new Error('Player not found')
+    }
+
+    // Delete related records first (cascade)
+    await prisma.$transaction(async (tx) => {
+      // Delete match player records
+      await tx.matchPlayer.deleteMany({
+        where: { playerId },
+      })
+
+      // Delete attendance records
+      await tx.attendance.deleteMany({
+        where: { playerId },
+      })
+
+      // Delete payment records
+      await tx.payment.deleteMany({
+        where: { playerId },
+      })
+
+      // Delete the player
+      await tx.player.delete({
+        where: { id: playerId },
+      })
+
+      // Audit log
+      await tx.auditLog.create({
+        data: {
+          orgId: currentUser.orgId,
+          actorUserId: currentUser.id,
+          action: 'DELETE_PLAYER',
+          entityType: 'Player',
+          entityId: playerId,
+          before: existingPlayer,
+        },
+      })
+    })
+
+    revalidatePath('/dashboard/players')
+    revalidatePath('/dashboard/leaderboard')
+    return { success: true }
+  } catch (error) {
+    console.error('Delete player error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete player',
+    }
+  }
+}
+
 export async function createQuickPlayer(name: string, pricingRuleId?: string) {
   try {
     const currentUser = await getCurrentUser()

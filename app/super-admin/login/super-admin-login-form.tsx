@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { loginSuperAdmin } from '@/lib/actions/super-admin'
 import { Shield } from 'lucide-react'
@@ -46,9 +47,9 @@ export function SuperAdminLoginForm() {
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+            <Label htmlFor="email">
               Email
-            </label>
+            </Label>
             <Input
               id="email"
               name="email"
@@ -59,9 +60,9 @@ export function SuperAdminLoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+            <Label htmlFor="password">
               Password
-            </label>
+            </Label>
             <Input
               id="password"
               name="password"
@@ -80,8 +81,9 @@ export function SuperAdminLoginForm() {
 
           <Button
             type="submit"
+            variant="destructive"
             size="lg"
-            className="w-full bg-red-600 hover:bg-red-700 text-base font-semibold"
+            className="w-full text-base font-semibold"
             disabled={isPending}
           >
             {isPending ? (

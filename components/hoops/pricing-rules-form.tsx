@@ -8,21 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { updatePricingRule } from '@/lib/actions/settings'
 import { DollarSign, Save, Info } from 'lucide-react'
 import { PricingRule } from '@prisma/client'
+import { getCurrencySymbol } from '@/lib/format'
 
 interface PricingRulesFormProps {
   pricingRule: PricingRule
   currency: string
   isAdmin: boolean
-}
-
-const getCurrencySymbol = (currency: string) => {
-  switch (currency) {
-    case 'GBP': return '£'
-    case 'EUR': return '€'
-    case 'USD': return '$'
-    case 'AUD': return 'A$'
-    default: return currency
-  }
 }
 
 const formatPrice = (pence: number) => (pence / 100).toFixed(2)

@@ -26,7 +26,7 @@ export default async function UsersPage() {
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Users</h1>
-          <Button asChild className="w-full sm:w-auto">
+          <Button asChild size="sm" className="w-full sm:w-auto">
             <Link href="/dashboard/users/new">
               <Plus className="w-4 h-4 mr-2" />
               Add User

@@ -9,9 +9,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { updatePlayer } from '@/lib/actions/players'
-import { ArrowLeft, Save, User } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { updatePlayer, deletePlayer } from '@/lib/actions/players'
+import { ArrowLeft, Save, User, Trash2 } from 'lucide-react'
 import { Player, PricingRule } from '@prisma/client'
+import { getCurrencySymbol } from '@/lib/format'
 
 interface PlayerEditFormProps {
   player: Player & { pricingRule: PricingRule | null }
@@ -19,20 +31,33 @@ interface PlayerEditFormProps {
   currency: string
 }
 
-const getCurrencySymbol = (currency: string) => {
-  switch (currency) {
-    case 'GBP': return '£'
-    case 'EUR': return '€'
-    case 'USD': return '$'
-    case 'AUD': return 'A$'
-    default: return currency
-  }
-}
-
 export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFormProps) {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  async function handleDelete() {
+    setIsDeleting(true)
+    setMessage(null)
+
+    try {
+      const result = await deletePlayer(player.id)
+
+      if (result.success) {
+        router.push('/dashboard/players')
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to delete player' })
+        setIsDeleting(false)
+      }
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to delete player',
+      })
+      setIsDeleting(false)
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setIsPending(true)
@@ -220,20 +245,53 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button type="submit" size="lg" disabled={isPending} className="w-full sm:w-auto">
-                {isPending ? (
-                  'Saving...'
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </Button>
-              <Button asChild variant="outline" className="w-full sm:w-auto">
-                <Link href={`/dashboard/players/${player.id}`}>Cancel</Link>
-              </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button type="submit" size="lg" disabled={isPending || isDeleting} className="w-full sm:w-auto">
+                  {isPending ? (
+                    'Saving...'
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+                <Button asChild variant="outline" className="w-full sm:w-auto">
+                  <Link href={`/dashboard/players/${player.id}`}>Cancel</Link>
+                </Button>
+              </div>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                    disabled={isPending || isDeleting}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {isDeleting ? 'Deleting...' : 'Delete Player'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {player.name}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this player and all their associated data including attendance records, payments, and match history. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </form>
         </CardContent>

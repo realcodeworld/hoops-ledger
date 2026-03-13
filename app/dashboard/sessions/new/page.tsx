@@ -8,23 +8,15 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { createSession } from '@/lib/actions/sessions'
 import { getOrganizationSettings } from '@/lib/actions/settings'
+import { getCurrencySymbol } from '@/lib/format'
+
+const formatPrice = (pence: number) => (pence / 100).toFixed(2)
 
 export default async function NewSessionPage() {
   const organization = await getOrganizationSettings()
 
   if (!organization) {
     redirect('/auth')
-  }
-
-  const formatPrice = (pence: number) => (pence / 100).toFixed(2)
-  const getCurrencySymbol = (currency: string) => {
-    switch (currency) {
-      case 'GBP': return '£'
-      case 'EUR': return '€'
-      case 'USD': return '$'
-      case 'AUD': return 'A$'
-      default: return currency
-    }
   }
 
   const currencySymbol = getCurrencySymbol(organization.currency)

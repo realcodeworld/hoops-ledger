@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { createNewUser } from '@/lib/actions/super-admin'
@@ -73,9 +74,9 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
         <CardContent>
           <form action={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="orgId" className="text-sm font-medium">
+              <Label htmlFor="orgId">
                 Organization
-              </label>
+              </Label>
               <Select name="orgId" required disabled={isPending}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select an organization" />
@@ -91,9 +92,9 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
+              <Label htmlFor="name">
                 Name
-              </label>
+              </Label>
               <Input
                 id="name"
                 name="name"
@@ -105,9 +106,9 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <Label htmlFor="email">
                 Email
-              </label>
+              </Label>
               <Input
                 id="email"
                 name="email"
@@ -119,9 +120,9 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="role" className="text-sm font-medium">
+              <Label htmlFor="role">
                 Role
-              </label>
+              </Label>
               <Select name="role" required disabled={isPending}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role" />
@@ -134,9 +135,9 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <Label htmlFor="password">
                 Password
-              </label>
+              </Label>
               <Input
                 id="password"
                 name="password"

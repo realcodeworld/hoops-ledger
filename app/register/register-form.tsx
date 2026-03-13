@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { registerUser } from '@/lib/actions/auth'
 import { UserPlus } from 'lucide-react'
@@ -40,9 +41,9 @@ export function RegisterForm() {
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="organizationName" className="text-sm font-medium">
+            <Label htmlFor="organizationName">
               Organization Name
-            </label>
+            </Label>
             <Input
               id="organizationName"
               name="organizationName"
@@ -54,9 +55,9 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium">
+            <Label htmlFor="name">
               Your Name
-            </label>
+            </Label>
             <Input
               id="name"
               name="name"
@@ -68,9 +69,9 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
+            <Label htmlFor="email">
               Email Address
-            </label>
+            </Label>
             <Input
               id="email"
               name="email"
@@ -82,9 +83,9 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
+            <Label htmlFor="password">
               Password
-            </label>
+            </Label>
             <Input
               id="password"
               name="password"

@@ -13,7 +13,7 @@ export default async function PaymentsPage() {
     <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments</h1>
-          <Button asChild className="w-full sm:w-auto">
+          <Button asChild size="sm" className="w-full sm:w-auto">
             <Link href="/dashboard/payments/new">
               <Plus className="w-4 h-4 mr-2" />
               Record Payment
@@ -26,7 +26,7 @@ export default async function PaymentsPage() {
             {payments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>No payments yet</p>
-                <Button asChild className="mt-4" variant="outline">
+                <Button asChild size="sm" className="mt-4" variant="outline">
                   <Link href="/dashboard/payments/new">
                     <Plus className="w-4 h-4 mr-2" />
                     Record payment
