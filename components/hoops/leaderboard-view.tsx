@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Trophy, Flame, CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trophy, Flame, CalendarCheck, ChevronLeft, ChevronRight, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type {
   LeaderboardEntry,
@@ -192,6 +192,14 @@ export function LeaderboardView({
   const paginatedWinStreaks = winStreaks.slice((winPage - 1) * PAGE_SIZE, winPage * PAGE_SIZE)
   const paginatedAttendance = attendanceStreaks.slice((attendancePage - 1) * PAGE_SIZE, attendancePage * PAGE_SIZE)
 
+  const myEntryPage = myEntry ? Math.ceil(myEntry.rank / PAGE_SIZE) : null
+  const myWinPage = myWin ? Math.ceil(myWin.rank / PAGE_SIZE) : null
+  const myAttPage = myAtt ? Math.ceil(myAtt.rank / PAGE_SIZE) : null
+
+  const isMyEntryOnPage = myEntryPage === pointsPage
+  const isMyWinOnPage = myWinPage === winPage
+  const isMyAttOnPage = myAttPage === attendancePage
+
   const tabClass = (t: TabValue) =>
     tab === t
       ? 'bg-orange-500 text-white border border-b-0 border-orange-500 -mb-px shadow-sm rounded-t-md'
@@ -281,7 +289,10 @@ export function LeaderboardView({
                         className={`border-b ${rowClass(entry.playerId)}`}
                       >
                         <TableCell className={`${cellClass} w-10 text-gray-500`}>
-                          {entry.rank}
+                          <span className="flex items-center gap-1">
+                            {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            {entry.rank}
+                          </span>
                         </TableCell>
                         <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
                           <span className="font-medium truncate block">
@@ -296,6 +307,33 @@ export function LeaderboardView({
                     ))}
                   </TableBody>
                 </Table>
+                {currentPlayerId && myEntry && !isMyEntryOnPage && (
+                  <div className="border-t-2 border-dashed border-gray-200 mt-3 pt-3">
+                    <p className="text-xs text-gray-500 mb-2 px-2">
+                      {myEntryPage! < pointsPage ? 'You are ranked higher' : 'Your position'}
+                    </p>
+                    <Table className="min-w-[280px]">
+                      <TableBody>
+                        <TableRow className={`border-b ${rowClass(myEntry.playerId)}`}>
+                          <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                            <span className="flex items-center gap-1">
+                              {myEntry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                              {myEntry.rank}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} ${nameClass(myEntry.playerId)}`}>
+                            <span className="font-medium truncate block">
+                              {myEntry.name} (you)
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                            {myEntry.totalPoints} pts
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
                 <Pagination
                   currentPage={pointsPage}
                   totalPages={pointsTotalPages}
@@ -354,7 +392,10 @@ export function LeaderboardView({
                         className={`border-b ${rowClass(entry.playerId)}`}
                       >
                         <TableCell className={`${cellClass} w-10 text-gray-500`}>
-                          {entry.rank}
+                          <span className="flex items-center gap-1">
+                            {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            {entry.rank}
+                          </span>
                         </TableCell>
                         <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
                           <span className="font-medium truncate block">
@@ -381,6 +422,45 @@ export function LeaderboardView({
                     ))}
                   </TableBody>
                 </Table>
+                {currentPlayerId && myWin && !isMyWinOnPage && (
+                  <div className="border-t-2 border-dashed border-gray-200 mt-3 pt-3">
+                    <p className="text-xs text-gray-500 mb-2 px-2">
+                      {myWinPage! < winPage ? 'You are ranked higher' : 'Your position'}
+                    </p>
+                    <Table className="min-w-[400px]">
+                      <TableBody>
+                        <TableRow className={`border-b ${rowClass(myWin.playerId)}`}>
+                          <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                            <span className="flex items-center gap-1">
+                              {myWin.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                              {myWin.rank}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} ${nameClass(myWin.playerId)}`}>
+                            <span className="font-medium truncate block">
+                              {myWin.name} (you)
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myWin.gamesPlayed}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myWin.wins}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myWin.losses}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myWin.currentWinStreak}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                            {myWin.maxWinStreak}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
                 <Pagination
                   currentPage={winPage}
                   totalPages={winTotalPages}
@@ -438,7 +518,10 @@ export function LeaderboardView({
                         className={`border-b ${rowClass(entry.playerId)}`}
                       >
                         <TableCell className={`${cellClass} w-10 text-gray-500`}>
-                          {entry.rank}
+                          <span className="flex items-center gap-1">
+                            {entry.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                            {entry.rank}
+                          </span>
                         </TableCell>
                         <TableCell className={`${cellClass} ${nameClass(entry.playerId)}`}>
                           <span className="font-medium truncate block">
@@ -462,6 +545,42 @@ export function LeaderboardView({
                     ))}
                   </TableBody>
                 </Table>
+                {currentPlayerId && myAtt && !isMyAttOnPage && (
+                  <div className="border-t-2 border-dashed border-gray-200 mt-3 pt-3">
+                    <p className="text-xs text-gray-500 mb-2 px-2">
+                      {myAttPage! < attendancePage ? 'You are ranked higher' : 'Your position'}
+                    </p>
+                    <Table className="min-w-[400px]">
+                      <TableBody>
+                        <TableRow className={`border-b ${rowClass(myAtt.playerId)}`}>
+                          <TableCell className={`${cellClass} w-10 text-gray-500`}>
+                            <span className="flex items-center gap-1">
+                              {myAtt.rank === 1 && <Crown className="h-4 w-4 text-yellow-500" />}
+                              {myAtt.rank}
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} ${nameClass(myAtt.playerId)}`}>
+                            <span className="font-medium truncate block">
+                              {myAtt.name} (you)
+                            </span>
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myAtt.sessionsAttended}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myAtt.sessionsMissed}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right text-gray-700`}>
+                            {myAtt.currentStreak}
+                          </TableCell>
+                          <TableCell className={`${cellClass} text-right font-semibold text-gray-900`}>
+                            {myAtt.maxStreak}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
                 <Pagination
                   currentPage={attendancePage}
                   totalPages={attendanceTotalPages}

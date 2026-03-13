@@ -63,7 +63,7 @@ export function AdminBottomNav({ userRole, userName }: AdminBottomNavProps) {
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white lg:relative lg:bottom-auto lg:border-t-0 lg:bg-transparent"
         aria-label="Admin navigation"
       >
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-around px-2 lg:justify-start lg:gap-1 lg:px-4">
+        <div className="mx-auto flex h-24 max-w-7xl items-center justify-around px-2 lg:justify-start lg:gap-1 lg:px-4">
           {primaryItems.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href
             return (
@@ -71,14 +71,14 @@ export function AdminBottomNav({ userRole, userName }: AdminBottomNavProps) {
                 key={href}
                 href={href}
                 className={cn(
-                  'flex min-w-[72px] flex-col items-center justify-center gap-1.5 py-2 text-[11px] transition-colors lg:min-w-0 lg:flex-row lg:gap-2 lg:rounded-md lg:px-3 lg:py-2 lg:text-sm',
+                  'flex min-w-[76px] flex-col items-center justify-center gap-2 py-3 text-xs transition-colors lg:min-w-0 lg:flex-row lg:gap-2 lg:rounded-md lg:px-3 lg:py-2 lg:text-sm',
                   isActive
                     ? 'text-primary font-medium'
                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-7 w-7 shrink-0 lg:h-4 lg:w-4" />
+                <Icon className="h-8 w-8 shrink-0 lg:h-4 lg:w-4" />
                 <span className="truncate">{label}</span>
               </Link>
             )
@@ -87,13 +87,13 @@ export function AdminBottomNav({ userRole, userName }: AdminBottomNavProps) {
           <button
             onClick={() => setMoreOpen(true)}
             className={cn(
-              'flex min-w-[72px] flex-col items-center justify-center gap-1.5 py-2 text-[11px] transition-colors lg:min-w-0 lg:flex-row lg:gap-2 lg:rounded-md lg:px-3 lg:py-2 lg:text-sm',
+              'flex min-w-[76px] flex-col items-center justify-center gap-2 py-3 text-xs transition-colors lg:min-w-0 lg:flex-row lg:gap-2 lg:rounded-md lg:px-3 lg:py-2 lg:text-sm',
               isMoreActive
                 ? 'text-primary font-medium'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
             )}
           >
-            <MoreHorizontal className="h-7 w-7 shrink-0 lg:h-4 lg:w-4" />
+            <MoreHorizontal className="h-8 w-8 shrink-0 lg:h-4 lg:w-4" />
             <span>More</span>
           </button>
         </div>
@@ -125,7 +125,7 @@ export function AdminBottomNav({ userRole, userName }: AdminBottomNavProps) {
               )
             })}
           </nav>
-          <div className="mt-6 pt-4 border-t border-gray-100">
+          <div className="mt-6 pt-6 pb-4 px-2 border-t border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">{userName}</p>
@@ -134,7 +134,7 @@ export function AdminBottomNav({ userRole, userName }: AdminBottomNavProps) {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Log out
