@@ -80,12 +80,12 @@ export default async function PlayerMatchesPage() {
                         <span className="truncate">{cardTitle}</span>
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
-                        {format(new Date(match.createdAt), 'PPP')}
+                        {format(new Date(match.createdAt), 'dd/MM/yy')}
                         {match.session && (
                           <>
                             {' · '}
                             {match.session.name ||
-                              format(new Date(match.session.startsAt), 'PPP')}
+                              format(new Date(match.session.startsAt), 'dd/MM/yy')}
                           </>
                         )}
                       </p>

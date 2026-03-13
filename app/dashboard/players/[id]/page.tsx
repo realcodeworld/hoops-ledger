@@ -237,7 +237,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                   <label className="text-sm font-medium text-gray-500">Member Since</label>
                   <div className="flex items-center mt-1">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    <span>{new Date(player.createdAt).toLocaleDateString()}</span>
+                    <span>{new Date(player.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
                   </div>
                 </div>
               </CardContent>
@@ -298,7 +298,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{attendance.session.name}</div>
                           <div className="text-sm text-gray-500">
-                            <div className="sm:inline">{new Date(attendance.session.startsAt).toLocaleDateString()}</div>
+                            <div className="sm:inline">{new Date(attendance.session.startsAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</div>
                             {attendance.session.venue && (
                               <>
                                 <span className="hidden sm:inline"> • </span>
@@ -428,7 +428,7 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                             <CurrencyDisplay amountPence={payment.amountPence} />
                           </div>
                           <div className="text-sm text-gray-500 capitalize">
-                            {payment.method} • {new Date(payment.occurredOn).toLocaleDateString()}
+                            {payment.method} • {new Date(payment.occurredOn).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                           </div>
                         </div>
                         {payment.notes && (

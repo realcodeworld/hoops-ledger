@@ -36,13 +36,13 @@ export function RegisterForm() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Organization & admin</CardTitle>
+        <CardTitle>Organisation & admin</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="organizationName">
-              Organization Name
+              Organisation Name
             </Label>
             <Input
               id="organizationName"
@@ -125,7 +125,7 @@ export function RegisterForm() {
 
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            This will create your organization with default pricing: Student £3, Standard £5, Guest £0
+            This will create your organisation with default pricing: Student £3, Standard £5, Guest £0
           </p>
         </div>
       </CardContent>

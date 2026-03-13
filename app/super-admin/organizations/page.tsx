@@ -42,7 +42,7 @@ export default async function OrganizationsPage() {
       <div>
         <h1 className="text-3xl font-bold">Organizations</h1>
         <p className="text-gray-600 mt-1">
-          Select an organization to view its users and players
+          Select an organisation to view its users and players
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export default async function OrganizationsPage() {
       {orgsWithCounts.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center text-gray-500">
-            No organizations found
+            No organisations found
           </CardContent>
         </Card>
       )}

@@ -26,7 +26,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
   if (!result.success || !result.data) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600">Error loading organization: {result.error}</p>
+        <p className="text-red-600">Error loading organisation: {result.error}</p>
         <Link href="/super-admin/organizations">
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -92,7 +92,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                       </div>
                       {user.lastLoginAt && (
                         <div className="text-xs text-gray-500 mt-1">
-                          Last login: {new Date(user.lastLoginAt).toLocaleDateString()}
+                          Last login: {new Date(user.lastLoginAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                         </div>
                       )}
                     </div>
@@ -114,7 +114,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
               Players ({org.players.length})
             </CardTitle>
             <CardDescription>
-              Registered players in this organization
+              Registered players in this organisation
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -142,7 +142,7 @@ export default async function OrganizationDetailPage({ params }: PageProps) {
                       )}
                       {player.lastLoginAt && (
                         <div className="text-xs text-gray-500 mt-1">
-                          Last login: {new Date(player.lastLoginAt).toLocaleDateString()}
+                          Last login: {new Date(player.lastLoginAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                         </div>
                       )}
                     </div>

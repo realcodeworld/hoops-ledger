@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 const organizationSchema = z.object({
-  name: z.string().min(1, 'Organization name is required'),
+  name: z.string().min(1, 'Organisation name is required'),
   timezone: z.string().min(1, 'Timezone is required'),
   currency: z.string().min(1, 'Currency is required'),
 })
@@ -24,7 +24,7 @@ export async function updateOrganization(formData: FormData) {
     const currentUser = await getCurrentUser()
 
     if (!currentUser || currentUser.role !== 'admin') {
-      throw new Error('Unauthorized: Only admins can update organization settings')
+      throw new Error('Unauthorized: Only admins can update organisation settings')
     }
 
     const data = organizationSchema.parse({
@@ -59,12 +59,12 @@ export async function updateOrganization(formData: FormData) {
     })
 
     revalidatePath('/dashboard/settings')
-    return { success: true, message: 'Organization settings updated successfully' }
+    return { success: true, message: 'Organisation settings updated successfully' }
   } catch (error) {
     console.error('Organization update error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update organization settings'
+      error: error instanceof Error ? error.message : 'Failed to update organisation settings'
     }
   }
 }

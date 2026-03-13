@@ -169,7 +169,7 @@ export async function updateUserDetails(formData: FormData) {
 
 // Create new user
 const createUserSchema = z.object({
-  orgId: z.string().min(1, 'Organization is required'),
+  orgId: z.string().min(1, 'Organisation is required'),
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Valid email is required'),
   role: z.enum(['admin', 'supervisor']),
@@ -289,7 +289,7 @@ export async function getOrganizationDetails(orgId: string) {
     })
 
     if (!organization) {
-      throw new Error('Organization not found')
+      throw new Error('Organisation not found')
     }
 
     return { success: true, data: organization }
@@ -297,7 +297,7 @@ export async function getOrganizationDetails(orgId: string) {
     console.error('Get organization details error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch organization details',
+      error: error instanceof Error ? error.message : 'Failed to fetch organisation details',
     }
   }
 }

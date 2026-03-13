@@ -159,7 +159,7 @@ export default async function PlayerDashboardPage() {
                     {lastMatch.won ? 'Won' : 'Lost'}
                   </span>
                   {' · '}
-                  {format(new Date(lastMatch.match.createdAt), 'PPP')}
+                  {format(new Date(lastMatch.match.createdAt), 'dd/MM/yy')}
                 </p>
               )}
             </>

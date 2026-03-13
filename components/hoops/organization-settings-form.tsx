@@ -44,14 +44,14 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
       const result = await updateOrganization(formData)
 
       if (result.success) {
-        setMessage({ type: 'success', text: result.message || 'Organization settings updated successfully' })
+        setMessage({ type: 'success', text: result.message || 'Organisation settings updated successfully' })
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to update organization settings' })
+        setMessage({ type: 'error', text: result.error || 'Failed to update organisation settings' })
       }
     } catch (error) {
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update organization settings'
+        text: error instanceof Error ? error.message : 'Failed to update organisation settings'
       })
     } finally {
       setIsPending(false)
@@ -63,13 +63,13 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
       <CardHeader>
         <CardTitle className="flex items-center">
           <Building2 className="w-5 h-5 mr-2 text-primary" />
-          Organization Profile
+          Organisation Profile
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form action={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Organization Name</Label>
+            <Label htmlFor="name">Organisation Name</Label>
             <Input
               id="name"
               name="name"
@@ -145,7 +145,7 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
 
           {!isAdmin && (
             <div className="text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <strong>View Only:</strong> Only administrators can modify organization settings.
+              <strong>View Only:</strong> Only administrators can modify organisation settings.
             </div>
           )}
         </form>

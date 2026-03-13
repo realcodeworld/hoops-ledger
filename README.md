@@ -36,7 +36,7 @@ HoopsLedger is a modern, multi-tenant SaaS application built specifically for ba
 - Cannot make online payments (all payment tracking is manual)
 
 ### 📊 Financial Management
-- **Default Pricing**: Student £3, Standard £5, Guest £0 (fully customizable per organization)
+- **Default Pricing**: Student £3, Standard £5, Guest £0 (fully customisable per organisation)
 - **Per-session Overrides**: Adjust pricing rules for specific sessions
 - **Per-attendance Fee Overrides**: Individual fee adjustments by admin/host
 - **Manual Payment Processing**: All payments recorded manually with audit trails

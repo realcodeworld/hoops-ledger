@@ -68,18 +68,18 @@ export function NewUserForm({ organizations }: NewUserFormProps) {
         <CardHeader>
           <CardTitle>User Information</CardTitle>
           <CardDescription>
-            Create a new user account for any organization
+            Create a new user account for any organisation
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="orgId">
-                Organization
+                Organisation
               </Label>
               <Select name="orgId" required disabled={isPending}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select an organization" />
+                  <SelectValue placeholder="Select an organisation" />
                 </SelectTrigger>
                 <SelectContent>
                   {organizations.map((org) => (

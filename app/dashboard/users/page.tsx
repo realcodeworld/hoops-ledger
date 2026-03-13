@@ -66,7 +66,7 @@ export default async function UsersPage() {
                           <p className="text-sm text-gray-500 truncate">{u.email}</p>
                           {u.lastLoginAt && (
                             <p className="text-xs text-gray-400 mt-1">
-                              Last login: {new Date(u.lastLoginAt).toLocaleString()}
+                              Last login: {new Date(u.lastLoginAt).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                             </p>
                           )}
                         </div>

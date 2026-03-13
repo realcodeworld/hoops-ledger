@@ -87,7 +87,7 @@ export default async function SuperAdminUsersPage() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString()
+                        ? new Date(user.lastLoginAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
                         : 'Never'}
                     </td>
                     <td className="py-3 px-4">

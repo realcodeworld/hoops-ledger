@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CreditCard, Calendar, MessageCircle } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
@@ -91,6 +89,8 @@ export default async function PlayerPaymentsPage() {
         ? 'Bank transfer'
         : 'Other'
 
+  const whatsappNumber = process.env.WHATSAPP_SUPPORT_NUMBER
+
   return (
     <>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
@@ -135,7 +135,7 @@ export default async function PlayerPaymentsPage() {
                         {item.sessionName || 'Session'}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {format(new Date(item.date), 'PPP')}
+                        {format(new Date(item.date), 'dd/MM/yy')}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -163,7 +163,7 @@ export default async function PlayerPaymentsPage() {
                         {methodLabel(item.method)} payment
                       </p>
                       <p className="text-sm text-gray-500">
-                        {format(new Date(item.date), 'PPP')}
+                        {format(new Date(item.date), 'dd/MM/yy')}
                       </p>
                       {item.notes && (
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -182,22 +182,22 @@ export default async function PlayerPaymentsPage() {
         )}
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-sm text-gray-600 mb-3">
-            Questions about a charge or need to dispute a payment?
+      {whatsappNumber && (
+        <div className="text-center pt-4">
+          <p className="text-sm text-gray-500 mb-2">
+            Have a query about your payments?
           </p>
-          <Button asChild variant="outline" size="sm">
-            <a
-              href="mailto:?subject=Payment%20inquiry"
-              className="inline-flex items-center"
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Contact about payment
-            </a>
-          </Button>
-        </CardContent>
-      </Card>
+          <a
+            href={`https://wa.me/${whatsappNumber}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Chat on WhatsApp
+          </a>
+        </div>
+      )}
     </>
   )
 }

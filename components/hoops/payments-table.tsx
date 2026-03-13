@@ -79,7 +79,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                 </Badge>
               </TableCell>
               <TableCell className="text-sm text-gray-600">
-                {format(new Date(payment.occurredOn), 'dd MMM yyyy')}
+                {format(new Date(payment.occurredOn), 'dd/MM/yy')}
               </TableCell>
               <TableCell>
                 {payment.session ? (
@@ -87,7 +87,7 @@ export function PaymentsTable({ payments }: PaymentsTableProps) {
                     href={`/dashboard/sessions/${payment.session.id}`}
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    {payment.session.name || format(new Date(payment.session.startsAt), 'dd MMM yyyy')}
+                    {payment.session.name || format(new Date(payment.session.startsAt), 'dd/MM/yy')}
                   </Link>
                 ) : (
                   <span className="text-sm text-gray-400">General</span>
