@@ -65,6 +65,7 @@ model Player {
   id                 String      @id @default(cuid())
   orgId              String
   org                Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  paymentRef         String      @unique
   name               String
   email              String?     @unique
   phone              String?

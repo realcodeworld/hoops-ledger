@@ -136,7 +136,7 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="monzoPayUrl">Monzo Pay link</Label>
+            <Label htmlFor="monzoPayUrl">Online payment link</Label>
             <Input
               id="monzoPayUrl"
               name="monzoPayUrl"
@@ -149,9 +149,9 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              Optional. Players get a prominent &quot;Pay with Monzo&quot; button on the Balance card
-              (dashboard and payments). Paste the full https link from Monzo. Amount and reference are
-              set in Monzo when you create the link. Must be monzo.me or monzo.com.
+              Optional. Players see an &quot;Online payment&quot; button on the Balance card (dashboard
+              and payments). Paste the full https link from your provider (e.g. Monzo.me). Amount and
+              reference are set in that app when you create the link. Must be monzo.me or monzo.com.
             </p>
           </div>
 

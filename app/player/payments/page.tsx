@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { CreditCard, Calendar, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
-import { PlayerBankDetailsCard } from '@/components/hoops/player-bank-details-card'
+import { PlayerBankTransferCollapsible } from '@/components/hoops/player-bank-details-card'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -154,23 +154,27 @@ export default async function PlayerPaymentsPage() {
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
             >
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
-              Pay with Monzo
+              Online payment
             </a>
           )}
           {org.bankAccountName &&
             org.bankSortCode &&
             org.bankAccountNumber && (
-            <PlayerBankDetailsCard
-              accountName={org.bankAccountName}
-              sortCode={org.bankSortCode}
-              accountNumber={org.bankAccountNumber}
-              paymentReference={playerData.name}
-            />
-          )}
+              <PlayerBankTransferCollapsible
+                accountName={org.bankAccountName}
+                sortCode={org.bankSortCode}
+                accountNumber={org.bankAccountNumber}
+                paymentRef={playerData.paymentRef}
+              />
+            )}
           <p className="text-sm text-gray-600">
             {hasUnpaidBalance
-              ? 'Below is everything that affects your balance. Use Monzo or your usual method, then your organiser will record cash or transfer payments.'
+              ? 'Below is everything that affects your balance. Pay online or by bank transfer if available, then your organiser will record cash or transfer payments.'
               : 'Your session fees and recorded payments appear below.'}
+          </p>
+          <p className="text-xs text-gray-500 leading-relaxed border-t border-gray-100 pt-3">
+            Your balance updates when your organiser records a payment. After you pay, it may take up
+            to 24 hours to show here while they reconcile.
           </p>
         </CardContent>
       </Card>

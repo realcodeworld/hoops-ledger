@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { generatePlayerPaymentRef } from '../lib/generate-player-payment-ref'
 
 const prisma = new PrismaClient()
 
@@ -117,6 +118,7 @@ async function main() {
       update: {},
       create: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'John Student',
         email: 'john.student@email.com',
         phone: '+44 7700 900123',
@@ -128,6 +130,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'Jane Standard',
         email: 'jane.standard@email.com',
         phone: '+44 7700 900124',
@@ -139,6 +142,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'Mike Exempt',
         email: 'mike.exempt@email.com',
         pricingRuleId: standardPricing.id,
@@ -149,6 +153,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'Guest Player',
         // No email - cannot log in
         pricingRuleId: guestPricing.id,
@@ -159,6 +164,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'Sarah Standard',
         email: 'sarah.standard@email.com',
         pricingRuleId: standardPricing.id,
@@ -169,6 +175,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
+        paymentRef: generatePlayerPaymentRef(),
         name: 'Tommy Junior',
         email: 'tommy.junior@email.com',
         phone: '+44 7700 900125',

@@ -2,9 +2,37 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { isValidE164, normalizeToE164 } from '@/lib/utils'
+import { generatePlayerPaymentRef } from '@/lib/generate-player-payment-ref'
+
+const PAYMENT_REF_MAX_ATTEMPTS = 16
+
+async function createPlayerWithUniquePaymentRef(
+  data: Omit<Prisma.PlayerCreateInput, 'paymentRef'>
+) {
+  for (let attempt = 0; attempt < PAYMENT_REF_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.player.create({
+        data: {
+          ...data,
+          paymentRef: generatePlayerPaymentRef(),
+        },
+      })
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        continue
+      }
+      throw error
+    }
+  }
+  throw new Error('Could not assign a unique payment reference')
+}
 
 const createPlayerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -49,14 +77,14 @@ export async function createPlayer(formData: FormData) {
       ? normalizeToE164(data.phone.trim()) ?? null
       : null
 
-    const player = await prisma.player.create({
-      data: {
-        ...data,
-        email: data.email || null,
-        phone: phoneToStore,
-        notes: data.notes || null,
-        orgId: currentUser.orgId,
-      },
+    const player = await createPlayerWithUniquePaymentRef({
+      name: data.name,
+      email: data.email || null,
+      phone: phoneToStore,
+      notes: data.notes || null,
+      isExempt: data.isExempt,
+      org: { connect: { id: currentUser.orgId } },
+      pricingRule: { connect: { id: data.pricingRuleId } },
     })
 
     // Audit log
@@ -389,14 +417,12 @@ export async function createQuickPlayer(name: string, pricingRuleId?: string) {
       finalPricingRuleId = defaultPricingRule.id
     }
 
-    const player = await prisma.player.create({
-      data: {
-        orgId: currentUser.orgId,
-        name: name.trim(),
-        pricingRuleId: finalPricingRuleId,
-        isExempt: false,
-        isActive: true,
-      },
+    const player = await createPlayerWithUniquePaymentRef({
+      org: { connect: { id: currentUser.orgId } },
+      name: name.trim(),
+      pricingRule: { connect: { id: finalPricingRuleId } },
+      isExempt: false,
+      isActive: true,
     })
 
     // Audit log

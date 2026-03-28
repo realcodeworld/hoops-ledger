@@ -21,6 +21,7 @@ import {
   FileText,
   Plus,
   Gamepad2,
+  Hash,
 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import { formatMatchOutcome } from '@/lib/match-outcome'
@@ -227,6 +228,19 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                     </div>
                   </div>
                 )}
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Payment reference</label>
+                  <div className="flex items-center mt-1">
+                    <Hash className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
+                    <span className="font-mono text-sm font-medium tracking-tight">
+                      {player.paymentRef}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ask players to use this on bank transfers so you can match payments.
+                  </p>
+                </div>
 
                 {player.notes && (
                   <div>

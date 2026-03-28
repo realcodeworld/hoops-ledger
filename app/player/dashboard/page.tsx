@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreditCard, Trophy, Gamepad2, ArrowRight, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
-import { PlayerBankDetailsCard } from '@/components/hoops/player-bank-details-card'
+import { PlayerBankTransferCollapsible } from '@/components/hoops/player-bank-details-card'
 import { prisma } from '@/lib/prisma'
 import {
   getLeaderboard,
@@ -81,6 +81,8 @@ export default async function PlayerDashboardPage() {
 
   const monzoPayUrl = playerData.org.monzoPayUrl
   const org = playerData.org
+  const hasBankDetails =
+    !!org.bankAccountName && !!org.bankSortCode && !!org.bankAccountNumber
 
   const matchHistory = (playerData.matchPlayers ?? [])
     .map((mp) => {
@@ -179,24 +181,29 @@ export default async function PlayerDashboardPage() {
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
             >
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
-              Pay with Monzo
+              Online payment
             </a>
           )}
 
           {org.bankAccountName &&
             org.bankSortCode &&
             org.bankAccountNumber && (
-            <PlayerBankDetailsCard
-              accountName={org.bankAccountName}
-              sortCode={org.bankSortCode}
-              accountNumber={org.bankAccountNumber}
-              paymentReference={playerData.name}
-            />
-          )}
+              <PlayerBankTransferCollapsible
+                accountName={org.bankAccountName}
+                sortCode={org.bankSortCode}
+                accountNumber={org.bankAccountNumber}
+                paymentRef={playerData.paymentRef}
+              />
+            )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             {hasUnpaidBalance ? (
-              <Button asChild size="lg" variant={monzoPayUrl ? 'outline' : 'default'} className="w-full sm:w-auto">
+              <Button
+                asChild
+                size="lg"
+                variant={monzoPayUrl || hasBankDetails ? 'outline' : 'default'}
+                className="w-full sm:w-auto"
+              >
                 <Link href="/player/payments">
                   View payment breakdown
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -211,6 +218,11 @@ export default async function PlayerDashboardPage() {
               </Button>
             )}
           </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed border-t border-gray-100 pt-3">
+            Your balance updates when your organiser records a payment. After you pay online or by
+            transfer, it may take up to 24 hours to appear here while they reconcile.
+          </p>
         </CardContent>
       </Card>
 

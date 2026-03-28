@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Building2, Check, Copy } from 'lucide-react'
+import { Building2, Check, ChevronDown, Copy } from 'lucide-react'
 
 function CopyRow({
   label,
@@ -57,31 +57,51 @@ type Props = {
   accountName: string
   sortCode: string
   accountNumber: string
-  paymentReference: string
+  paymentRef: string
 }
 
-export function PlayerBankDetailsCard({
+/**
+ * Collapsible bank transfer block styled like the online payment control; expands to show details.
+ */
+export function PlayerBankTransferCollapsible({
   accountName,
   sortCode,
   accountNumber,
-  paymentReference,
+  paymentRef,
 }: Props) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 ring-1 ring-slate-200/60">
-      <div className="flex items-center gap-2 mb-1">
-        <Building2 className="h-4 w-4 text-slate-600 shrink-0" aria-hidden />
-        <h3 className="text-sm font-semibold text-gray-900">Pay by bank transfer</h3>
-      </div>
-      <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-        Use{' '}
-        <span className="font-semibold text-gray-800">{paymentReference}</span> as the payment
-        reference so your organiser can match your payment.
-      </p>
-      <div className="rounded-xl border border-gray-200 bg-white px-3 py-1">
-        <CopyRow label="Account name" value={accountName} />
-        <CopyRow label="Sort code" value={sortCode} mono />
-        <CopyRow label="Account number" value={accountNumber} mono />
-      </div>
+    <div className="rounded-2xl border-2 border-[#FF4D4D] bg-white shadow-md overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 min-h-[3.25rem] text-left font-semibold text-base text-[#FF4D4D] hover:bg-red-50/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4D4D] focus-visible:ring-offset-2"
+        aria-expanded={open}
+      >
+        <span className="flex items-center justify-center gap-2">
+          <Building2 className="h-6 w-6 shrink-0" aria-hidden />
+          Bank transfer
+        </span>
+        <ChevronDown
+          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          aria-hidden
+        />
+      </button>
+      {open && (
+        <div className="border-t border-red-100 bg-slate-50/90 px-4 py-4">
+          <p className="text-xs text-gray-600 mb-3 leading-relaxed">
+            Use your personal payment reference below when you pay — it helps your organiser match
+            your transfer. Copy each line into your banking app.
+          </p>
+          <div className="rounded-xl border border-gray-200 bg-white px-3 py-1">
+            <CopyRow label="Payment reference" value={paymentRef} mono />
+            <CopyRow label="Account name" value={accountName} />
+            <CopyRow label="Sort code" value={sortCode} mono />
+            <CopyRow label="Account number" value={accountNumber} mono />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
