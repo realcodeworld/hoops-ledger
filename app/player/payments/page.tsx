@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { CreditCard, Calendar, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
+import { PlayerBankDetailsCard } from '@/components/hoops/player-bank-details-card'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -98,6 +99,7 @@ export default async function PlayerPaymentsPage() {
         : 'Other'
 
   const monzoPayUrl = playerData.org.monzoPayUrl
+  const org = playerData.org
 
   return (
     <>
@@ -154,6 +156,16 @@ export default async function PlayerPaymentsPage() {
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
               Pay with Monzo
             </a>
+          )}
+          {org.bankAccountName &&
+            org.bankSortCode &&
+            org.bankAccountNumber && (
+            <PlayerBankDetailsCard
+              accountName={org.bankAccountName}
+              sortCode={org.bankSortCode}
+              accountNumber={org.bankAccountNumber}
+              paymentReference={playerData.name}
+            />
           )}
           <p className="text-sm text-gray-600">
             {hasUnpaidBalance

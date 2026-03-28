@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreditCard, Trophy, Gamepad2, ArrowRight, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
+import { PlayerBankDetailsCard } from '@/components/hoops/player-bank-details-card'
 import { prisma } from '@/lib/prisma'
 import {
   getLeaderboard,
@@ -79,6 +80,7 @@ export default async function PlayerDashboardPage() {
     : null
 
   const monzoPayUrl = playerData.org.monzoPayUrl
+  const org = playerData.org
 
   const matchHistory = (playerData.matchPlayers ?? [])
     .map((mp) => {
@@ -179,6 +181,17 @@ export default async function PlayerDashboardPage() {
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
               Pay with Monzo
             </a>
+          )}
+
+          {org.bankAccountName &&
+            org.bankSortCode &&
+            org.bankAccountNumber && (
+            <PlayerBankDetailsCard
+              accountName={org.bankAccountName}
+              sortCode={org.bankSortCode}
+              accountNumber={org.bankAccountNumber}
+              paymentReference={playerData.name}
+            />
           )}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

@@ -21,6 +21,9 @@ model Organization {
   currency              String   @default("GBP")
   whatsappSupportNumber String?
   monzoPayUrl           String?
+  bankAccountName       String?
+  bankSortCode          String?
+  bankAccountNumber     String?
   brandingJson          Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

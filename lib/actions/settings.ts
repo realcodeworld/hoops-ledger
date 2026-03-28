@@ -66,6 +66,73 @@ function parseMonzoPayUrl(raw: string): { url: string | null; error?: string } {
   return { url: trimmed }
 }
 
+const BANK_ACCOUNT_NAME_MAX_LEN = 120
+
+type ParsedBankDetails =
+  | {
+      bankAccountName: string | null
+      bankSortCode: string | null
+      bankAccountNumber: string | null
+    }
+  | { error: string }
+
+/**
+ * All-or-nothing UK-style bank fields: empty → all null; any filled → all required and validated.
+ * Sort code stored as XX-XX-XX; account number digits only.
+ */
+function parseUkBankDetails(
+  rawName: unknown,
+  rawSort: unknown,
+  rawAcct: unknown
+): ParsedBankDetails {
+  const name = typeof rawName === 'string' ? rawName.trim() : ''
+  const sort = typeof rawSort === 'string' ? rawSort.trim() : ''
+  const acct = typeof rawAcct === 'string' ? rawAcct.trim() : ''
+
+  const anyNonEmpty = name !== '' || sort !== '' || acct !== ''
+  if (!anyNonEmpty) {
+    return {
+      bankAccountName: null,
+      bankSortCode: null,
+      bankAccountNumber: null,
+    }
+  }
+
+  if (name === '' || sort === '' || acct === '') {
+    return {
+      error:
+        'Bank transfer: enter account name, sort code, and account number, or leave all three blank.',
+    }
+  }
+
+  if (name.length > BANK_ACCOUNT_NAME_MAX_LEN) {
+    return {
+      error: `Account name is too long (max ${BANK_ACCOUNT_NAME_MAX_LEN} characters).`,
+    }
+  }
+
+  const sortDigits = sort.replace(/\D/g, '')
+  if (sortDigits.length !== 6) {
+    return {
+      error: 'Sort code must be 6 digits (e.g. 12-34-56).',
+    }
+  }
+  const bankSortCode = `${sortDigits.slice(0, 2)}-${sortDigits.slice(2, 4)}-${sortDigits.slice(4, 6)}`
+
+  const acctDigits = acct.replace(/\s/g, '').replace(/\D/g, '')
+  if (acctDigits.length < 6 || acctDigits.length > 8) {
+    return {
+      error: 'Account number must be 6–8 digits.',
+    }
+  }
+
+  return {
+    bankAccountName: name,
+    bankSortCode,
+    bankAccountNumber: acctDigits,
+  }
+}
+
 export async function updateOrganization(formData: FormData) {
   try {
     const currentUser = await getCurrentUser()
@@ -105,6 +172,20 @@ export async function updateOrganization(formData: FormData) {
     }
     const monzoPayUrl = monzoParsed.url
 
+    const bankParsed = parseUkBankDetails(
+      formData.get('bankAccountName'),
+      formData.get('bankSortCode'),
+      formData.get('bankAccountNumber')
+    )
+    if ('error' in bankParsed) {
+      return { success: false, error: bankParsed.error }
+    }
+    const {
+      bankAccountName,
+      bankSortCode,
+      bankAccountNumber,
+    } = bankParsed
+
     await prisma.organization.update({
       where: { id: currentUser.orgId },
       data: {
@@ -113,6 +194,9 @@ export async function updateOrganization(formData: FormData) {
         currency: data.currency,
         whatsappSupportNumber,
         monzoPayUrl,
+        bankAccountName,
+        bankSortCode,
+        bankAccountNumber,
       },
     })
 
@@ -130,6 +214,9 @@ export async function updateOrganization(formData: FormData) {
           currency: data.currency,
           whatsappSupportNumber,
           monzoPayUrl,
+          bankAccountName,
+          bankSortCode,
+          bankAccountNumber,
         },
       },
     })

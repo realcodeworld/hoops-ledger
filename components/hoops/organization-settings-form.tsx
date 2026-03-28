@@ -155,6 +155,57 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
             </p>
           </div>
 
+          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+            <p className="text-sm font-medium text-gray-900">Bank transfer (optional)</p>
+            <p className="text-xs text-gray-500 -mt-2">
+              If you fill these in, players see them on the Balance card to pay by transfer. Leave all
+              three blank to hide. UK sort code (6 digits) and account number (6–8 digits).
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="bankAccountName">Account name</Label>
+              <Input
+                id="bankAccountName"
+                name="bankAccountName"
+                type="text"
+                autoComplete="organization"
+                placeholder="e.g. Hoops Club"
+                defaultValue={organization.bankAccountName ?? ''}
+                disabled={!isAdmin || isPending}
+                className="w-full"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bankSortCode">Sort code</Label>
+                <Input
+                  id="bankSortCode"
+                  name="bankSortCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="12-34-56"
+                  defaultValue={organization.bankSortCode ?? ''}
+                  disabled={!isAdmin || isPending}
+                  className="w-full font-mono"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankAccountNumber">Account number</Label>
+                <Input
+                  id="bankAccountNumber"
+                  name="bankAccountNumber"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="12345678"
+                  defaultValue={organization.bankAccountNumber ?? ''}
+                  disabled={!isAdmin || isPending}
+                  className="w-full font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
           {message && (
             <div className={`text-sm p-3 rounded-lg border ${
               message.type === 'success'
