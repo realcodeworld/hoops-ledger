@@ -233,12 +233,13 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                   <label className="text-sm font-medium text-gray-500">Payment reference</label>
                   <div className="flex items-center mt-1">
                     <Hash className="w-4 h-4 mr-2 text-gray-400 shrink-0" />
-                    <span className="font-mono text-sm font-medium tracking-tight">
+                    <span className="text-sm font-medium text-gray-900 tracking-tight">
                       {player.paymentRef}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Ask players to use this on bank transfers so you can match payments.
+                    Their name plus a short code — ask them to use this exact text on bank transfers
+                    so you can match payments.
                   </p>
                 </div>
 

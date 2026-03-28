@@ -1,40 +1,32 @@
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { bootstrapSuperAdmin } from './bootstrap-superadmin'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🔐 Seeding Super Admin...')
+  console.log('🔐 Bootstrapping super admin…')
 
-  const email = 'superadmin@hoopsledger.com'
-  const password = 'SuperAdmin123!'
+  const result = await bootstrapSuperAdmin(prisma)
 
-  const passwordHash = await bcrypt.hash(password, 10)
+  if (result.skipped) {
+    console.log(`ℹ️  ${result.reason}`)
+    return
+  }
 
-  const superAdmin = await prisma.superAdmin.upsert({
-    where: { email },
-    update: {
-      passwordHash,
-      name: 'Super Admin',
-    },
-    create: {
-      name: 'Super Admin',
-      email,
-      passwordHash,
-    },
-  })
-
-  console.log('✅ Super Admin seeded successfully!')
-  console.log('\n🔐 SUPER ADMIN CREDENTIALS:')
-  console.log(`   Email: ${superAdmin.email}`)
-  console.log(`   Password: ${password}`)
-  console.log(`   Login URL: /super-admin/login`)
-  console.log('\n⚠️  IMPORTANT: Change this password immediately after first login!')
+  console.log(`✅ Super admin ready: ${result.email}`)
+  if (result.source === 'env') {
+    console.log('   Credentials were taken from SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD.')
+  } else {
+    console.log('   Using development defaults (not for production).')
+    console.log(`   Email: ${result.email}`)
+    console.log('   Password: SuperAdmin123!')
+  }
+  console.log('   Login: /super-admin/login')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding super admin:', e)
+    console.error('❌ Super admin bootstrap failed:', e)
     process.exit(1)
   })
   .finally(async () => {

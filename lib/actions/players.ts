@@ -13,12 +13,13 @@ const PAYMENT_REF_MAX_ATTEMPTS = 16
 async function createPlayerWithUniquePaymentRef(
   data: Omit<Prisma.PlayerCreateInput, 'paymentRef'>
 ) {
+  const rawName = typeof data.name === 'string' ? data.name : 'Player'
   for (let attempt = 0; attempt < PAYMENT_REF_MAX_ATTEMPTS; attempt++) {
     try {
       return await prisma.player.create({
         data: {
           ...data,
-          paymentRef: generatePlayerPaymentRef(),
+          paymentRef: generatePlayerPaymentRef(rawName),
         },
       })
     } catch (error) {

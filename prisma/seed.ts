@@ -1,25 +1,26 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { generatePlayerPaymentRef } from '../lib/generate-player-payment-ref'
+import { bootstrapSuperAdmin } from './bootstrap-superadmin'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🏀 Seeding HoopsLedger database...')
 
-  // Create super admin
-  const superAdminPasswordHash = await bcrypt.hash('SuperAdmin123!', 10)
-  const superAdmin = await prisma.superAdmin.upsert({
-    where: { email: 'superadmin@hoopsledger.com' },
-    update: {
-      passwordHash: superAdminPasswordHash,
-    },
-    create: {
-      name: 'Super Admin',
-      email: 'superadmin@hoopsledger.com',
-      passwordHash: superAdminPasswordHash,
-    },
-  })
+  const superAdminResult = await bootstrapSuperAdmin(prisma)
+  if (superAdminResult.skipped) {
+    console.log(`ℹ️  ${superAdminResult.reason}`)
+  } else {
+    console.log(
+      `✅ Super admin: ${superAdminResult.email} (${superAdminResult.source === 'env' ? 'from env' : 'development defaults'})`
+    )
+    if (superAdminResult.source === 'development_default') {
+      console.log(
+        '   (Password is the dev default — set SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD in production.)'
+      )
+    }
+  }
 
   // Create demo organization
   const org = await prisma.organization.upsert({
@@ -118,7 +119,7 @@ async function main() {
       update: {},
       create: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('John Student'),
         name: 'John Student',
         email: 'john.student@email.com',
         phone: '+44 7700 900123',
@@ -130,7 +131,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('Jane Standard'),
         name: 'Jane Standard',
         email: 'jane.standard@email.com',
         phone: '+44 7700 900124',
@@ -142,7 +143,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('Mike Exempt'),
         name: 'Mike Exempt',
         email: 'mike.exempt@email.com',
         pricingRuleId: standardPricing.id,
@@ -153,7 +154,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('Guest Player'),
         name: 'Guest Player',
         // No email - cannot log in
         pricingRuleId: guestPricing.id,
@@ -164,7 +165,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('Sarah Standard'),
         name: 'Sarah Standard',
         email: 'sarah.standard@email.com',
         pricingRuleId: standardPricing.id,
@@ -175,7 +176,7 @@ async function main() {
     prisma.player.create({
       data: {
         orgId: org.id,
-        paymentRef: generatePlayerPaymentRef(),
+        paymentRef: generatePlayerPaymentRef('Tommy Junior'),
         name: 'Tommy Junior',
         email: 'tommy.junior@email.com',
         phone: '+44 7700 900125',
@@ -283,9 +284,17 @@ async function main() {
 
   console.log('✅ Database seeded successfully!')
   console.log('\n🔐 SUPER ADMIN LOGIN:')
-  console.log(`   Email: ${superAdmin.email}`)
-  console.log(`   Password: SuperAdmin123!`)
-  console.log(`   URL: /super-admin/login`)
+  if (!superAdminResult.skipped) {
+    console.log(`   Email: ${superAdminResult.email}`)
+    console.log(
+      superAdminResult.source === 'env'
+        ? '   Password: (set via SUPERADMIN_PASSWORD in your environment)'
+        : '   Password: SuperAdmin123! (dev default — use SUPERADMIN_* in production)'
+    )
+    console.log(`   URL: /super-admin/login`)
+  } else {
+    console.log('   (Skipped — configure SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD to enable.)')
+  }
   console.log('\n📧 DEMO ORG ADMIN LOGIN:')
   console.log(`   Email: admin@demohoops.com`)
   console.log(`   Password: admin123`)
