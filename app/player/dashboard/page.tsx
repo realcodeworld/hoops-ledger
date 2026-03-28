@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CreditCard, Trophy, Gamepad2, ArrowRight } from 'lucide-react'
+import { CreditCard, Trophy, Gamepad2, ArrowRight, MessageCircle } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import {
   getLeaderboard,
@@ -71,6 +71,11 @@ export default async function PlayerDashboardPage() {
   const credit = Math.max(0, -balanceDifference)
   const hasUnpaidBalance = unpaid > 0
 
+  const whatsappNumber = playerData.org.whatsappSupportNumber
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`
+    : null
+
   const matchHistory = (playerData.matchPlayers ?? [])
     .map((mp) => {
       const isDraw = mp.match.winningTeam === 'DRAW'
@@ -111,28 +116,55 @@ export default async function PlayerDashboardPage() {
         Your dashboard
       </h1>
 
-      {/* Personalized: balance first if they owe */}
-      {hasUnpaidBalance && (
-        <Card className="mb-6 border-amber-200 bg-amber-50/50">
-          <CardHeader className="pb-2">
+      <Card
+        className={
+          hasUnpaidBalance ? 'mb-6 border-amber-200 bg-amber-50/50' : 'mb-6'
+        }
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
             <CardTitle className="flex items-center text-lg">
-              <CreditCard className="w-5 h-5 mr-2 text-amber-600" />
-              Amount due
+              <CreditCard
+                className={`w-5 h-5 mr-2 shrink-0 ${hasUnpaidBalance ? 'text-amber-600' : 'text-primary'}`}
+              />
+              Balance
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-gray-900 mb-2">
-              <CurrencyDisplay amountPence={unpaid} />
-            </p>
+            {whatsappHref && (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-xl p-2 text-green-600 hover:bg-green-50 transition-colors"
+                aria-label="Chat on WhatsApp about payments"
+              >
+                <MessageCircle className="w-6 h-6" />
+              </a>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-500 mb-1">
+            {credit > 0 ? 'In credit' : 'Unpaid'}
+          </p>
+          <p className="text-2xl font-bold text-gray-900 mb-4">
+            <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
+          </p>
+          {hasUnpaidBalance ? (
             <Button asChild>
               <Link href="/player/payments">
                 View payments
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-gray-500">
+              <Link href="/player/payments" className="text-primary hover:underline">
+                View payment history
+              </Link>
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Match summary */}
       <Card className="mb-6">
@@ -216,14 +248,6 @@ export default async function PlayerDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Optional: quick link to payments when no balance due */}
-      {!hasUnpaidBalance && (
-        <p className="text-sm text-gray-500">
-          <Link href="/player/payments" className="text-primary hover:underline">
-            View payment history
-          </Link>
-        </p>
-      )}
     </>
   )
 }

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, Calendar, MessageCircle } from 'lucide-react'
+import { CreditCard, Calendar } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -88,8 +88,6 @@ export default async function PlayerPaymentsPage() {
       : method === 'bank_transfer'
         ? 'Bank transfer'
         : 'Other'
-
-  const whatsappNumber = playerData.org.whatsappSupportNumber
 
   return (
     <>
@@ -181,23 +179,6 @@ export default async function PlayerPaymentsPage() {
           </ul>
         )}
       </div>
-
-      {whatsappNumber && (
-        <div className="text-center pt-4">
-          <p className="text-sm text-gray-500 mb-2">
-            Have a query about your payments?
-          </p>
-          <a
-            href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Chat on WhatsApp
-          </a>
-        </div>
-      )}
     </>
   )
 }
