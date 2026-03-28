@@ -7,20 +7,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import type { ReuseTeamOption } from '@/lib/match-reuse-options'
+import { squadKey } from '@/lib/match-reuse-options'
 
-export interface ReuseTeamOption {
-  /** e.g. "Game 1" */
-  label: string
-  team: 'A' | 'B'
-  playerIds: string[]
-}
+export type { ReuseTeamOption }
 
 interface ReuseTeamSheetProps {
   options: ReuseTeamOption[]
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelect: (team: 'A' | 'B', playerIds: string[]) => void
+  /** Which slot on the current form to fill (not the historical side). */
+  onSelect: (targetSlot: 'A' | 'B', playerIds: string[]) => void
 }
 
 export function ReuseTeamSheet({
@@ -29,8 +27,8 @@ export function ReuseTeamSheet({
   onOpenChange,
   onSelect,
 }: ReuseTeamSheetProps) {
-  const handleSelect = (team: 'A' | 'B', playerIds: string[]) => {
-    onSelect(team, playerIds)
+  const handleSelect = (targetSlot: 'A' | 'B', playerIds: string[]) => {
+    onSelect(targetSlot, playerIds)
     onOpenChange(false)
   }
 
@@ -46,7 +44,6 @@ export function ReuseTeamSheet({
 
         <div
           className="flex-1 overflow-y-auto overscroll-contain min-h-0"
-          role="listbox"
           aria-label="Previous teams"
         >
           {options.length === 0 ? (
@@ -57,23 +54,39 @@ export function ReuseTeamSheet({
           ) : (
             <div className="divide-y">
               {options.map((opt, index) => (
-                <button
-                  key={`${opt.label}-${opt.team}-${index}`}
-                  type="button"
-                  role="option"
-                  onClick={() => handleSelect(opt.team, opt.playerIds)}
-                  className={cn(
-                    'w-full flex items-center justify-between px-4 py-3.5 min-h-[56px] text-left transition-colors',
-                    'active:bg-gray-100 hover:bg-gray-50 border-l-4 border-l-transparent'
-                  )}
+                <div
+                  key={`${opt.label}-${opt.sourceSide}-${squadKey(opt.playerIds)}-${index}`}
+                  className="px-4 py-3.5 space-y-3"
                 >
-                  <span className="font-medium text-gray-900">
-                    {opt.label} – Team {opt.team}
-                  </span>
-                  <span className="text-sm text-gray-500 tabular-nums">
-                    {opt.playerIds.length} player{opt.playerIds.length !== 1 ? 's' : ''}
-                  </span>
-                </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-gray-900">
+                      {opt.label} (was Team {opt.sourceSide})
+                    </span>
+                    <span className="text-sm text-gray-500 tabular-nums shrink-0">
+                      {opt.playerIds.length} player{opt.playerIds.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 min-h-10"
+                      onClick={() => handleSelect('A', opt.playerIds)}
+                    >
+                      Use as Team A
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 min-h-10"
+                      onClick={() => handleSelect('B', opt.playerIds)}
+                    >
+                      Use as Team B
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           )}

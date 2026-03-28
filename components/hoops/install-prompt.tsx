@@ -11,6 +11,8 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = 'pwa-install-dismissed'
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+/** At most one custom install banner per tab session (SPA navigations do not reset this). */
+const SESSION_PROMPT_KEY = 'pwa-install-prompt-shown-session'
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
@@ -28,6 +30,14 @@ export function InstallPrompt() {
 
     const handler = (e: Event) => {
       e.preventDefault()
+      try {
+        if (sessionStorage.getItem(SESSION_PROMPT_KEY)) {
+          return
+        }
+        sessionStorage.setItem(SESSION_PROMPT_KEY, '1')
+      } catch {
+        // sessionStorage unavailable; still allow one prompt this mount
+      }
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       setShowBanner(true)
     }

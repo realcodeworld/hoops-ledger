@@ -77,9 +77,15 @@ export function MatchResultForm({
 
   const getPlayerName = (id: string) => players.find((p) => p.id === id)?.name ?? id
 
-  const handleReuseSelect = (team: 'A' | 'B', playerIds: string[]) => {
-    if (team === 'A') setTeamAIds(playerIds)
-    else setTeamBIds(playerIds)
+  const handleReuseSelect = (targetSlot: 'A' | 'B', playerIds: string[]) => {
+    const ids = [...playerIds]
+    if (targetSlot === 'A') {
+      setTeamAIds(ids)
+      setTeamBIds((prev) => prev.filter((id) => !ids.includes(id)))
+    } else {
+      setTeamBIds(ids)
+      setTeamAIds((prev) => prev.filter((id) => !ids.includes(id)))
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

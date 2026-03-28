@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { getMatchDetail } from '@/lib/actions/matches'
+import { getMatchDetail, getSessionMatches } from '@/lib/actions/matches'
+import { buildReuseOptionsFromMatches, type ReuseTeamOption } from '@/lib/match-reuse-options'
 import { getSessions } from '@/lib/actions/sessions'
 import { getPlayers } from '@/lib/actions/players'
 import { MatchEditForm } from './match-edit-form'
@@ -13,19 +14,31 @@ interface MatchEditPageProps {
 
 export default async function MatchEditPage({ params }: MatchEditPageProps) {
   const { id } = await params
-  const [matchResult, sessionsResult, playersResult] = await Promise.all([
-    getMatchDetail(id),
-    getSessions(),
-    getPlayers(),
-  ])
+  const matchResult = await getMatchDetail(id)
 
   if (!matchResult.success || !matchResult.data) {
     notFound()
   }
 
   const match = matchResult.data
+
+  const [sessionsResult, playersResult] = await Promise.all([
+    getSessions(),
+    getPlayers(),
+  ])
+
   const sessions = sessionsResult.success ? sessionsResult.data ?? [] : []
   const players = playersResult.success ? playersResult.data ?? [] : []
+
+  let previousMatches: ReuseTeamOption[] = []
+  if (match.sessionId) {
+    const sessionMatchesResult = await getSessionMatches(match.sessionId)
+    if (sessionMatchesResult.success && sessionMatchesResult.data) {
+      previousMatches = buildReuseOptionsFromMatches(sessionMatchesResult.data, {
+        excludeMatchId: match.id,
+      })
+    }
+  }
   const teamAPlayerIds = match.matchPlayers
     .filter((mp) => mp.team === 'A')
     .map((mp) => mp.playerId)
@@ -57,6 +70,7 @@ export default async function MatchEditPage({ params }: MatchEditPageProps) {
         currentTeamBPlayerIds={teamBPlayerIds}
         sessions={sessions}
         players={players}
+        previousMatches={previousMatches}
       />
     </div>
   )

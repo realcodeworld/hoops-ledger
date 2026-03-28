@@ -14,9 +14,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TeamPlayerSelectSheet } from '@/components/hoops/team-player-select-sheet'
+import { ReuseTeamSheet, type ReuseTeamOption } from '@/components/hoops/reuse-team-sheet'
 import { updateMatch } from '@/lib/actions/matches'
 import { formatDate } from '@/lib/utils'
-import { X, Users } from 'lucide-react'
+import { X, Users, Copy } from 'lucide-react'
 import type { MatchTeam } from '@prisma/client'
 
 interface Session {
@@ -44,6 +45,8 @@ interface MatchEditFormProps {
   currentTeamBPlayerIds: string[]
   sessions: Session[]
   players: Player[]
+  /** Other matches in the same session (when editing a session-linked match) */
+  previousMatches?: ReuseTeamOption[]
 }
 
 export function MatchEditForm({
@@ -57,6 +60,7 @@ export function MatchEditForm({
   currentTeamBPlayerIds,
   sessions,
   players,
+  previousMatches = [],
 }: MatchEditFormProps) {
   const router = useRouter()
   const [label, setLabel] = useState(currentLabel ?? '')
@@ -72,8 +76,11 @@ export function MatchEditForm({
   const [winningTeam, setWinningTeam] = useState<MatchTeam>(currentWinningTeam)
   const [teamASheetOpen, setTeamASheetOpen] = useState(false)
   const [teamBSheetOpen, setTeamBSheetOpen] = useState(false)
+  const [reuseSheetOpen, setReuseSheetOpen] = useState(false)
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const showReuse = previousMatches.length > 0
 
   const availableForTeamA = players.filter((p) => !teamBIds.includes(p.id))
   const availableForTeamB = players.filter((p) => !teamAIds.includes(p.id))
@@ -89,6 +96,17 @@ export function MatchEditForm({
   }
 
   const getPlayerName = (id: string) => players.find((p) => p.id === id)?.name ?? id
+
+  const handleReuseSelect = (targetSlot: 'A' | 'B', playerIds: string[]) => {
+    const ids = [...playerIds]
+    if (targetSlot === 'A') {
+      setTeamAIds(ids)
+      setTeamBIds((prev) => prev.filter((id) => !ids.includes(id)))
+    } else {
+      setTeamBIds(ids)
+      setTeamAIds((prev) => prev.filter((id) => !ids.includes(id)))
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -124,6 +142,18 @@ export function MatchEditForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {showReuse && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full min-h-[48px] h-12"
+              onClick={() => setReuseSheetOpen(true)}
+              disabled={isPending}
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Reuse a team from this session
+            </Button>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label>Team A</Label>
@@ -216,6 +246,13 @@ export function MatchEditForm({
             open={teamBSheetOpen}
             onOpenChange={setTeamBSheetOpen}
             onChange={setTeamBIds}
+          />
+
+          <ReuseTeamSheet
+            options={previousMatches}
+            open={reuseSheetOpen}
+            onOpenChange={setReuseSheetOpen}
+            onSelect={handleReuseSelect}
           />
 
           <div className="flex flex-wrap gap-4 items-end">
