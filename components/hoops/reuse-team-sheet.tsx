@@ -13,8 +13,21 @@ import { squadKey } from '@/lib/match-reuse-options'
 
 export type { ReuseTeamOption }
 
+export interface ReuseTeamSheetPlayer {
+  id: string
+  name: string
+}
+
+function playerNamesLine(playerIds: string[], players: ReuseTeamSheetPlayer[]): string {
+  return playerIds
+    .map((id) => players.find((p) => p.id === id)?.name ?? id)
+    .join(', ')
+}
+
 interface ReuseTeamSheetProps {
   options: ReuseTeamOption[]
+  /** Used to show player names for each line-up */
+  players: ReuseTeamSheetPlayer[]
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Which slot on the current form to fill (not the historical side). */
@@ -23,6 +36,7 @@ interface ReuseTeamSheetProps {
 
 export function ReuseTeamSheet({
   options,
+  players,
   open,
   onOpenChange,
   onSelect,
@@ -58,11 +72,16 @@ export function ReuseTeamSheet({
                   key={`${opt.label}-${opt.sourceSide}-${squadKey(opt.playerIds)}-${index}`}
                   className="px-4 py-3.5 space-y-3"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-gray-900">
-                      {opt.label} (was Team {opt.sourceSide})
-                    </span>
-                    <span className="text-sm text-gray-500 tabular-nums shrink-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-1">
+                      <span className="font-medium text-gray-900 block">
+                        {opt.label} (was Team {opt.sourceSide})
+                      </span>
+                      <p className="text-sm text-gray-600 leading-snug break-words">
+                        {playerNamesLine(opt.playerIds, players)}
+                      </p>
+                    </div>
+                    <span className="text-sm text-gray-500 tabular-nums shrink-0 pt-0.5">
                       {opt.playerIds.length} player{opt.playerIds.length !== 1 ? 's' : ''}
                     </span>
                   </div>

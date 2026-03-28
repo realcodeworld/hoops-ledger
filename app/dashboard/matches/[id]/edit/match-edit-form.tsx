@@ -250,6 +250,7 @@ export function MatchEditForm({
 
           <ReuseTeamSheet
             options={previousMatches}
+            players={players}
             open={reuseSheetOpen}
             onOpenChange={setReuseSheetOpen}
             onSelect={handleReuseSelect}

@@ -240,6 +240,7 @@ export function MatchResultForm({
 
           <ReuseTeamSheet
             options={previousMatches}
+            players={players}
             open={reuseSheetOpen}
             onOpenChange={setReuseSheetOpen}
             onSelect={handleReuseSelect}
