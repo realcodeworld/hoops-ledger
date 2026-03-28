@@ -129,8 +129,29 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              Optional. If set, players see a link on the Payments screen to chat about payment queries.
-              Leave blank to hide it. Use international format (e.g. +44 for UK).
+              Optional. If set, players see an icon on the dashboard Balance card to chat about payment
+              queries. Leave blank to hide it. Use international format (e.g. +44 for UK).
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="monzoPayUrl">Monzo Pay link</Label>
+            <Input
+              id="monzoPayUrl"
+              name="monzoPayUrl"
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              placeholder="https://monzo.me/…"
+              defaultValue={organization.monzoPayUrl ?? ''}
+              disabled={!isAdmin || isPending}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">
+              Optional. Paste the full https link from Monzo (Request money or your business payment
+              link). Amount and reference are set in Monzo when you create the link; we do not add them
+              here. Leave blank to hide the Pay with Monzo option for players. Must be monzo.me or
+              monzo.com.
             </p>
           </div>
 

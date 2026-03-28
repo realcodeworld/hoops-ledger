@@ -20,6 +20,7 @@ model Organization {
   timezone              String   @default("Europe/London")
   currency              String   @default("GBP")
   whatsappSupportNumber String?
+  monzoPayUrl           String?
   brandingJson          Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

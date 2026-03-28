@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, Calendar } from 'lucide-react'
+import { CreditCard, Calendar, Wallet } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -89,6 +89,8 @@ export default async function PlayerPaymentsPage() {
         ? 'Bank transfer'
         : 'Other'
 
+  const monzoPayUrl = playerData.org.monzoPayUrl
+
   return (
     <>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
@@ -97,10 +99,23 @@ export default async function PlayerPaymentsPage() {
 
       <Card className="mb-6">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center text-lg">
-            <CreditCard className="w-5 h-5 mr-2 text-primary" />
-            Balance
-          </CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="flex items-center text-lg">
+              <CreditCard className="w-5 h-5 mr-2 text-primary" />
+              Balance
+            </CardTitle>
+            {monzoPayUrl && (
+              <a
+                href={monzoPayUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-xl p-2 text-[#FF4D4D] hover:bg-red-50 transition-colors"
+                aria-label="Pay with Monzo"
+              >
+                <Wallet className="w-6 h-6" />
+              </a>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-500 mb-1">

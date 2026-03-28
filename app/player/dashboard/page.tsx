@@ -3,7 +3,14 @@ import Link from 'next/link'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CreditCard, Trophy, Gamepad2, ArrowRight, MessageCircle } from 'lucide-react'
+import {
+  CreditCard,
+  Trophy,
+  Gamepad2,
+  ArrowRight,
+  MessageCircle,
+  Wallet,
+} from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import {
   getLeaderboard,
@@ -76,6 +83,8 @@ export default async function PlayerDashboardPage() {
     ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`
     : null
 
+  const monzoPayUrl = playerData.org.monzoPayUrl
+
   const matchHistory = (playerData.matchPlayers ?? [])
     .map((mp) => {
       const isDraw = mp.match.winningTeam === 'DRAW'
@@ -129,16 +138,31 @@ export default async function PlayerDashboardPage() {
               />
               Balance
             </CardTitle>
-            {whatsappHref && (
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 rounded-xl p-2 text-green-600 hover:bg-green-50 transition-colors"
-                aria-label="Chat on WhatsApp about payments"
-              >
-                <MessageCircle className="w-6 h-6" />
-              </a>
+            {(monzoPayUrl || whatsappHref) && (
+              <div className="flex items-center gap-0.5 shrink-0">
+                {monzoPayUrl && (
+                  <a
+                    href={monzoPayUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl p-2 text-[#FF4D4D] hover:bg-red-50 transition-colors"
+                    aria-label="Pay with Monzo"
+                  >
+                    <Wallet className="w-6 h-6" />
+                  </a>
+                )}
+                {whatsappHref && (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-xl p-2 text-green-600 hover:bg-green-50 transition-colors"
+                    aria-label="Chat on WhatsApp about payments"
+                  >
+                    <MessageCircle className="w-6 h-6" />
+                  </a>
+                )}
+              </div>
             )}
           </div>
         </CardHeader>

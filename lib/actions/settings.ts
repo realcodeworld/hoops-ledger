@@ -20,6 +20,52 @@ const pricingRuleSchema = z.object({
 
 const createPricingRuleSchema = pricingRuleSchema
 
+const MONZO_PAY_URL_MAX_LEN = 2048
+
+/** Hostnames we accept for org Monzo Pay links (https only). */
+function isAllowedMonzoPayHostname(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  if (h === 'monzo.me' || h === 'www.monzo.me') return true
+  if (/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.monzo\.me$/i.test(h)) return true
+  if (h === 'monzo.com' || h === 'www.monzo.com') return true
+  if (/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.monzo\.com$/i.test(h)) return true
+  return false
+}
+
+function parseMonzoPayUrl(raw: string): { url: string | null; error?: string } {
+  const trimmed = raw.trim()
+  if (trimmed === '') return { url: null }
+  if (trimmed.length > MONZO_PAY_URL_MAX_LEN) {
+    return {
+      url: null,
+      error: `Monzo Pay link is too long (max ${MONZO_PAY_URL_MAX_LEN} characters).`,
+    }
+  }
+  let parsed: URL
+  try {
+    parsed = new URL(trimmed)
+  } catch {
+    return {
+      url: null,
+      error: 'Invalid Monzo Pay link. Use a full https URL from Monzo.',
+    }
+  }
+  if (parsed.protocol !== 'https:') {
+    return {
+      url: null,
+      error: 'Monzo Pay link must use https.',
+    }
+  }
+  if (!isAllowedMonzoPayHostname(parsed.hostname)) {
+    return {
+      url: null,
+      error:
+        'Monzo Pay link must be on monzo.me or monzo.com (paste the link from Monzo).',
+    }
+  }
+  return { url: trimmed }
+}
+
 export async function updateOrganization(formData: FormData) {
   try {
     const currentUser = await getCurrentUser()
@@ -50,6 +96,15 @@ export async function updateOrganization(formData: FormData) {
       whatsappSupportNumber = normalized
     }
 
+    const rawMonzo = formData.get('monzoPayUrl')
+    const monzoRaw =
+      typeof rawMonzo === 'string' ? rawMonzo : ''
+    const monzoParsed = parseMonzoPayUrl(monzoRaw)
+    if (monzoParsed.error) {
+      return { success: false, error: monzoParsed.error }
+    }
+    const monzoPayUrl = monzoParsed.url
+
     await prisma.organization.update({
       where: { id: currentUser.orgId },
       data: {
@@ -57,6 +112,7 @@ export async function updateOrganization(formData: FormData) {
         timezone: data.timezone,
         currency: data.currency,
         whatsappSupportNumber,
+        monzoPayUrl,
       },
     })
 
@@ -73,12 +129,14 @@ export async function updateOrganization(formData: FormData) {
           timezone: data.timezone,
           currency: data.currency,
           whatsappSupportNumber,
+          monzoPayUrl,
         },
       },
     })
 
     revalidatePath('/dashboard/settings')
     revalidatePath('/player/payments')
+    revalidatePath('/player/dashboard')
     return { success: true, message: 'Organisation settings updated successfully' }
   } catch (error) {
     console.error('Organization update error:', error)
