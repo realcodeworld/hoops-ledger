@@ -115,6 +115,25 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="whatsappSupportNumber">WhatsApp support number</Label>
+            <Input
+              id="whatsappSupportNumber"
+              name="whatsappSupportNumber"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="+447XXXXXXXXX"
+              defaultValue={organization.whatsappSupportNumber ?? ''}
+              disabled={!isAdmin || isPending}
+              className="w-full"
+            />
+            <p className="text-xs text-gray-500">
+              Optional. If set, players see a link on the Payments screen to chat about payment queries.
+              Leave blank to hide it. Use international format (e.g. +44 for UK).
+            </p>
+          </div>
+
           {message && (
             <div className={`text-sm p-3 rounded-lg border ${
               message.type === 'success'

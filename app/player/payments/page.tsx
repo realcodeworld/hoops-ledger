@@ -89,7 +89,7 @@ export default async function PlayerPaymentsPage() {
         ? 'Bank transfer'
         : 'Other'
 
-  const whatsappNumber = process.env.WHATSAPP_SUPPORT_NUMBER
+  const whatsappNumber = playerData.org.whatsappSupportNumber
 
   return (
     <>
@@ -188,7 +188,7 @@ export default async function PlayerPaymentsPage() {
             Have a query about your payments?
           </p>
           <a
-            href={`https://wa.me/${whatsappNumber}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`}
+            href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"

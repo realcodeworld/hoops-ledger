@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { normalizeToE164 } from '@/lib/utils'
 
 const organizationSchema = z.object({
   name: z.string().min(1, 'Organisation name is required'),
@@ -33,12 +34,29 @@ export async function updateOrganization(formData: FormData) {
       currency: formData.get('currency'),
     })
 
+    const rawWhatsapp = formData.get('whatsappSupportNumber')
+    const whatsappTrimmed =
+      typeof rawWhatsapp === 'string' ? rawWhatsapp.trim() : ''
+    let whatsappSupportNumber: string | null = null
+    if (whatsappTrimmed !== '') {
+      const normalized = normalizeToE164(whatsappTrimmed)
+      if (!normalized) {
+        return {
+          success: false,
+          error:
+            'Invalid WhatsApp number. Use international format, e.g. +447XXXXXXXXX',
+        }
+      }
+      whatsappSupportNumber = normalized
+    }
+
     await prisma.organization.update({
       where: { id: currentUser.orgId },
       data: {
         name: data.name,
         timezone: data.timezone,
         currency: data.currency,
+        whatsappSupportNumber,
       },
     })
 
@@ -54,11 +72,13 @@ export async function updateOrganization(formData: FormData) {
           name: data.name,
           timezone: data.timezone,
           currency: data.currency,
+          whatsappSupportNumber,
         },
       },
     })
 
     revalidatePath('/dashboard/settings')
+    revalidatePath('/player/payments')
     return { success: true, message: 'Organisation settings updated successfully' }
   } catch (error) {
     console.error('Organization update error:', error)
