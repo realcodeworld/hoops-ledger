@@ -3,6 +3,8 @@ import { getCurrentPlayer } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CreditCard, Calendar, Wallet } from 'lucide-react'
+import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
+import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -42,6 +44,12 @@ export default async function PlayerPaymentsPage() {
   const balanceDifference = totalOwedAmount - totalPaidAmount
   const unpaid = Math.max(0, balanceDifference)
   const credit = Math.max(0, -balanceDifference)
+  const hasUnpaidBalance = unpaid > 0
+
+  const whatsappNumber = playerData.org.whatsappSupportNumber
+  const whatsappHref = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20payments`
+    : null
 
   type MergedItem =
     | {
@@ -97,44 +105,75 @@ export default async function PlayerPaymentsPage() {
         Payments
       </h1>
 
-      <Card className="mb-6">
+      <Card
+        className={
+          hasUnpaidBalance
+            ? 'mb-6 overflow-hidden border-amber-200 bg-gradient-to-b from-amber-50/80 to-white shadow-md'
+            : 'mb-6 shadow-sm'
+        }
+      >
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <CardTitle className="flex items-center text-lg">
-              <CreditCard className="w-5 h-5 mr-2 text-primary" />
+              <CreditCard
+                className={`w-5 h-5 mr-2 shrink-0 ${hasUnpaidBalance ? 'text-amber-600' : 'text-primary'}`}
+              />
               Balance
             </CardTitle>
-            {monzoPayUrl && (
+            {whatsappHref && (
               <a
-                href={monzoPayUrl}
+                href={whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 rounded-xl p-2 text-[#FF4D4D] hover:bg-red-50 transition-colors"
-                aria-label="Pay with Monzo"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 transition-colors"
+                aria-label="Chat on WhatsApp about payments"
               >
-                <Wallet className="w-6 h-6" />
+                <WhatsappBrandIcon className="h-7 w-7" />
               </a>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-1">
-            {credit > 0 ? 'In credit' : 'Unpaid'}
-          </p>
-          <p className="text-2xl font-bold text-gray-900">
-            <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
+              {credit > 0 ? 'In credit' : hasUnpaidBalance ? 'Amount due' : 'Balance'}
+            </p>
+            <p
+              className={`font-bold tracking-tight text-gray-900 ${hasUnpaidBalance ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}
+            >
+              <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
+            </p>
+          </div>
+          {monzoPayUrl && (
+            <a
+              href={monzoPayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
+            >
+              <Wallet className="h-6 w-6 shrink-0" aria-hidden />
+              Pay with Monzo
+            </a>
+          )}
+          <p className="text-sm text-gray-600">
+            {hasUnpaidBalance
+              ? 'Below is everything that affects your balance. Use Monzo or your usual method, then your organiser will record cash or transfer payments.'
+              : 'Your session fees and recorded payments appear below.'}
           </p>
         </CardContent>
       </Card>
 
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          Session & payment history
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-gray-900 mb-1">
+          Session and payment history
         </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Unpaid sessions count toward your balance; payments your organiser has recorded appear here too.
+        </p>
         {merged.length === 0 ? (
-          <p className="text-gray-500 text-sm">No sessions or payments yet</p>
+          <p className="text-gray-500 text-sm py-2">No sessions or payments yet</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-2">
             {merged.map((item) =>
               item.type === 'session' ? (
                 <li
@@ -193,7 +232,9 @@ export default async function PlayerPaymentsPage() {
             )}
           </ul>
         )}
-      </div>
+      </section>
+
+      <PlayerPaymentSupportFooter whatsappHref={whatsappHref} />
     </>
   )
 }

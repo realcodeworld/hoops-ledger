@@ -129,8 +129,9 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              Optional. If set, players see an icon on the dashboard Balance card to chat about payment
-              queries. Leave blank to hide it. Use international format (e.g. +44 for UK).
+              Optional. Players see the WhatsApp icon on the Balance card (dashboard and payments) and
+              a &quot;Chat on WhatsApp&quot; link at the bottom of those pages. Leave blank to hide. Use
+              international format (e.g. +44 for UK).
             </p>
           </div>
 
@@ -148,10 +149,9 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              Optional. Paste the full https link from Monzo (Request money or your business payment
-              link). Amount and reference are set in Monzo when you create the link; we do not add them
-              here. Leave blank to hide the Pay with Monzo option for players. Must be monzo.me or
-              monzo.com.
+              Optional. Players get a prominent &quot;Pay with Monzo&quot; button on the Balance card
+              (dashboard and payments). Paste the full https link from Monzo. Amount and reference are
+              set in Monzo when you create the link. Must be monzo.me or monzo.com.
             </p>
           </div>
 

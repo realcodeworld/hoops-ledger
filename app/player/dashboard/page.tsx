@@ -3,14 +3,9 @@ import Link from 'next/link'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  CreditCard,
-  Trophy,
-  Gamepad2,
-  ArrowRight,
-  MessageCircle,
-  Wallet,
-} from 'lucide-react'
+import { CreditCard, Trophy, Gamepad2, ArrowRight, Wallet } from 'lucide-react'
+import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
+import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
 import { prisma } from '@/lib/prisma'
 import {
   getLeaderboard,
@@ -127,66 +122,82 @@ export default async function PlayerDashboardPage() {
 
       <Card
         className={
-          hasUnpaidBalance ? 'mb-6 border-amber-200 bg-amber-50/50' : 'mb-6'
+          hasUnpaidBalance
+            ? 'mb-6 overflow-hidden border-amber-200 bg-gradient-to-b from-amber-50/80 to-white shadow-md'
+            : 'mb-6 shadow-sm'
         }
       >
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="flex items-center text-lg">
-              <CreditCard
-                className={`w-5 h-5 mr-2 shrink-0 ${hasUnpaidBalance ? 'text-amber-600' : 'text-primary'}`}
-              />
-              Balance
-            </CardTitle>
-            {(monzoPayUrl || whatsappHref) && (
-              <div className="flex items-center gap-0.5 shrink-0">
-                {monzoPayUrl && (
-                  <a
-                    href={monzoPayUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-xl p-2 text-[#FF4D4D] hover:bg-red-50 transition-colors"
-                    aria-label="Pay with Monzo"
-                  >
-                    <Wallet className="w-6 h-6" />
-                  </a>
-                )}
-                {whatsappHref && (
-                  <a
-                    href={whatsappHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-xl p-2 text-green-600 hover:bg-green-50 transition-colors"
-                    aria-label="Chat on WhatsApp about payments"
-                  >
-                    <MessageCircle className="w-6 h-6" />
-                  </a>
-                )}
-              </div>
+        <CardHeader className="pb-2 space-y-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center text-lg">
+                <CreditCard
+                  className={`w-5 h-5 mr-2 shrink-0 ${hasUnpaidBalance ? 'text-amber-600' : 'text-primary'}`}
+                />
+                Balance
+              </CardTitle>
+              <p className="text-xs text-gray-500 mt-2 max-w-md leading-relaxed">
+                {hasUnpaidBalance
+                  ? 'You owe fees for one or more sessions. Pay online or check the breakdown below.'
+                  : credit > 0
+                    ? 'You are in credit — thank you.'
+                    : 'You are up to date.'}
+              </p>
+            </div>
+            {whatsappHref && (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 transition-colors"
+                aria-label="Chat on WhatsApp about payments"
+              >
+                <WhatsappBrandIcon className="h-7 w-7" />
+              </a>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-1">
-            {credit > 0 ? 'In credit' : 'Unpaid'}
-          </p>
-          <p className="text-2xl font-bold text-gray-900 mb-4">
-            <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
-          </p>
-          {hasUnpaidBalance ? (
-            <Button asChild>
-              <Link href="/player/payments">
-                View payments
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-          ) : (
-            <p className="text-sm text-gray-500">
-              <Link href="/player/payments" className="text-primary hover:underline">
-                View payment history
-              </Link>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
+              {credit > 0 ? 'In credit' : hasUnpaidBalance ? 'Amount due' : 'Balance'}
             </p>
+            <p
+              className={`font-bold tracking-tight text-gray-900 ${hasUnpaidBalance ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}
+            >
+              <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
+            </p>
+          </div>
+
+          {monzoPayUrl && (
+            <a
+              href={monzoPayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
+            >
+              <Wallet className="h-6 w-6 shrink-0" aria-hidden />
+              Pay with Monzo
+            </a>
           )}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {hasUnpaidBalance ? (
+              <Button asChild size="lg" variant={monzoPayUrl ? 'outline' : 'default'} className="w-full sm:w-auto">
+                <Link href="/player/payments">
+                  View payment breakdown
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                <Link href="/player/payments">
+                  View payment history
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -272,6 +283,7 @@ export default async function PlayerDashboardPage() {
         </CardContent>
       </Card>
 
+      <PlayerPaymentSupportFooter whatsappHref={whatsappHref} />
     </>
   )
 }
