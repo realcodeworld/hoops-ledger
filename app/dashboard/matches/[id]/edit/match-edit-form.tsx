@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { resolveWinningTeamFromScores } from '@/lib/match-outcome'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +20,13 @@ import { updateMatch } from '@/lib/actions/matches'
 import { formatDate } from '@/lib/utils'
 import { X, Users, Copy } from 'lucide-react'
 import type { MatchTeam } from '@prisma/client'
+
+function scoreFromField(s: string): number | null {
+  const t = s.trim()
+  if (t === '') return null
+  const n = parseInt(t, 10)
+  return Number.isNaN(n) ? null : n
+}
 
 interface Session {
   id: string
@@ -73,7 +81,9 @@ export function MatchEditForm({
   )
   const [teamAIds, setTeamAIds] = useState<string[]>(currentTeamAPlayerIds)
   const [teamBIds, setTeamBIds] = useState<string[]>(currentTeamBPlayerIds)
-  const [winningTeam, setWinningTeam] = useState<MatchTeam>(currentWinningTeam)
+  const [manualWinner, setManualWinner] = useState<MatchTeam>(
+    currentWinningTeam === 'DRAW' ? 'A' : currentWinningTeam
+  )
   const [teamASheetOpen, setTeamASheetOpen] = useState(false)
   const [teamBSheetOpen, setTeamBSheetOpen] = useState(false)
   const [reuseSheetOpen, setReuseSheetOpen] = useState(false)
@@ -81,6 +91,16 @@ export function MatchEditForm({
   const [error, setError] = useState<string | null>(null)
 
   const showReuse = previousMatches.length > 0
+
+  const scoreA = scoreFromField(teamAScore)
+  const scoreB = scoreFromField(teamBScore)
+  const bothScoresEntered = scoreA !== null && scoreB !== null
+  const outcomeFromScores = resolveWinningTeamFromScores(
+    scoreA ?? undefined,
+    scoreB ?? undefined
+  )
+  const submittedWinner: MatchTeam =
+    outcomeFromScores !== null ? outcomeFromScores : manualWinner
 
   const availableForTeamA = players.filter((p) => !teamBIds.includes(p.id))
   const availableForTeamB = players.filter((p) => !teamAIds.includes(p.id))
@@ -122,7 +142,7 @@ export function MatchEditForm({
         teamBScore: scoreB != null && !Number.isNaN(scoreB) ? scoreB : null,
         teamAPlayerIds: teamAIds,
         teamBPlayerIds: teamBIds,
-        winningTeam,
+        winningTeam: submittedWinner,
       })
       if (!result.success) {
         setError(result.error ?? 'Failed to update match')
@@ -260,9 +280,9 @@ export function MatchEditForm({
             <div className="space-y-2 min-w-[140px]">
               <Label htmlFor="winner">Winner</Label>
               <Select
-                value={winningTeam}
-                onValueChange={(v) => setWinningTeam(v as MatchTeam)}
-                disabled={isPending}
+                value={submittedWinner}
+                onValueChange={(v) => setManualWinner(v as MatchTeam)}
+                disabled={isPending || bothScoresEntered}
               >
                 <SelectTrigger id="winner">
                   <SelectValue />
@@ -270,8 +290,16 @@ export function MatchEditForm({
                 <SelectContent>
                   <SelectItem value="A">Team A</SelectItem>
                   <SelectItem value="B">Team B</SelectItem>
+                  {bothScoresEntered && (
+                    <SelectItem value="DRAW">Draw</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
+              {bothScoresEntered && (
+                <p className="text-xs text-gray-500">
+                  Set from scores (change scores to adjust outcome)
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="label">Label (e.g. Game 1)</Label>

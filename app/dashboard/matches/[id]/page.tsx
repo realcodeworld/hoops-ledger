@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Trophy, ArrowLeft, Calendar, Edit } from 'lucide-react'
 import Link from 'next/link'
 import { getMatchDetail } from '@/lib/actions/matches'
+import { formatMatchOutcome } from '@/lib/match-outcome'
 import { formatDateTime } from '@/lib/utils'
 import { DeleteMatchButton } from './delete-match-button'
 
@@ -22,13 +23,14 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
   const match = result.data
   const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
   const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
-  const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+  const winnerLabel = formatMatchOutcome(match.winningTeam)
   const hasScore = match.teamAScore != null && match.teamBScore != null
   const scoreBracket = hasScore
     ? ` [${match.teamAScore}–${match.teamBScore}]`
     : ''
   const titleLabel = match.label ? ` ${match.label}` : ''
-  const pageTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
+  const outcomeSuffix = match.winningTeam === 'DRAW' ? '' : ' 🥇'
+  const pageTitle = `Match${titleLabel}: ${winnerLabel}${outcomeSuffix}${scoreBracket}`
 
   return (
     <div className="space-y-6">
@@ -88,7 +90,15 @@ export default async function MatchDetailPage({ params }: MatchDetailPageProps) 
                 </p>
               </div>
             </div>
-            <p className="mt-4 font-medium text-green-700">Winner: {winnerLabel}</p>
+            <p
+              className={
+                match.winningTeam === 'DRAW'
+                  ? 'mt-4 font-medium text-gray-800'
+                  : 'mt-4 font-medium text-green-700'
+              }
+            >
+              {match.winningTeam === 'DRAW' ? 'Result: Draw' : `Winner: ${winnerLabel}`}
+            </p>
           </CardContent>
         </Card>
     </div>

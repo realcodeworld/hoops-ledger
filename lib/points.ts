@@ -28,3 +28,11 @@ export function computeMatchWinPoints(
   const factor = clampWeightFactor(1 + pointDiff / WEIGHT_SCALE)
   return Math.round(BASE_WIN_POINTS * factor)
 }
+
+/** Half of weighted win points per player on that side (for drawn matches). */
+export function halfMatchWinPoints(
+  opposingTeamTotalPoints: number,
+  sideTeamTotalPoints: number
+): number {
+  return Math.round(computeMatchWinPoints(opposingTeamTotalPoints, sideTeamTotalPoints) / 2)
+}

@@ -4,9 +4,51 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { getAllPlayerTotals } from '@/lib/actions/leaderboard'
-import { computeMatchWinPoints } from '@/lib/points'
-import { POINT_SOURCE_MATCH_WIN } from '@/lib/points'
+import { computeMatchWinPoints, halfMatchWinPoints, POINT_SOURCE_MATCH_WIN } from '@/lib/points'
+import { resolveWinningTeamFromScores } from '@/lib/match-outcome'
 import type { MatchTeam } from '@prisma/client'
+
+function buildMatchWinPointRows(
+  winningTeam: MatchTeam,
+  teamA: string[],
+  teamB: string[],
+  teamATotal: number,
+  teamBTotal: number,
+  orgId: string,
+  matchId: string
+): { playerId: string; orgId: string; source: string; amount: number; matchId: string }[] {
+  if (winningTeam === 'DRAW') {
+    const ptsA = halfMatchWinPoints(teamBTotal, teamATotal)
+    const ptsB = halfMatchWinPoints(teamATotal, teamBTotal)
+    return [
+      ...teamA.map((playerId) => ({
+        playerId,
+        orgId,
+        source: POINT_SOURCE_MATCH_WIN,
+        amount: ptsA,
+        matchId,
+      })),
+      ...teamB.map((playerId) => ({
+        playerId,
+        orgId,
+        source: POINT_SOURCE_MATCH_WIN,
+        amount: ptsB,
+        matchId,
+      })),
+    ]
+  }
+  const winningTotal = winningTeam === 'A' ? teamATotal : teamBTotal
+  const opposingTotal = winningTeam === 'A' ? teamBTotal : teamATotal
+  const pointsPerWinner = computeMatchWinPoints(opposingTotal, winningTotal)
+  const winningPlayerIds = winningTeam === 'A' ? teamA : teamB
+  return winningPlayerIds.map((playerId) => ({
+    playerId,
+    orgId,
+    source: POINT_SOURCE_MATCH_WIN,
+    amount: pointsPerWinner,
+    matchId,
+  }))
+}
 
 export async function createMatchResult(
   teamAPlayerIds: string[],
@@ -54,16 +96,25 @@ export async function createMatchResult(
       .filter((id) => teamB.includes(id))
       .reduce((sum, id) => sum + (totals.get(id) ?? 0), 0)
 
-    const winningTotal = winningTeam === 'A' ? teamATotal : teamBTotal
-    const opposingTotal = winningTeam === 'A' ? teamBTotal : teamATotal
-    const pointsPerWinner = computeMatchWinPoints(opposingTotal, winningTotal)
-    const winningPlayerIds = winningTeam === 'A' ? teamA : teamB
+    const fromScores = resolveWinningTeamFromScores(teamAScore, teamBScore)
+    let winningTeamResolved: MatchTeam
+    if (fromScores !== null) {
+      winningTeamResolved = fromScores
+    } else {
+      if (winningTeam === 'DRAW') {
+        return {
+          success: false,
+          error: 'Draw is only allowed when both team scores are entered',
+        }
+      }
+      winningTeamResolved = winningTeam
+    }
 
     const match = await prisma.match.create({
       data: {
         sessionId: sessionId || null,
         orgId: currentUser.orgId,
-        winningTeam,
+        winningTeam: winningTeamResolved,
         teamATotalPoints: teamATotal,
         teamBTotalPoints: teamBTotal,
         teamAScore: teamAScore != null ? teamAScore : null,
@@ -80,13 +131,15 @@ export async function createMatchResult(
     })
 
     await prisma.playerPointEntry.createMany({
-      data: winningPlayerIds.map((playerId) => ({
-        playerId,
-        orgId: currentUser.orgId,
-        source: POINT_SOURCE_MATCH_WIN,
-        amount: pointsPerWinner,
-        matchId: match.id,
-      })),
+      data: buildMatchWinPointRows(
+        winningTeamResolved,
+        teamA,
+        teamB,
+        teamATotal,
+        teamBTotal,
+        currentUser.orgId,
+        match.id
+      ),
     })
 
     if (sessionId) revalidatePath(`/dashboard/sessions/${sessionId}`)
@@ -262,11 +315,25 @@ export async function updateMatch(
       const teamBTotal = allPlayerIds
         .filter((id) => teamB.includes(id))
         .reduce((sum, id) => sum + (totals.get(id) ?? 0), 0)
-      const winningTeam = data.winningTeam ?? match.winningTeam
-      const winningTotal = winningTeam === 'A' ? teamATotal : teamBTotal
-      const opposingTotal = winningTeam === 'A' ? teamBTotal : teamATotal
-      const pointsPerWinner = computeMatchWinPoints(opposingTotal, winningTotal)
-      const winningPlayerIds = winningTeam === 'A' ? teamA : teamB
+
+      const nextScoreA =
+        data.teamAScore !== undefined ? data.teamAScore : match.teamAScore
+      const nextScoreB =
+        data.teamBScore !== undefined ? data.teamBScore : match.teamBScore
+      const fromScores = resolveWinningTeamFromScores(nextScoreA, nextScoreB)
+      let winningTeamResolved: MatchTeam
+      if (fromScores !== null) {
+        winningTeamResolved = fromScores
+      } else {
+        const wt = data.winningTeam ?? match.winningTeam
+        if (wt === 'DRAW') {
+          return {
+            success: false,
+            error: 'Draw is only allowed when both team scores are entered',
+          }
+        }
+        winningTeamResolved = wt
+      }
 
       await prisma.playerPointEntry.deleteMany({
         where: { matchId },
@@ -281,20 +348,22 @@ export async function updateMatch(
         ],
       })
       await prisma.playerPointEntry.createMany({
-        data: winningPlayerIds.map((playerId) => ({
-          playerId,
-          orgId: currentUser.orgId,
-          source: POINT_SOURCE_MATCH_WIN,
-          amount: pointsPerWinner,
-          matchId,
-        })),
+        data: buildMatchWinPointRows(
+          winningTeamResolved,
+          teamA,
+          teamB,
+          teamATotal,
+          teamBTotal,
+          currentUser.orgId,
+          matchId
+        ),
       })
       await prisma.match.update({
         where: { id: matchId },
         data: {
           teamATotalPoints: teamATotal,
           teamBTotalPoints: teamBTotal,
-          winningTeam,
+          winningTeam: winningTeamResolved,
           ...(data.label !== undefined && { label: data.label?.trim() || null }),
           ...(data.sessionId !== undefined && { sessionId: data.sessionId || null }),
           ...(data.teamAScore !== undefined && { teamAScore: data.teamAScore ?? null }),

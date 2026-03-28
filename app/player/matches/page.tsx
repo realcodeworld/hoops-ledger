@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Trophy } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
+import { formatMatchOutcome } from '@/lib/match-outcome'
 
 export default async function PlayerMatchesPage() {
   const player = await getCurrentPlayer()
@@ -31,10 +32,14 @@ export default async function PlayerMatchesPage() {
   if (!playerData) redirect('/')
 
   const matchHistory = (playerData.matchPlayers ?? [])
-    .map((mp) => ({
-      match: mp.match,
-      won: mp.match.winningTeam === mp.team,
-    }))
+    .map((mp) => {
+      const isDraw = mp.match.winningTeam === 'DRAW'
+      return {
+        match: mp.match,
+        won: !isDraw && mp.match.winningTeam === mp.team,
+        isDraw,
+      }
+    })
     .sort(
       (a, b) =>
         new Date(b.match.createdAt).getTime() -
@@ -42,7 +47,8 @@ export default async function PlayerMatchesPage() {
     )
 
   const wins = matchHistory.filter((m) => m.won).length
-  const losses = matchHistory.length - wins
+  const draws = matchHistory.filter((m) => m.isDraw).length
+  const losses = matchHistory.length - wins - draws
 
   return (
     <>
@@ -51,7 +57,7 @@ export default async function PlayerMatchesPage() {
       </h1>
       {matchHistory.length > 0 && (
         <p className="text-gray-600 mb-6">
-          {wins} wins, {losses} losses
+          {wins} wins{draws > 0 ? `, ${draws} draws` : ''}, {losses} losses
         </p>
       )}
 
@@ -59,17 +65,18 @@ export default async function PlayerMatchesPage() {
         <p className="text-gray-500 text-sm">No matches yet</p>
       ) : (
         <div className="space-y-4">
-          {matchHistory.map(({ match, won }) => {
+          {matchHistory.map(({ match, won, isDraw }) => {
             const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
             const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
-            const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+            const outcomeLabel = formatMatchOutcome(match.winningTeam)
             const hasScore =
               match.teamAScore != null && match.teamBScore != null
             const scoreBracket = hasScore
               ? ` [${match.teamAScore}–${match.teamBScore}]`
               : ''
             const titleLabel = match.label ? ` ${match.label}` : ''
-            const cardTitle = `Match${titleLabel}: ${winnerLabel} won${scoreBracket}`
+            const resultPhrase = isDraw ? 'Draw' : `${outcomeLabel} won`
+            const cardTitle = `Match${titleLabel}: ${resultPhrase}${scoreBracket}`
             return (
               <Card key={match.id} className="overflow-hidden">
                 <CardHeader className="pb-2">
@@ -91,14 +98,18 @@ export default async function PlayerMatchesPage() {
                       </p>
                     </div>
                     <Badge
-                      variant={won ? 'default' : 'secondary'}
+                      variant={
+                        isDraw ? 'secondary' : won ? 'default' : 'secondary'
+                      }
                       className={
-                        won
-                          ? 'bg-green-600 hover:bg-green-600 shrink-0'
-                          : 'bg-gray-500 hover:bg-gray-500 shrink-0'
+                        isDraw
+                          ? 'bg-slate-600 hover:bg-slate-600 shrink-0'
+                          : won
+                            ? 'bg-green-600 hover:bg-green-600 shrink-0'
+                            : 'bg-gray-500 hover:bg-gray-500 shrink-0'
                       }
                     >
-                      {won ? 'Won' : 'Lost'}
+                      {isDraw ? 'Draw' : won ? 'Won' : 'Lost'}
                     </Badge>
                   </div>
                 </CardHeader>

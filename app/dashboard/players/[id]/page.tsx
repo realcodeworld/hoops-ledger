@@ -23,6 +23,7 @@ import {
   Gamepad2,
 } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import { formatMatchOutcome } from '@/lib/match-outcome'
 
 interface PlayerDetailsPageProps {
   params: Promise<{ id: string }>
@@ -122,11 +123,15 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
 
   // Match history: one entry per match (player's matchPlayers), sorted by match date desc
   const matchHistory = (player.matchPlayers ?? [])
-    .map((mp) => ({
-      match: mp.match,
-      playerTeam: mp.team,
-      won: mp.match.winningTeam === mp.team,
-    }))
+    .map((mp) => {
+      const isDraw = mp.match.winningTeam === 'DRAW'
+      return {
+        match: mp.match,
+        playerTeam: mp.team,
+        won: !isDraw && mp.match.winningTeam === mp.team,
+        isDraw,
+      }
+    })
     .sort(
       (a, b) =>
         new Date(b.match.createdAt).getTime() - new Date(a.match.createdAt).getTime()
@@ -340,18 +345,20 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
               <CardContent>
                 {matchHistory.length > 0 ? (
                   <div className="space-y-3">
-                    {matchHistory.map(({ match, playerTeam, won }) => {
+                    {matchHistory.map(({ match, playerTeam, won, isDraw }) => {
                       const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
                       const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
                       const teamLabel = playerTeam === 'A' ? 'Team A' : 'Team B'
-                      const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+                      const outcomeLabel = formatMatchOutcome(match.winningTeam)
                       const hasScore =
                         match.teamAScore != null && match.teamBScore != null
                       const scoreBracket = hasScore
                         ? ` [${match.teamAScore}–${match.teamBScore}]`
                         : ''
                       const titleLabel = match.label ? ` ${match.label}` : ''
-                      const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
+                      const outcomeSuffix =
+                        match.winningTeam === 'DRAW' ? '' : ' 🥇'
+                      const cardTitle = `Match${titleLabel}: ${outcomeLabel}${outcomeSuffix}${scoreBracket}`
                       return (
                         <Link
                           key={match.id}
@@ -392,14 +399,18 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                             </div>
                           </div>
                           <Badge
-                            variant={won ? 'default' : 'secondary'}
+                            variant={
+                              isDraw ? 'secondary' : won ? 'default' : 'secondary'
+                            }
                             className={
-                              won
-                                ? 'bg-green-600 hover:bg-green-600 shrink-0'
-                                : 'bg-gray-500 hover:bg-gray-500 shrink-0'
+                              isDraw
+                                ? 'bg-slate-600 hover:bg-slate-600 shrink-0'
+                                : won
+                                  ? 'bg-green-600 hover:bg-green-600 shrink-0'
+                                  : 'bg-gray-500 hover:bg-gray-500 shrink-0'
                             }
                           >
-                            {won ? 'Won' : 'Lost'}
+                            {isDraw ? 'Draw' : won ? 'Won' : 'Lost'}
                           </Badge>
                         </Link>
                       )

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Gamepad2, Plus, Calendar, Trophy } from 'lucide-react'
 import { getMatches } from '@/lib/actions/matches'
+import { formatMatchOutcome } from '@/lib/match-outcome'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -39,13 +40,15 @@ export default async function MatchesPage() {
             {matches.map((match) => {
               const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
               const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
-              const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+              const winnerLabel = formatMatchOutcome(match.winningTeam)
               const hasScore = match.teamAScore != null && match.teamBScore != null
               const scoreBracket = hasScore
                 ? ` [${match.teamAScore}–${match.teamBScore}]`
                 : ''
               const titleLabel = match.label ? ` ${match.label}` : ''
-              const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
+              const outcomeSuffix =
+                match.winningTeam === 'DRAW' ? '' : ' 🥇'
+              const cardTitle = `Match${titleLabel}: ${winnerLabel}${outcomeSuffix}${scoreBracket}`
               return (
                 <Card key={match.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">

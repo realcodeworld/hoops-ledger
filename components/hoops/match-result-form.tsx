@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import type { MatchTeam } from '@prisma/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +18,14 @@ import { TeamPlayerSelectSheet } from '@/components/hoops/team-player-select-she
 import { ReuseTeamSheet, type ReuseTeamOption } from '@/components/hoops/reuse-team-sheet'
 import { Trophy, Users, X, Copy } from 'lucide-react'
 import { createMatchResult } from '@/lib/actions/matches'
+import { resolveWinningTeamFromScores } from '@/lib/match-outcome'
+
+function scoreFromField(s: string): number | null {
+  const t = s.trim()
+  if (t === '') return null
+  const n = parseInt(t, 10)
+  return Number.isNaN(n) ? null : n
+}
 
 interface Player {
   id: string
@@ -45,7 +54,7 @@ export function MatchResultForm({
   const router = useRouter()
   const [teamAIds, setTeamAIds] = useState<string[]>([])
   const [teamBIds, setTeamBIds] = useState<string[]>([])
-  const [winningTeam, setWinningTeam] = useState<'A' | 'B'>('A')
+  const [manualWinner, setManualWinner] = useState<MatchTeam>('A')
   const [label, setLabel] = useState('')
   const [teamAScore, setTeamAScore] = useState<string>('')
   const [teamBScore, setTeamBScore] = useState<string>('')
@@ -57,6 +66,16 @@ export function MatchResultForm({
   const [reuseSheetOpen, setReuseSheetOpen] = useState(false)
 
   const showReuse = Boolean(sessionId && previousMatches.length > 0)
+
+  const scoreA = scoreFromField(teamAScore)
+  const scoreB = scoreFromField(teamBScore)
+  const bothScoresEntered = scoreA !== null && scoreB !== null
+  const outcomeFromScores = resolveWinningTeamFromScores(
+    scoreA ?? undefined,
+    scoreB ?? undefined
+  )
+  const submittedWinner: MatchTeam =
+    outcomeFromScores !== null ? outcomeFromScores : manualWinner
 
   const basePool = attendeeIds
     ? players.filter((p) => attendeeIds.includes(p.id))
@@ -98,7 +117,7 @@ export function MatchResultForm({
       const result = await createMatchResult(
         teamAIds,
         teamBIds,
-        winningTeam,
+        submittedWinner,
         label.trim() || undefined,
         sessionId ?? undefined,
         scoreA != null && !Number.isNaN(scoreA) ? scoreA : undefined,
@@ -110,7 +129,7 @@ export function MatchResultForm({
       }
       setTeamAIds([])
       setTeamBIds([])
-      setWinningTeam('A')
+      setManualWinner('A')
       setLabel('')
       setTeamAScore('')
       setTeamBScore('')
@@ -250,8 +269,9 @@ export function MatchResultForm({
             <div className="space-y-2 min-w-[140px]">
               <Label htmlFor="winner">Winner</Label>
               <Select
-                value={winningTeam}
-                onValueChange={(v) => setWinningTeam(v as 'A' | 'B')}
+                value={submittedWinner}
+                onValueChange={(v) => setManualWinner(v as MatchTeam)}
+                disabled={bothScoresEntered}
               >
                 <SelectTrigger id="winner">
                   <SelectValue />
@@ -259,8 +279,16 @@ export function MatchResultForm({
                 <SelectContent>
                   <SelectItem value="A">Team A</SelectItem>
                   <SelectItem value="B">Team B</SelectItem>
+                  {bothScoresEntered && (
+                    <SelectItem value="DRAW">Draw</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
+              {bothScoresEntered && (
+                <p className="text-xs text-gray-500">
+                  Set from scores (change scores to adjust outcome)
+                </p>
+              )}
             </div>
             <div className="space-y-2 min-w-[120px]">
               <Label htmlFor="teamAScore">Team A score</Label>

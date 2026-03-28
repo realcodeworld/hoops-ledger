@@ -18,6 +18,7 @@ import { Trophy, Trash2 } from 'lucide-react'
 import { deleteMatch } from '@/lib/actions/matches'
 import { useRouter } from 'next/navigation'
 import type { MatchTeam } from '@prisma/client'
+import { formatMatchOutcome } from '@/lib/match-outcome'
 
 interface MatchPlayer {
   id: string
@@ -73,13 +74,15 @@ export function MatchList({ sessionId, matches }: MatchListProps) {
           {matches.map((match, index) => {
             const teamAPlayers = match.matchPlayers.filter((mp) => mp.team === 'A')
             const teamBPlayers = match.matchPlayers.filter((mp) => mp.team === 'B')
-            const winnerLabel = match.winningTeam === 'A' ? 'Team A' : 'Team B'
+            const winnerLabel = formatMatchOutcome(match.winningTeam)
             const hasScore = match.teamAScore != null && match.teamBScore != null
             const scoreBracket = hasScore
               ? ` [${match.teamAScore}–${match.teamBScore}]`
               : ''
             const titleLabel = match.label ? ` ${match.label}` : ` Game ${index + 1}`
-            const cardTitle = `Match${titleLabel}: ${winnerLabel} 🥇${scoreBracket}`
+            const outcomeSuffix =
+              match.winningTeam === 'DRAW' ? '' : ' 🥇'
+            const cardTitle = `Match${titleLabel}: ${winnerLabel}${outcomeSuffix}${scoreBracket}`
 
             return (
               <div

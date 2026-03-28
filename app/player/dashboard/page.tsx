@@ -72,11 +72,15 @@ export default async function PlayerDashboardPage() {
   const hasUnpaidBalance = unpaid > 0
 
   const matchHistory = (playerData.matchPlayers ?? [])
-    .map((mp) => ({
-      match: mp.match,
-      playerTeam: mp.team,
-      won: mp.match.winningTeam === mp.team,
-    }))
+    .map((mp) => {
+      const isDraw = mp.match.winningTeam === 'DRAW'
+      return {
+        match: mp.match,
+        playerTeam: mp.team,
+        won: !isDraw && mp.match.winningTeam === mp.team,
+        isDraw,
+      }
+    })
     .sort(
       (a, b) =>
         new Date(b.match.createdAt).getTime() -
@@ -84,7 +88,8 @@ export default async function PlayerDashboardPage() {
     )
 
   const wins = matchHistory.filter((m) => m.won).length
-  const losses = matchHistory.length - wins
+  const draws = matchHistory.filter((m) => m.isDraw).length
+  const losses = matchHistory.length - wins - draws
   const lastMatch = matchHistory[0]
 
   const [leaderboardResult, winStreaksResult] = await Promise.all([
@@ -143,20 +148,29 @@ export default async function PlayerDashboardPage() {
           ) : (
             <>
               <p className="text-sm text-gray-700 mb-1">
-                Record: <span className="font-semibold">{wins} W</span> –{' '}
-                <span className="font-semibold">{losses} L</span>
+                Record: <span className="font-semibold">{wins} W</span>
+                {draws > 0 && (
+                  <>
+                    {' '}
+                    – <span className="font-semibold">{draws} D</span>
+                  </>
+                )}
+                {' '}
+                – <span className="font-semibold">{losses} L</span>
               </p>
               {lastMatch && (
                 <p className="text-sm text-gray-600 mb-3">
                   Last match:{' '}
                   <span
                     className={
-                      lastMatch.won
-                        ? 'text-green-600 font-medium'
-                        : 'text-gray-600'
+                      lastMatch.isDraw
+                        ? 'text-slate-600 font-medium'
+                        : lastMatch.won
+                          ? 'text-green-600 font-medium'
+                          : 'text-gray-600'
                     }
                   >
-                    {lastMatch.won ? 'Won' : 'Lost'}
+                    {lastMatch.isDraw ? 'Draw' : lastMatch.won ? 'Won' : 'Lost'}
                   </span>
                   {' · '}
                   {format(new Date(lastMatch.match.createdAt), 'dd/MM/yy')}

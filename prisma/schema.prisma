@@ -138,6 +138,7 @@ model Match {
 enum MatchTeam {
   A
   B
+  DRAW
 }
 
 model MatchPlayer {

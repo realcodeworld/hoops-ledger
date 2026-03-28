@@ -1,3 +1,5 @@
+import type { MatchTeam } from '@prisma/client'
+
 /** One past line-up from a session match (sourceSide is for display only). */
 export interface ReuseTeamOption {
   label: string
@@ -5,7 +7,7 @@ export interface ReuseTeamOption {
   playerIds: string[]
 }
 
-type MatchPlayerRow = { team: 'A' | 'B'; playerId: string }
+type MatchPlayerRow = { team: MatchTeam; playerId: string }
 
 type MatchForReuse = {
   id: string

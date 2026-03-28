@@ -248,7 +248,9 @@ export async function getWinStreaks(): Promise<{
     for (const mp of matchPlayers) {
       if (!byPlayer.has(mp.playerId)) byPlayer.set(mp.playerId, [])
       byPlayer.get(mp.playerId)!.push({
-        won: mp.match.winningTeam === mp.team,
+        won:
+          mp.match.winningTeam !== 'DRAW' &&
+          mp.match.winningTeam === mp.team,
       })
     }
 
