@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -14,14 +15,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Mail, Phone, Search, Users, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X } from 'lucide-react'
+import {
+  Link as LinkIcon,
+  Mail,
+  MailPlus,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  Users,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react'
 import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { PlayerActionsDropdown } from '@/app/dashboard/players/player-actions-dropdown'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { Plus, MailPlus } from 'lucide-react'
 import { emailBulkBalanceRemindersToAdmin } from '@/lib/actions/balance-reminders'
+import { generateMagicLink } from '@/lib/actions/auth'
+import { SwipeableRow } from '@/components/hoops/swipeable-row'
 
 type SortKey = 'name' | 'category' | 'status' | 'balance' | 'sessions'
 type SortDir = 'asc' | 'desc'
@@ -66,7 +81,43 @@ export function PlayersList({ players, currency }: PlayersListProps) {
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+  const [swipedPlayerOpenId, setSwipedPlayerOpenId] = useState<string | null>(null)
+  const [magicPendingId, setMagicPendingId] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const onScroll = () => setSwipedPlayerOpenId(null)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  async function handleSwipeMagicLink(player: PlayerWithBalance) {
+    if (!player.email) return
+    setMagicPendingId(player.id)
+    try {
+      const result = await generateMagicLink(player.id)
+      if (result.success) {
+        const linkText = result.url || ''
+        try {
+          await navigator.clipboard.writeText(linkText)
+          alert(
+            `Magic link copied to clipboard!\n\nLink: ${linkText}\n\nShare this link directly with ${player.name}. It expires in 15 minutes and can only be used once.`
+          )
+        } catch {
+          alert(
+            `Magic link generated:\n\n${linkText}\n\nCopy this link and share it with ${player.name}. It expires in 15 minutes and can only be used once.`
+          )
+        }
+      } else {
+        alert(`Failed to generate magic link: ${result.error}`)
+      }
+    } catch {
+      alert('Failed to generate magic link')
+    } finally {
+      setMagicPendingId(null)
+    }
+    setSwipedPlayerOpenId(null)
+  }
 
   const activeFilterCount = [
     statusFilter !== 'all',
@@ -514,57 +565,87 @@ export function PlayersList({ players, currency }: PlayersListProps) {
           </div>
         ) : (
           filteredPlayers.map((player) => (
-            <div 
-              key={player.id} 
-              className="flex items-center gap-3 py-3 cursor-pointer active:bg-gray-50"
-              onClick={(e) => {
-                const target = e.target as HTMLElement
-                if (target.closest('[data-action-dropdown]') || target.closest('[data-reminder-checkbox]')) {
-                  return
-                }
-                router.push(`/dashboard/players/${player.id}`)
-              }}
-            >
-              {canEmailReminder(player) && (
+            <SwipeableRow
+              key={player.id}
+              rowId={player.id}
+              exclusiveOpenId={swipedPlayerOpenId}
+              onSwipeOpen={(id) => setSwipedPlayerOpenId(id)}
+              leftUnderlay={
                 <div
-                  className="shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                  data-reminder-checkbox
+                  className={cn(
+                    'flex h-full w-full',
+                    player.email ? 'bg-primary' : 'bg-gray-400'
+                  )}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(player.id)}
-                    onChange={() => toggleSelect(player.id)}
-                    className="rounded border-gray-300 w-4 h-4"
-                    aria-label={`Select ${player.name} for reminder`}
-                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-full w-full rounded-none text-white hover:bg-black/10 hover:text-white disabled:opacity-60"
+                    disabled={!player.email || magicPendingId === player.id}
+                    aria-label={player.email ? 'Generate magic link' : 'No email on file for magic link'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      if (player.email) void handleSwipeMagicLink(player)
+                    }}
+                  >
+                    <LinkIcon className="w-5 h-5" />
+                  </Button>
                 </div>
-              )}
-
-              <span className="flex-1 min-w-0 font-medium truncate">{player.name}</span>
-
-              <div className="shrink-0 tabular-nums">
-                {player.credit > 0 ? (
-                  <span className="text-green-600">
-                    +<CurrencyDisplay amountPence={player.credit} />
-                  </span>
-                ) : player.unpaidBalance > 0 ? (
-                  <span className="text-red-600">
-                    <CurrencyDisplay amountPence={player.unpaidBalance} />
-                  </span>
-                ) : (
-                  <span className="text-gray-400">–</span>
+              }
+              rightUnderlay={
+                <div className="flex h-full w-full bg-slate-600">
+                  <Button variant="ghost" className="h-full w-full rounded-none p-0 hover:bg-slate-700" asChild>
+                    <Link
+                      href={`/dashboard/players/${player.id}/edit`}
+                      className="flex items-center justify-center text-white"
+                      aria-label="Edit player"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Pencil className="w-5 h-5" />
+                    </Link>
+                  </Button>
+                </div>
+              }
+            >
+              <div className="flex w-full min-w-0 items-center gap-3 py-3 pl-3 pr-1 touch-pan-y bg-white">
+                {canEmailReminder(player) && (
+                  <div className="shrink-0" data-reminder-checkbox>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(player.id)}
+                      onChange={() => toggleSelect(player.id)}
+                      className="rounded border-gray-300 w-4 h-4"
+                      aria-label={`Select ${player.name} for reminder`}
+                    />
+                  </div>
                 )}
-              </div>
 
-              <div 
-                className="shrink-0 -mr-2"
-                onClick={(e) => e.stopPropagation()}
-                data-action-dropdown
-              >
-                <PlayerActionsDropdown player={player} />
+                <Link
+                  href={`/dashboard/players/${player.id}`}
+                  className="flex-1 min-w-0 flex items-center gap-3 active:scale-[0.99] transition-transform"
+                >
+                  <span className="font-medium truncate">{player.name}</span>
+                  <span className="shrink-0 tabular-nums text-sm">
+                    {player.credit > 0 ? (
+                      <span className="text-green-600">
+                        +<CurrencyDisplay amountPence={player.credit} />
+                      </span>
+                    ) : player.unpaidBalance > 0 ? (
+                      <span className="text-red-600">
+                        <CurrencyDisplay amountPence={player.unpaidBalance} />
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">–</span>
+                    )}
+                  </span>
+                </Link>
+
+                <div className="shrink-0 -mr-1" data-action-dropdown>
+                  <PlayerActionsDropdown player={player} />
+                </div>
               </div>
-            </div>
+            </SwipeableRow>
           ))
         )}
       </div>
