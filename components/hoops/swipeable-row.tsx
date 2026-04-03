@@ -53,6 +53,9 @@ export function SwipeableRow({
 
   const clamp = (v: number) => Math.max(-rightWidth, Math.min(leftWidth, v))
 
+  const leftReveal = x > 0 ? Math.min(1, x / leftWidth) : 0
+  const rightReveal = x < 0 ? Math.min(1, -x / rightWidth) : 0
+
   const bind = useDrag(
     ({ movement: [mx], first, last, velocity: [vx] }) => {
       if (disabled) return
@@ -83,16 +86,30 @@ export function SwipeableRow({
   return (
     <div className={cn("relative overflow-hidden", className)}>
       <div
-        className="absolute inset-y-0 left-0 flex items-stretch z-0"
-        style={{ width: leftWidth }}
-        aria-hidden
+        className={cn(
+          "absolute inset-y-0 left-0 z-0 flex items-stretch",
+          !dragging && "transition-opacity duration-200 ease-out"
+        )}
+        style={{
+          width: leftWidth,
+          opacity: leftReveal,
+          pointerEvents: leftReveal > 0.15 ? "auto" : "none",
+        }}
+        aria-hidden={leftReveal < 0.5}
       >
         {leftUnderlay}
       </div>
       <div
-        className="absolute inset-y-0 right-0 flex items-stretch z-0"
-        style={{ width: rightWidth }}
-        aria-hidden
+        className={cn(
+          "absolute inset-y-0 right-0 z-0 flex items-stretch",
+          !dragging && "transition-opacity duration-200 ease-out"
+        )}
+        style={{
+          width: rightWidth,
+          opacity: rightReveal,
+          pointerEvents: rightReveal > 0.15 ? "auto" : "none",
+        }}
+        aria-hidden={rightReveal < 0.5}
       >
         {rightUnderlay}
       </div>
@@ -103,7 +120,7 @@ export function SwipeableRow({
           touchAction: disabled ? undefined : "pan-y",
         }}
         className={cn(
-          "relative z-10 flex w-full min-w-0 bg-background border-0 shadow-none",
+          "relative z-10 flex w-full min-w-0 min-h-full bg-white border-0 shadow-none",
           !dragging && "transition-transform duration-200 ease-out"
         )}
       >
