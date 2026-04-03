@@ -1,16 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, CreditCard, BarChart3, Plus } from 'lucide-react'
+import { Users, CreditCard, BarChart3, Plus, LineChart } from 'lucide-react'
 import { getPlayers } from '@/lib/actions/players'
 import { getOrganizationFinancials } from '@/lib/actions/payments'
+import { getDashboardAttendanceSeries } from '@/lib/actions/dashboard'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
+import { AttendanceOverTimeChart } from '@/components/hoops/attendance-over-time-chart'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
   // Fetch dashboard data
-  const [playersResult, financialsResult] = await Promise.all([
+  const [playersResult, financialsResult, attendanceSeriesResult] = await Promise.all([
     getPlayers(),
     getOrganizationFinancials(),
+    getDashboardAttendanceSeries(36),
   ])
 
   const players = playersResult.success ? playersResult.data : []
@@ -21,6 +24,8 @@ export default async function DashboardPage() {
   }
 
   const activePlayers = (players || []).filter(p => p.isActive)
+  const attendanceSeries =
+    attendanceSeriesResult.success ? attendanceSeriesResult.data : []
 
   return (
     <div className="space-y-6">
@@ -72,6 +77,23 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-row items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base sm:text-lg">Attendance over time</CardTitle>
+                <CardDescription className="mt-1">
+                  Headcount per session (up to the 36 most recent sessions)
+                </CardDescription>
+              </div>
+              <LineChart className="h-8 w-8 text-primary shrink-0 hidden sm:block" aria-hidden />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <AttendanceOverTimeChart data={attendanceSeries} />
+          </CardContent>
+        </Card>
     </div>
   )
 }
