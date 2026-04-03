@@ -19,7 +19,6 @@ import {
   Link as LinkIcon,
   Mail,
   MailPlus,
-  Pencil,
   Phone,
   Plus,
   Search,
@@ -83,6 +82,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [swipedPlayerOpenId, setSwipedPlayerOpenId] = useState<string | null>(null)
   const [magicPendingId, setMagicPendingId] = useState<string | null>(null)
+  const [copyToast, setCopyToast] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -100,12 +100,11 @@ export function PlayersList({ players, currency }: PlayersListProps) {
         const linkText = result.url || ''
         try {
           await navigator.clipboard.writeText(linkText)
-          alert(
-            `Magic link copied to clipboard!\n\nLink: ${linkText}\n\nShare this link directly with ${player.name}. It expires in 15 minutes and can only be used once.`
-          )
+          setCopyToast(`Magic link copied for ${player.name} (15 min, one use)`)
+          setTimeout(() => setCopyToast(null), 3500)
         } catch {
           alert(
-            `Magic link generated:\n\n${linkText}\n\nCopy this link and share it with ${player.name}. It expires in 15 minutes and can only be used once.`
+            `Copy failed. Magic link:\n\n${linkText}\n\nShare with ${player.name}. Expires in 15 minutes, one use.`
           )
         }
       } else {
@@ -116,6 +115,11 @@ export function PlayersList({ players, currency }: PlayersListProps) {
     } finally {
       setMagicPendingId(null)
     }
+    setSwipedPlayerOpenId(null)
+  }
+
+  function toggleReminderFromSwipe(playerId: string) {
+    toggleSelect(playerId)
     setSwipedPlayerOpenId(null)
   }
 
@@ -257,6 +261,14 @@ export function PlayersList({ players, currency }: PlayersListProps) {
 
   return (
     <div className="space-y-4">
+      {copyToast && (
+        <div
+          className="md:hidden fixed bottom-20 left-1/2 z-[150] max-w-[min(90vw,20rem)] -translate-x-1/2 rounded-lg bg-gray-900 px-4 py-2 text-center text-sm text-white shadow-lg"
+          role="status"
+        >
+          {copyToast}
+        </div>
+      )}
       {/* Bulk actions bar - only show when players are selected */}
       {selectedCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 py-2 px-3 bg-gray-50 rounded-lg">
@@ -375,6 +387,26 @@ export function PlayersList({ players, currency }: PlayersListProps) {
             </Button>
           )}
         </div>
+
+        {/* Mobile: select all eligible for balance reminders (phone + unpaid) */}
+        {selectablePlayers.length > 0 && (
+          <div className="md:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-center"
+              onClick={selectAllSelectable}
+            >
+              {selectedCount === selectablePlayers.length && selectablePlayers.length > 0
+                ? `Deselect all (${selectablePlayers.length})`
+                : `Select all for reminders (${selectablePlayers.length})`}
+            </Button>
+            <p className="text-xs text-gray-500 mt-1.5 px-0.5">
+              Swipe right on a row for the same toggle. Reminders email you a summary per selected player.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Desktop Table */}
@@ -570,19 +602,52 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               rowId={player.id}
               exclusiveOpenId={swipedPlayerOpenId}
               onSwipeOpen={(id) => setSwipedPlayerOpenId(id)}
+              leftWidth={96}
+              rightWidth={96}
               leftUnderlay={
                 <div
                   className={cn(
                     'flex h-full w-full',
-                    player.email ? 'bg-primary' : 'bg-gray-400'
+                    canEmailReminder(player) ? 'bg-emerald-600' : 'bg-gray-400'
                   )}
                 >
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-full w-full rounded-none text-white hover:bg-black/10 hover:text-white disabled:opacity-60"
+                    className="h-full w-full rounded-none text-white hover:bg-black/15 hover:text-white disabled:opacity-60"
+                    disabled={!canEmailReminder(player)}
+                    aria-label={
+                      canEmailReminder(player)
+                        ? selectedIds.has(player.id)
+                          ? `Remove ${player.name} from reminder selection`
+                          : `Select ${player.name} for balance reminder email`
+                        : 'Reminder selection needs phone and unpaid balance'
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      if (canEmailReminder(player)) toggleReminderFromSwipe(player.id)
+                    }}
+                  >
+                    <Mail className="w-5 h-5" />
+                  </Button>
+                </div>
+              }
+              rightUnderlay={
+                <div
+                  className={cn(
+                    'flex h-full w-full',
+                    player.email ? 'bg-slate-700' : 'bg-gray-400'
+                  )}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-full w-full rounded-none text-white hover:bg-black/15 hover:text-white disabled:opacity-60"
                     disabled={!player.email || magicPendingId === player.id}
-                    aria-label={player.email ? 'Generate magic link' : 'No email on file for magic link'}
+                    aria-label={
+                      player.email ? 'Generate magic link and copy to clipboard' : 'No email — magic link unavailable'
+                    }
                     onClick={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
@@ -593,34 +658,13 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                   </Button>
                 </div>
               }
-              rightUnderlay={
-                <div className="flex h-full w-full bg-slate-600">
-                  <Button variant="ghost" className="h-full w-full rounded-none p-0 hover:bg-slate-700" asChild>
-                    <Link
-                      href={`/dashboard/players/${player.id}/edit`}
-                      className="flex items-center justify-center text-white"
-                      aria-label="Edit player"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Pencil className="w-5 h-5" />
-                    </Link>
-                  </Button>
-                </div>
-              }
             >
-              <div className="flex w-full min-w-0 items-center gap-3 py-3 pl-3 pr-1 touch-pan-y bg-white">
-                {canEmailReminder(player) && (
-                  <div className="shrink-0" data-reminder-checkbox>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(player.id)}
-                      onChange={() => toggleSelect(player.id)}
-                      className="rounded border-gray-300 w-4 h-4"
-                      aria-label={`Select ${player.name} for reminder`}
-                    />
-                  </div>
+              <div
+                className={cn(
+                  'flex w-full min-w-0 items-center gap-2 py-3 pl-3 pr-1 touch-pan-y bg-white',
+                  selectedIds.has(player.id) && canEmailReminder(player) && 'bg-orange-50/90 ring-2 ring-inset ring-primary/30'
                 )}
-
+              >
                 <Link
                   href={`/dashboard/players/${player.id}`}
                   className="flex-1 min-w-0 flex items-center gap-3 active:scale-[0.99] transition-transform"
@@ -641,7 +685,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                   </span>
                 </Link>
 
-                <div className="shrink-0 -mr-1" data-action-dropdown>
+                <div className="shrink-0 -mr-1 relative z-20" data-action-dropdown>
                   <PlayerActionsDropdown player={player} />
                 </div>
               </div>

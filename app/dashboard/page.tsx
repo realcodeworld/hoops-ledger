@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, CreditCard, BarChart3, Plus, LineChart } from 'lucide-react'
+import { Users, CreditCard, BarChart2, BarChart3, Plus } from 'lucide-react'
 import { getPlayers } from '@/lib/actions/players'
 import { getOrganizationFinancials } from '@/lib/actions/payments'
 import { getDashboardAttendanceSeries } from '@/lib/actions/dashboard'
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                   Headcount per session (up to the 36 most recent sessions)
                 </CardDescription>
               </div>
-              <LineChart className="h-8 w-8 text-primary shrink-0 hidden sm:block" aria-hidden />
+              <BarChart2 className="h-8 w-8 text-primary shrink-0 hidden sm:block" aria-hidden />
             </div>
           </CardHeader>
           <CardContent className="pt-2">

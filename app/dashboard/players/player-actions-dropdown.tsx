@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,43 +21,47 @@ interface PlayerActionsDropdownProps {
   player: any
 }
 
+const DROPDOWN_WIDTH = 224
+
 export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState<'left' | 'right'>('right')
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left?: number; right?: number }>({
+    top: 0,
+  })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (isOpen && buttonRef.current && dropdownRef.current) {
-      const updatePosition = () => {
-        if (!buttonRef.current) return
+  const updateMenuPosition = () => {
+    const el = buttonRef.current
+    if (!el) return
+    const buttonRect = el.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const gap = 4
+    const top = buttonRect.bottom + gap
+    if (buttonRect.right + DROPDOWN_WIDTH > viewportWidth - 16) {
+      setMenuStyle({
+        top,
+        right: Math.max(8, viewportWidth - buttonRect.right),
+        left: undefined,
+      })
+    } else {
+      setMenuStyle({
+        top,
+        left: Math.max(8, buttonRect.left),
+        right: undefined,
+      })
+    }
+  }
 
-        const buttonRect = buttonRef.current.getBoundingClientRect()
-        const dropdownWidth = 224 // w-56 = 14rem = 224px
-        const viewportWidth = window.innerWidth
-
-        // Check if dropdown would overflow on the right
-        if (buttonRect.right + dropdownWidth > viewportWidth - 16) {
-          setDropdownPosition('left')
-        } else {
-          setDropdownPosition('right')
-        }
-      }
-
-      updatePosition()
-
-      // Update position on scroll or resize
-      const handlePositionUpdate = () => {
-        updatePosition()
-      }
-
-      window.addEventListener('scroll', handlePositionUpdate)
-      window.addEventListener('resize', handlePositionUpdate)
-
-      return () => {
-        window.removeEventListener('scroll', handlePositionUpdate)
-        window.removeEventListener('resize', handlePositionUpdate)
-      }
+  useLayoutEffect(() => {
+    if (!isOpen) return
+    updateMenuPosition()
+    const handlePositionUpdate = () => updateMenuPosition()
+    window.addEventListener('scroll', handlePositionUpdate, true)
+    window.addEventListener('resize', handlePositionUpdate)
+    return () => {
+      window.removeEventListener('scroll', handlePositionUpdate, true)
+      window.removeEventListener('resize', handlePositionUpdate)
     }
   }, [isOpen])
 
@@ -116,36 +121,24 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
         <MoreHorizontal className="w-4 h-4" />
       </Button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Dropdown */}
-          <div
-            ref={dropdownRef}
-            className={`absolute top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-lg z-50 ${
-              dropdownPosition === 'left' ? 'right-0' : 'left-0'
-            }`}
-            style={{
-              // Ensure dropdown doesn't get clipped by table overflow
-              position: 'fixed',
-              ...(dropdownPosition === 'left' && buttonRef.current
-                ? {
-                    right: `${window.innerWidth - buttonRef.current.getBoundingClientRect().right}px`,
-                    top: `${buttonRef.current.getBoundingClientRect().bottom + 4}px`,
-                  }
-                : buttonRef.current
-                ? {
-                    left: `${buttonRef.current.getBoundingClientRect().left}px`,
-                    top: `${buttonRef.current.getBoundingClientRect().bottom + 4}px`,
-                  }
-                : {})
-            }}>
-            <div className="py-1">
+      {isOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[200] bg-black/20"
+              aria-hidden
+              onClick={() => setIsOpen(false)}
+            />
+            <div
+              ref={dropdownRef}
+              className="fixed z-[201] w-56 bg-white border border-gray-200 rounded-xl shadow-lg py-1"
+              style={{
+                top: menuStyle.top,
+                ...(menuStyle.left != null ? { left: menuStyle.left } : {}),
+                ...(menuStyle.right != null ? { right: menuStyle.right } : {}),
+              }}
+            >
               <Link
                 href={`/dashboard/players/${player.id}`}
                 className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 tap-target"
@@ -154,7 +147,7 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
                 <Eye className="w-4 h-4 mr-3" />
                 View Details
               </Link>
-              
+
               <Link
                 href={`/dashboard/players/${player.id}/edit`}
                 className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 tap-target"
@@ -166,6 +159,7 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
 
               {player.email && (
                 <button
+                  type="button"
                   onClick={handleGenerateMagicLink}
                   disabled={isGeneratingLink}
                   className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 tap-target disabled:opacity-50"
@@ -178,6 +172,7 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
               <div className="border-t border-gray-100 my-1" />
 
               <button
+                type="button"
                 onClick={handleToggleExempt}
                 className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 tap-target"
               >
@@ -195,6 +190,7 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
               </button>
 
               <button
+                type="button"
                 className="flex items-center w-full px-4 py-2 text-sm hover:bg-gray-100 tap-target"
               >
                 {player.isActive ? (
@@ -210,9 +206,9 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
                 )}
               </button>
             </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.body
+        )}
     </div>
   )
 }

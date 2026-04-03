@@ -1,9 +1,9 @@
 "use client"
 
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,7 +11,7 @@ import {
 } from "recharts"
 import type { DashboardAttendancePoint } from "@/lib/actions/dashboard"
 
-const STROKE = "#F97316"
+const BAR_FILL = "#F97316"
 
 type Props = {
   data: DashboardAttendancePoint[]
@@ -29,7 +29,7 @@ export function AttendanceOverTimeChart({ data }: Props) {
   return (
     <div className="w-full h-[min(22rem,55vw)] min-h-[240px]">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
+        <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
           <XAxis
             dataKey="label"
@@ -70,16 +70,14 @@ export function AttendanceOverTimeChart({ data }: Props) {
             }}
             formatter={(value) => [`${value} players`, "Attendance"]}
           />
-          <Line
-            type="monotone"
+          <Bar
             dataKey="attendees"
             name="Attendance"
-            stroke={STROKE}
-            strokeWidth={2}
-            dot={{ r: 3, fill: STROKE, strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: STROKE }}
+            fill={BAR_FILL}
+            radius={[4, 4, 0, 0]}
+            maxBarSize={48}
           />
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   )
