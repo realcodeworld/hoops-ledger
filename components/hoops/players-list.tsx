@@ -667,10 +667,13 @@ export function PlayersList({ players, currency }: PlayersListProps) {
               >
                 <Link
                   href={`/dashboard/players/${player.id}`}
-                  className="flex-1 min-w-0 flex items-center gap-3 active:scale-[0.99] transition-transform"
+                  className="flex-1 min-w-0 block active:scale-[0.99] transition-transform"
                 >
                   <span className="font-medium truncate">{player.name}</span>
-                  <span className="shrink-0 tabular-nums text-sm">
+                </Link>
+
+                <div className="flex items-center gap-2 shrink-0 pr-0.5">
+                  <span className="tabular-nums text-sm text-right min-w-[3.5rem]">
                     {player.credit > 0 ? (
                       <span className="text-green-600">
                         +<CurrencyDisplay amountPence={player.credit} />
@@ -683,10 +686,9 @@ export function PlayersList({ players, currency }: PlayersListProps) {
                       <span className="text-gray-400">–</span>
                     )}
                   </span>
-                </Link>
-
-                <div className="shrink-0 -mr-1 relative z-20" data-action-dropdown>
-                  <PlayerActionsDropdown player={player} />
+                  <div className="relative z-20" data-action-dropdown>
+                    <PlayerActionsDropdown player={player} />
+                  </div>
                 </div>
               </div>
             </SwipeableRow>
