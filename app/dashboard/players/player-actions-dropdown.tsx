@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { togglePlayerExempt } from '@/lib/actions/players'
 import { generateMagicLink } from '@/lib/actions/auth'
+import { MagicLinkResultDialog } from '@/components/hoops/magic-link-result-dialog'
 
 interface PlayerActionsDropdownProps {
   player: any
@@ -66,32 +67,31 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
   }, [isOpen])
 
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
+  const [magicLinkModal, setMagicLinkModal] = useState<{
+    url: string
+    playerName: string
+  } | null>(null)
 
   const handleGenerateMagicLink = async () => {
     if (!player.email) {
       alert('Player must have an email address to generate a magic link')
       return
     }
-    
+
     setIsGeneratingLink(true)
     try {
       const result = await generateMagicLink(player.id)
       if (result.success) {
-        // Show the link to the admin to copy
         const linkText = result.url || ''
-        navigator.clipboard.writeText(linkText).then(() => {
-          alert(`Magic link copied to clipboard!\n\nLink: ${linkText}\n\nShare this link directly with ${player.name}. It expires in 15 minutes and can only be used once.`)
-        }).catch(() => {
-          alert(`Magic link generated:\n\n${linkText}\n\nCopy this link and share it with ${player.name}. It expires in 15 minutes and can only be used once.`)
-        })
+        setMagicLinkModal({ url: linkText, playerName: player.name })
+        setIsOpen(false)
       } else {
         alert(`Failed to generate magic link: ${result.error}`)
       }
-    } catch (error) {
+    } catch {
       alert('Failed to generate magic link')
     } finally {
       setIsGeneratingLink(false)
-      setIsOpen(false)
     }
   }
 
@@ -111,6 +111,14 @@ export function PlayerActionsDropdown({ player }: PlayerActionsDropdownProps) {
 
   return (
     <div className="relative">
+      <MagicLinkResultDialog
+        open={magicLinkModal != null}
+        onOpenChange={(open) => {
+          if (!open) setMagicLinkModal(null)
+        }}
+        url={magicLinkModal?.url ?? ''}
+        playerName={magicLinkModal?.playerName ?? ''}
+      />
       <Button
         ref={buttonRef}
         variant="ghost"

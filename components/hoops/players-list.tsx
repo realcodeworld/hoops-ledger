@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button'
 import { emailBulkBalanceRemindersToAdmin } from '@/lib/actions/balance-reminders'
 import { generateMagicLink } from '@/lib/actions/auth'
 import { SwipeableRow } from '@/components/hoops/swipeable-row'
+import { MagicLinkResultDialog } from '@/components/hoops/magic-link-result-dialog'
 
 type SortKey = 'name' | 'category' | 'status' | 'balance' | 'sessions'
 type SortDir = 'asc' | 'desc'
@@ -83,7 +84,10 @@ export function PlayersList({ players, currency }: PlayersListProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [swipedPlayerOpenId, setSwipedPlayerOpenId] = useState<string | null>(null)
   const [magicPendingId, setMagicPendingId] = useState<string | null>(null)
-  const [copyToast, setCopyToast] = useState<string | null>(null)
+  const [magicLinkModal, setMagicLinkModal] = useState<{
+    url: string
+    playerName: string
+  } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -99,15 +103,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
       const result = await generateMagicLink(player.id)
       if (result.success) {
         const linkText = result.url || ''
-        try {
-          await navigator.clipboard.writeText(linkText)
-          setCopyToast(`Magic link copied for ${player.name} (15 min, one use)`)
-          setTimeout(() => setCopyToast(null), 3500)
-        } catch {
-          alert(
-            `Copy failed. Magic link:\n\n${linkText}\n\nShare with ${player.name}. Expires in 15 minutes, one use.`
-          )
-        }
+        setMagicLinkModal({ url: linkText, playerName: player.name })
       } else {
         alert(`Failed to generate magic link: ${result.error}`)
       }
@@ -262,14 +258,14 @@ export function PlayersList({ players, currency }: PlayersListProps) {
 
   return (
     <div className="space-y-4">
-      {copyToast && (
-        <div
-          className="md:hidden fixed bottom-20 left-1/2 z-[150] max-w-[min(90vw,20rem)] -translate-x-1/2 rounded-lg bg-gray-900 px-4 py-2 text-center text-sm text-white shadow-lg"
-          role="status"
-        >
-          {copyToast}
-        </div>
-      )}
+      <MagicLinkResultDialog
+        open={magicLinkModal != null}
+        onOpenChange={(open) => {
+          if (!open) setMagicLinkModal(null)
+        }}
+        url={magicLinkModal?.url ?? ''}
+        playerName={magicLinkModal?.playerName ?? ''}
+      />
       {/* Bulk actions bar - only show when players are selected */}
       {selectedCount > 0 && (
         <div className="flex flex-wrap items-center gap-2 py-2 px-3 bg-gray-50 rounded-lg">

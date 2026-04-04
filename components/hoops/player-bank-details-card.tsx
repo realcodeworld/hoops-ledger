@@ -8,10 +8,13 @@ export function CopyRow({
   label,
   value,
   mono,
+  breakAll,
 }: {
   label: string
   value: string
   mono?: boolean
+  /** Prefer for long URLs so they wrap within the row */
+  breakAll?: boolean
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -30,7 +33,7 @@ export function CopyRow({
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-gray-500">{label}</p>
         <p
-          className={`mt-0.5 text-sm font-semibold text-gray-900 break-words ${mono ? 'font-mono tabular-nums tracking-tight' : ''}`}
+          className={`mt-0.5 text-sm font-semibold text-gray-900 ${breakAll ? 'break-all' : 'break-words'} ${mono ? 'font-mono tabular-nums tracking-tight' : ''}`}
         >
           {value}
         </p>
@@ -57,16 +60,17 @@ type Props = {
   accountName: string
   sortCode: string
   accountNumber: string
+  paymentRef: string
 }
 
 /**
  * Collapsible bank transfer block styled like the online payment control; expands to show details.
- * Pair with `PaymentReferenceCopyField` above so the reference is visible before expanding.
  */
 export function PlayerBankTransferCollapsible({
   accountName,
   sortCode,
   accountNumber,
+  paymentRef,
 }: Props) {
   const [open, setOpen] = useState(false)
 
@@ -90,10 +94,11 @@ export function PlayerBankTransferCollapsible({
       {open && (
         <div className="border-t border-red-100 bg-slate-50/90 px-4 py-4">
           <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-            Use the payment reference shown above this section when you pay — it helps your organiser
-            match your transfer. Copy each line below into your banking app.
+            Use your personal payment reference when you pay — it helps your organiser match your
+            transfer. Copy each line into your banking app.
           </p>
           <div className="rounded-xl border border-gray-200 bg-white px-3 py-1">
+            <CopyRow label="Payment reference" value={paymentRef} mono />
             <CopyRow label="Account name" value={accountName} />
             <CopyRow label="Sort code" value={sortCode} mono />
             <CopyRow label="Account number" value={accountNumber} mono />

@@ -6,7 +6,6 @@ import { CreditCard, Calendar, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
 import { PlayerBankTransferCollapsible } from '@/components/hoops/player-bank-details-card'
-import { PaymentReferenceCopyField } from '@/components/hoops/payment-reference-copy'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
@@ -161,14 +160,12 @@ export default async function PlayerPaymentsPage() {
           {org.bankAccountName &&
             org.bankSortCode &&
             org.bankAccountNumber && (
-              <div className="space-y-3">
-                <PaymentReferenceCopyField paymentRef={playerData.paymentRef} />
-                <PlayerBankTransferCollapsible
-                  accountName={org.bankAccountName}
-                  sortCode={org.bankSortCode}
-                  accountNumber={org.bankAccountNumber}
-                />
-              </div>
+              <PlayerBankTransferCollapsible
+                accountName={org.bankAccountName}
+                sortCode={org.bankSortCode}
+                accountNumber={org.bankAccountNumber}
+                paymentRef={playerData.paymentRef}
+              />
             )}
           <p className="text-sm text-gray-600">
             {hasUnpaidBalance
