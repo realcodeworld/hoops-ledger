@@ -115,6 +115,28 @@ export function NewPlayerForm({ pricingRules, currency }: NewPlayerFormProps) {
         </p>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="openingBalancePounds">Balance carried forward (optional)</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+            {currencySymbol}
+          </span>
+          <Input
+            id="openingBalancePounds"
+            name="openingBalancePounds"
+            type="text"
+            inputMode="decimal"
+            placeholder="0.00"
+            disabled={isSubmitting}
+            className="pl-8"
+            autoComplete="off"
+          />
+        </div>
+        <p className="text-xs text-gray-500">
+          Debt from before Hoops Ledger. It adds to session fees; recorded payments reduce the total owed.
+        </p>
+      </div>
+
       {error && (
         <Card className="bg-red-50 border-red-200 p-4">
           <p className="text-sm text-red-700">{error}</p>

@@ -116,7 +116,9 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
     }),
   ])
 
-  const totalOwed = totalFeesOwed._sum.feeAppliedPence || 0
+  const totalSessionFeesPence = totalFeesOwed._sum.feeAppliedPence || 0
+  const openingBalancePence = player.openingBalancePence ?? 0
+  const totalOwed = totalSessionFeesPence + openingBalancePence
   const totalPaid = totalPayments._sum.amountPence || 0
   const balanceDifference = totalOwed - totalPaid
   const unpaid = Math.max(0, balanceDifference)
@@ -260,6 +262,52 @@ export default async function PlayerDetailsPage({ params }: PlayerDetailsPagePro
                     <span>{new Date(player.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Balance breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">Session fees (recorded)</span>
+                  <span className="font-medium tabular-nums">
+                    <CurrencyDisplay amountPence={totalSessionFeesPence} />
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">Carried forward (before Hoops Ledger)</span>
+                  <span className="font-medium tabular-nums">
+                    <CurrencyDisplay amountPence={openingBalancePence} />
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4 border-t border-gray-100 pt-3">
+                  <span className="text-gray-700 font-medium">Total owed</span>
+                  <span className="font-semibold tabular-nums">
+                    <CurrencyDisplay amountPence={totalOwed} />
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">Payments recorded</span>
+                  <span className="font-medium tabular-nums text-green-700">
+                    <CurrencyDisplay amountPence={totalPaid} />
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4 border-t border-gray-100 pt-3">
+                  <span className="text-gray-900 font-medium">
+                    {credit > 0 ? 'In credit' : 'Amount due'}
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    <CurrencyDisplay
+                      amountPence={credit > 0 ? credit : unpaid}
+                      className={unpaid > 0 ? 'text-orange-600' : credit > 0 ? 'text-green-600' : 'text-gray-600'}
+                    />
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 pt-1">
+                  Carried forward is combined with session fees; payments reduce the total until clear.
+                </p>
               </CardContent>
             </Card>
 

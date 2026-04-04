@@ -75,6 +75,8 @@ model Player {
   notes              String?
   isActive           Boolean     @default(true)
   hideFromLeaderboard Boolean   @default(false)
+  /// Debt owed before using Hoops Ledger; combined with session fees vs payments (single bucket).
+  openingBalancePence Int       @default(0)
   createdAt          DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   lastLoginAt        DateTime?

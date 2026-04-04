@@ -2,6 +2,7 @@
 
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { computeNetBalancePence } from '@/lib/player-balance'
 import { getCurrentUser, getCurrentPlayer } from '@/lib/auth'
 
 const reportRangeSchema = z.object({
@@ -313,20 +314,27 @@ export async function getMyPlayerReport(days = 30) {
       },
     })
 
-    // Financial summary
-    const financialSummary = await prisma.attendance.aggregate({
-      where: { playerId: currentPlayer.id },
-      _sum: {
-        feeAppliedPence: true,
-      },
-    })
-
-    const paymentSummary = await prisma.payment.aggregate({
-      where: { playerId: currentPlayer.id },
-      _sum: {
-        amountPence: true,
-      },
-    })
+    const [financialSummary, paymentSummary, playerRow] = await Promise.all([
+      prisma.attendance.aggregate({
+        where: {
+          playerId: currentPlayer.id,
+          status: { in: ['unpaid', 'paid'] },
+        },
+        _sum: {
+          feeAppliedPence: true,
+        },
+      }),
+      prisma.payment.aggregate({
+        where: { playerId: currentPlayer.id },
+        _sum: {
+          amountPence: true,
+        },
+      }),
+      prisma.player.findUnique({
+        where: { id: currentPlayer.id },
+        select: { openingBalancePence: true },
+      }),
+    ])
 
     // Session history (last 20 sessions)
     const sessionHistory = await prisma.attendance.findMany({
@@ -345,8 +353,14 @@ export async function getMyPlayerReport(days = 30) {
       take: 20,
     })
 
-    // Outstanding balance
-    const balance = (financialSummary._sum.feeAppliedPence || 0) - (paymentSummary._sum.amountPence || 0)
+    const totalSessionFeesPence = financialSummary._sum.feeAppliedPence || 0
+    const totalPaidPence = paymentSummary._sum.amountPence || 0
+    const openingBalancePence = playerRow?.openingBalancePence ?? 0
+    const { net: currentBalance } = computeNetBalancePence({
+      totalSessionFeesPence,
+      openingBalancePence,
+      totalPaidPence,
+    })
 
     return {
       success: true,
@@ -355,9 +369,10 @@ export async function getMyPlayerReport(days = 30) {
         period: { days, rangeStart },
         attendanceInRange,
         lifetimeAttendance,
-        lifetimePaid: paymentSummary._sum.amountPence || 0,
-        lifetimeOwed: financialSummary._sum.feeAppliedPence || 0,
-        currentBalance: balance,
+        lifetimePaid: totalPaidPence,
+        lifetimeOwed: totalSessionFeesPence,
+        openingBalancePence,
+        currentBalance,
         sessionHistory,
       },
     }

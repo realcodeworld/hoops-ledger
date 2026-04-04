@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { getPlayers } from '@/lib/actions/players'
-import { getPlayerBalance } from '@/lib/actions/payments'
 import Link from 'next/link'
 import { PlayersList } from '@/components/hoops/players-list'
 
@@ -31,6 +30,7 @@ export default async function PlayersPage() {
       credit: 0,
       unpaidBalance: 0,
       totalFeesOwed: 0,
+      openingBalancePence: 0,
       totalPaid: 0,
     }
     return {
@@ -38,6 +38,7 @@ export default async function PlayersPage() {
       balance: balanceData.balance,
       credit: balanceData.credit,
       unpaidBalance: balanceData.unpaidBalance,
+      openingBalancePence: balanceData.openingBalancePence,
     }
   })
 

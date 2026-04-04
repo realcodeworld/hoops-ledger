@@ -10,6 +10,15 @@ import { generatePlayerPaymentRef } from '@/lib/generate-player-payment-ref'
 
 const PAYMENT_REF_MAX_ATTEMPTS = 16
 
+/** Parses optional major-units currency field from FormData (e.g. "12.50" → 1250 pence). */
+function parseOpeningBalancePenceFromForm(formData: FormData): number {
+  const raw = formData.get('openingBalancePounds')
+  if (raw == null || String(raw).trim() === '') return 0
+  const n = parseFloat(String(raw).replace(/[^0-9.-]/g, ''))
+  if (Number.isNaN(n) || n < 0) return 0
+  return Math.round(n * 100)
+}
+
 async function createPlayerWithUniquePaymentRef(
   data: Omit<Prisma.PlayerCreateInput, 'paymentRef'>
 ) {
@@ -78,12 +87,15 @@ export async function createPlayer(formData: FormData) {
       ? normalizeToE164(data.phone.trim()) ?? null
       : null
 
+    const openingBalancePence = parseOpeningBalancePenceFromForm(formData)
+
     const player = await createPlayerWithUniquePaymentRef({
       name: data.name,
       email: data.email || null,
       phone: phoneToStore,
       notes: data.notes || null,
       isExempt: data.isExempt,
+      openingBalancePence,
       org: { connect: { id: currentUser.orgId } },
       pricingRule: { connect: { id: data.pricingRuleId } },
     })
@@ -146,6 +158,8 @@ export async function updatePlayer(formData: FormData) {
       ? normalizeToE164(data.phone.trim()) ?? null
       : null
 
+    const openingBalancePence = parseOpeningBalancePenceFromForm(formData)
+
     const updatedPlayer = await prisma.player.update({
       where: { id: data.id },
       data: {
@@ -157,6 +171,7 @@ export async function updatePlayer(formData: FormData) {
         isActive: data.isActive,
         hideFromLeaderboard: data.hideFromLeaderboard,
         notes: data.notes || null,
+        openingBalancePence,
       },
     })
 
@@ -174,6 +189,7 @@ export async function updatePlayer(formData: FormData) {
     })
 
     revalidatePath('/dashboard/players')
+    revalidatePath(`/dashboard/players/${data.id}`)
     revalidatePath('/dashboard/leaderboard')
     return { success: true, data: updatedPlayer }
   } catch (error) {

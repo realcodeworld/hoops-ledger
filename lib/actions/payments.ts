@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { PaymentMethod } from '@prisma/client'
+import { computeNetBalancePence } from '@/lib/player-balance'
 
 const createPaymentSchema = z.object({
   playerId: z.string().min(1, 'Player is required'),
@@ -290,26 +291,13 @@ export async function getPlayerBalance(playerId: string) {
       throw new Error('Player not found')
     }
 
-    // Calculate unpaid balance
-    // Unpaid balance = sum of only unpaid fees
-    const unpaidResult = await prisma.attendance.aggregate({
-      where: {
-        playerId,
-        status: 'unpaid',
-      },
-      _sum: {
-        feeAppliedPence: true,
-      },
-    })
+    const openingBalancePence = player.openingBalancePence ?? 0
 
-    const unpaidBalance = unpaidResult._sum.feeAppliedPence || 0
-
-    // Also calculate total fees and payments for reference
     const attendanceResult = await prisma.attendance.aggregate({
       where: {
         playerId,
         status: {
-          in: ['unpaid', 'paid'], // Include both unpaid and paid fees in balance calculation
+          in: ['unpaid', 'paid'],
         },
       },
       _sum: {
@@ -326,24 +314,28 @@ export async function getPlayerBalance(playerId: string) {
       },
     })
 
-    const totalFeesOwed = attendanceResult._sum.feeAppliedPence || 0
+    const totalSessionFeesPence = attendanceResult._sum.feeAppliedPence || 0
     const totalPaid = paymentResult._sum.amountPence || 0
 
-    // Calculate credit (overpayment)
-    const credit = totalPaid - totalFeesOwed
+    const net = computeNetBalancePence({
+      totalSessionFeesPence,
+      openingBalancePence,
+      totalPaidPence: totalPaid,
+    })
 
-    // Return unpaid balance if they owe money, otherwise return credit as negative (so it displays as positive credit)
-    const balance = unpaidBalance > 0 ? unpaidBalance : (credit > 0 ? -credit : 0)
+    // Legacy `balance`: signed net (positive = owes, negative = credit)
+    const balance = net.net
 
     return {
       success: true,
       data: {
         playerId,
-        totalFeesOwed,
+        totalFeesOwed: totalSessionFeesPence,
+        openingBalancePence,
         totalPaid,
         balance,
-        unpaidBalance,
-        credit: credit > 0 ? credit : 0,
+        unpaidBalance: net.amountDue,
+        credit: net.credit,
       }
     }
   } catch (error) {
@@ -361,20 +353,7 @@ export async function getPlayerBalance(playerId: string) {
  */
 export async function getPlayerBalancesBatch(playerIds: string[], orgId: string) {
   try {
-    // Fetch all attendance aggregates in parallel
-    const [unpaidAttendances, allAttendances, payments] = await Promise.all([
-      // Unpaid fees per player
-      prisma.attendance.groupBy({
-        by: ['playerId'],
-        where: {
-          playerId: { in: playerIds },
-          status: 'unpaid',
-        },
-        _sum: {
-          feeAppliedPence: true,
-        },
-      }),
-      // All fees (unpaid + paid) per player
+    const [allAttendances, payments, openingRows] = await Promise.all([
       prisma.attendance.groupBy({
         by: ['playerId'],
         where: {
@@ -385,7 +364,6 @@ export async function getPlayerBalancesBatch(playerIds: string[], orgId: string)
           feeAppliedPence: true,
         },
       }),
-      // All payments per player
       prisma.payment.groupBy({
         by: ['playerId'],
         where: {
@@ -395,34 +373,44 @@ export async function getPlayerBalancesBatch(playerIds: string[], orgId: string)
           amountPence: true,
         },
       }),
+      prisma.player.findMany({
+        where: {
+          id: { in: playerIds },
+          orgId,
+        },
+        select: { id: true, openingBalancePence: true },
+      }),
     ])
 
-    // Create maps for quick lookup
-    const unpaidMap = new Map(unpaidAttendances.map(a => [a.playerId, a._sum.feeAppliedPence || 0]))
     const totalFeesMap = new Map(allAttendances.map(a => [a.playerId, a._sum.feeAppliedPence || 0]))
     const paymentsMap = new Map(payments.map(p => [p.playerId, p._sum.amountPence || 0]))
+    const openingMap = new Map(openingRows.map((p) => [p.id, p.openingBalancePence ?? 0]))
 
-    // Calculate balances for each player
     const balances = new Map<string, {
       balance: number
       credit: number
       unpaidBalance: number
       totalFeesOwed: number
+      openingBalancePence: number
       totalPaid: number
     }>()
 
     for (const playerId of playerIds) {
-      const totalFeesOwed = totalFeesMap.get(playerId) || 0
+      const totalSessionFeesPence = totalFeesMap.get(playerId) || 0
       const totalPaid = paymentsMap.get(playerId) || 0
-      const unpaidBalance = unpaidMap.get(playerId) || 0
-      const credit = Math.max(0, totalPaid - totalFeesOwed)
-      const balance = unpaidBalance > 0 ? unpaidBalance : (credit > 0 ? -credit : 0)
+      const openingBalancePence = openingMap.get(playerId) ?? 0
+      const net = computeNetBalancePence({
+        totalSessionFeesPence,
+        openingBalancePence,
+        totalPaidPence: totalPaid,
+      })
 
       balances.set(playerId, {
-        balance,
-        credit,
-        unpaidBalance,
-        totalFeesOwed,
+        balance: net.net,
+        credit: net.credit,
+        unpaidBalance: net.amountDue,
+        totalFeesOwed: totalSessionFeesPence,
+        openingBalancePence,
         totalPaid,
       })
     }

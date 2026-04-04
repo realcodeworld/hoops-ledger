@@ -173,6 +173,33 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
                   E.164 only (e.g. +447700900123)
                 </p>
               </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="openingBalancePounds">Balance carried forward (before Hoops Ledger)</Label>
+                <div className="relative max-w-xs">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                    {getCurrencySymbol(currency)}
+                  </span>
+                  <Input
+                    id="openingBalancePounds"
+                    name="openingBalancePounds"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    disabled={isPending}
+                    className="pl-8"
+                    autoComplete="off"
+                    defaultValue={
+                      (player.openingBalancePence ?? 0) > 0
+                        ? ((player.openingBalancePence ?? 0) / 100).toFixed(2)
+                        : ''
+                    }
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Combined with session fees in one balance; payments you record reduce the total until clear.
+                </p>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -306,6 +333,7 @@ export function PlayerEditForm({ player, pricingRules, currency }: PlayerEditFor
             <p>• <strong>Exempt Status:</strong> Exempt players will never be charged fees, regardless of session pricing</p>
             <p>• <strong>Active Status:</strong> Inactive players won't appear in attendance lists but maintain their history</p>
             <p>• <strong>Pricing Changes:</strong> Pricing category changes will affect future session fees but not past attendance</p>
+            <p>• <strong>Carried forward:</strong> Pre-platform debt is combined with session fees; use Record Payment when they pay down the total</p>
           </div>
         </CardContent>
       </Card>

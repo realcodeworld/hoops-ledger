@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { computeNetBalancePence } from '@/lib/player-balance'
 import { sendBalanceReminderToAdmin } from '@/lib/email'
 
 export type UnpaidSessionSummary = {
@@ -11,6 +12,55 @@ export type UnpaidSessionSummary = {
   sessionName: string | null
   startsAt: Date
   feeAppliedPence: number
+}
+
+/** Org fields used for WhatsApp-style payment instructions at the end of balance reminders. */
+export type BalanceReminderOrgPayment = {
+  monzoPayUrl: string | null
+  bankAccountName: string | null
+  bankSortCode: string | null
+  bankAccountNumber: string | null
+}
+
+function buildPaymentFooterLines(
+  paymentRef: string,
+  org: BalanceReminderOrgPayment
+): string[] {
+  const hasBank =
+    !!org.bankAccountName?.trim() &&
+    !!org.bankSortCode?.trim() &&
+    !!org.bankAccountNumber?.trim()
+  const link = org.monzoPayUrl?.trim()
+  const hasLink = !!link
+
+  if (!hasBank && !hasLink) {
+    return []
+  }
+
+  const lines: string[] = [
+    '',
+    '──────────',
+    '*How to pay*',
+    '',
+  ]
+
+  if (hasLink && link) {
+    lines.push('*Pay online*', link, '')
+  }
+
+  if (hasBank) {
+    lines.push(
+      '*Bank transfer*',
+      `Account name: ${org.bankAccountName}`,
+      `Sort code: ${org.bankSortCode}`,
+      `Account number: ${org.bankAccountNumber}`,
+      '',
+      '*Payment reference* (use this exact text on your transfer):',
+      paymentRef
+    )
+  }
+
+  return lines
 }
 
 export async function getPlayerUnpaidSummary(playerId: string) {
@@ -31,23 +81,40 @@ export async function getPlayerUnpaidSummary(playerId: string) {
       throw new Error('Player not found')
     }
 
-    const unpaidAttendances = await prisma.attendance.findMany({
-      where: {
-        playerId,
-        status: 'unpaid',
-      },
-      include: {
-        session: true,
-      },
-      orderBy: {
-        session: { startsAt: 'asc' },
-      },
-    })
+    const [unpaidAttendances, sessionFeesAgg, totalPaidAgg] = await Promise.all([
+      prisma.attendance.findMany({
+        where: {
+          playerId,
+          status: 'unpaid',
+        },
+        include: {
+          session: true,
+        },
+        orderBy: {
+          session: { startsAt: 'asc' },
+        },
+      }),
+      prisma.attendance.aggregate({
+        where: {
+          playerId,
+          status: { in: ['unpaid', 'paid'] },
+        },
+        _sum: { feeAppliedPence: true },
+      }),
+      prisma.payment.aggregate({
+        where: { playerId },
+        _sum: { amountPence: true },
+      }),
+    ])
 
-    const unpaidBalancePence = unpaidAttendances.reduce(
-      (sum, a) => sum + a.feeAppliedPence,
-      0
-    )
+    const totalSessionFeesPence = sessionFeesAgg._sum.feeAppliedPence || 0
+    const totalPaidPence = totalPaidAgg._sum.amountPence || 0
+    const openingBalancePence = player.openingBalancePence ?? 0
+    const { amountDue: unpaidBalancePence } = computeNetBalancePence({
+      totalSessionFeesPence,
+      openingBalancePence,
+      totalPaidPence,
+    })
 
     const unpaidSessions: UnpaidSessionSummary[] = unpaidAttendances.map(
       (a) => ({
@@ -63,6 +130,7 @@ export async function getPlayerUnpaidSummary(playerId: string) {
       data: {
         unpaidBalancePence,
         unpaidSessions,
+        openingBalancePence,
       },
     }
   } catch (error) {
@@ -78,7 +146,10 @@ export async function getPlayerUnpaidSummary(playerId: string) {
 function buildReminderMessage(
   playerName: string,
   unpaidBalancePence: number,
-  unpaidSessions: UnpaidSessionSummary[]
+  unpaidSessions: UnpaidSessionSummary[],
+  openingBalancePence: number,
+  paymentRef: string,
+  orgPayment: BalanceReminderOrgPayment
 ): string {
   const lines: string[] = [
     `Hi ${playerName},`,
@@ -87,14 +158,29 @@ function buildReminderMessage(
     '',
   ]
 
+  if (openingBalancePence > 0) {
+    lines.push(
+      `This includes ${formatCurrency(openingBalancePence)} carried forward from last year.`,
+      ''
+    )
+  }
+
   if (unpaidSessions.length > 0) {
-    lines.push('Unpaid sessions:')
+    lines.push('*Unpaid sessions*')
     for (const s of unpaidSessions) {
       lines.push(
-        `- ${s.sessionName || 'Session'} (${formatDate(s.startsAt)}) – ${formatCurrency(s.feeAppliedPence)}`
+        `• ${s.sessionName || 'Session'} (${formatDate(s.startsAt)}) — ${formatCurrency(s.feeAppliedPence)}`
       )
     }
+    lines.push('')
   }
+
+  lines.push('Please arrange payment when you can.')
+  const footerLines = buildPaymentFooterLines(paymentRef, orgPayment)
+  if (footerLines.length > 0) {
+    lines.push(...footerLines)
+  }
+  lines.push('', 'Thanks!')
 
   return lines.join('\n')
 }
@@ -132,7 +218,7 @@ export async function emailBalanceReminderToAdmin(playerId: string) {
       }
     }
 
-    const { unpaidBalancePence, unpaidSessions } = summaryResult.data
+    const { unpaidBalancePence, unpaidSessions, openingBalancePence } = summaryResult.data
 
     if (unpaidBalancePence === 0) {
       return {
@@ -141,10 +227,30 @@ export async function emailBalanceReminderToAdmin(playerId: string) {
       }
     }
 
+    const org = await prisma.organization.findUnique({
+      where: { id: currentUser.orgId },
+      select: {
+        monzoPayUrl: true,
+        bankAccountName: true,
+        bankSortCode: true,
+        bankAccountNumber: true,
+      },
+    })
+
+    const orgPayment: BalanceReminderOrgPayment = org ?? {
+      monzoPayUrl: null,
+      bankAccountName: null,
+      bankSortCode: null,
+      bankAccountNumber: null,
+    }
+
     const message = buildReminderMessage(
       player.name,
       unpaidBalancePence,
-      unpaidSessions
+      unpaidSessions,
+      openingBalancePence ?? 0,
+      player.paymentRef,
+      orgPayment
     )
 
     const payload = {
@@ -210,6 +316,23 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
       []
     const includedPlayerIds: string[] = []
 
+    const org = await prisma.organization.findUnique({
+      where: { id: currentUser.orgId },
+      select: {
+        monzoPayUrl: true,
+        bankAccountName: true,
+        bankSortCode: true,
+        bankAccountNumber: true,
+      },
+    })
+
+    const orgPayment: BalanceReminderOrgPayment = org ?? {
+      monzoPayUrl: null,
+      bankAccountName: null,
+      bankSortCode: null,
+      bankAccountNumber: null,
+    }
+
     for (const playerId of playerIds) {
       const player = await prisma.player.findFirst({
         where: {
@@ -242,7 +365,7 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
         continue
       }
 
-      const { unpaidBalancePence, unpaidSessions } = summaryResult.data
+      const { unpaidBalancePence, unpaidSessions, openingBalancePence } = summaryResult.data
 
       if (unpaidBalancePence === 0) {
         results.push({ playerId, included: false, error: 'No unpaid balance' })
@@ -252,7 +375,10 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
       const message = buildReminderMessage(
         player.name,
         unpaidBalancePence,
-        unpaidSessions
+        unpaidSessions,
+        openingBalancePence ?? 0,
+        player.paymentRef,
+        orgPayment
       )
 
       payloads.push({

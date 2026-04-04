@@ -59,6 +59,7 @@ interface PlayerWithBalance {
   balance: number
   credit: number
   unpaidBalance: number
+  openingBalancePence?: number
 }
 
 interface PlayersListProps {
