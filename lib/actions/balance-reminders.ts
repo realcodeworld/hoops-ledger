@@ -6,6 +6,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { computeNetBalancePence } from '@/lib/player-balance'
 import { sendBalanceReminderToAdmin } from '@/lib/email'
+import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
 
 export type UnpaidSessionSummary = {
   sessionId: string
@@ -24,13 +25,14 @@ export type BalanceReminderOrgPayment = {
 
 function buildPaymentFooterLines(
   paymentRef: string,
-  org: BalanceReminderOrgPayment
+  org: BalanceReminderOrgPayment,
+  payOnlineUrl: string | null
 ): string[] {
   const hasBank =
     !!org.bankAccountName?.trim() &&
     !!org.bankSortCode?.trim() &&
     !!org.bankAccountNumber?.trim()
-  const link = org.monzoPayUrl?.trim()
+  const link = payOnlineUrl?.trim()
   const hasLink = !!link
 
   if (!hasBank && !hasLink) {
@@ -149,7 +151,8 @@ function buildReminderMessage(
   unpaidSessions: UnpaidSessionSummary[],
   openingBalancePence: number,
   paymentRef: string,
-  orgPayment: BalanceReminderOrgPayment
+  orgPayment: BalanceReminderOrgPayment,
+  payOnlineUrl: string | null
 ): string {
   const lines: string[] = [
     `🏀 Hi ${playerName},`,
@@ -176,7 +179,7 @@ function buildReminderMessage(
   }
 
   lines.push('Please arrange payment when you can.')
-  const footerLines = buildPaymentFooterLines(paymentRef, orgPayment)
+  const footerLines = buildPaymentFooterLines(paymentRef, orgPayment, payOnlineUrl)
   if (footerLines.length > 0) {
     lines.push(...footerLines)
   }
@@ -244,13 +247,20 @@ export async function emailBalanceReminderToAdmin(playerId: string) {
       bankAccountNumber: null,
     }
 
+    const payOnlineUrl = buildMonzoPaymentUrl(
+      orgPayment.monzoPayUrl,
+      unpaidBalancePence,
+      player.paymentRef
+    )
+
     const message = buildReminderMessage(
       player.name,
       unpaidBalancePence,
       unpaidSessions,
       openingBalancePence ?? 0,
       player.paymentRef,
-      orgPayment
+      orgPayment,
+      payOnlineUrl
     )
 
     const payload = {
@@ -372,13 +382,20 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
         continue
       }
 
+      const payOnlineUrl = buildMonzoPaymentUrl(
+        orgPayment.monzoPayUrl,
+        unpaidBalancePence,
+        player.paymentRef
+      )
+
       const message = buildReminderMessage(
         player.name,
         unpaidBalancePence,
         unpaidSessions,
         openingBalancePence ?? 0,
         player.paymentRef,
-        orgPayment
+        orgPayment,
+        payOnlineUrl
       )
 
       payloads.push({

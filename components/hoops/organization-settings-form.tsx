@@ -149,9 +149,10 @@ export function OrganizationSettingsForm({ organization, isAdmin }: Organization
               className="w-full"
             />
             <p className="text-xs text-gray-500">
-              Optional. Players see an &quot;Online payment&quot; button on the Balance card (dashboard
-              and payments). Paste the full https link from your provider (e.g. Monzo.me). Amount and
-              reference are set in that app when you create the link. Must be monzo.me or monzo.com.
+              Optional. Paste your Monzo.me profile URL only (e.g. https://monzo.me/yourusername) — no
+              amount in the link. When a player owes money, we append the amount due and their payment
+              reference automatically (<code className="text-[11px] bg-gray-100 px-1 rounded">…/10.00?d=…</code>
+              ). Must be monzo.me or monzo.com.
             </p>
           </div>
 

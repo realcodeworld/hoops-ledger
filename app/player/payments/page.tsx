@@ -9,6 +9,8 @@ import { PlayerBankTransferCollapsible } from '@/components/hoops/player-bank-de
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
+import { computeNetBalancePence } from '@/lib/player-balance'
+import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
 
 export default async function PlayerPaymentsPage() {
   const player = await getCurrentPlayer()
@@ -40,11 +42,14 @@ export default async function PlayerPaymentsPage() {
       _sum: { amountPence: true },
     }),
   ])
-  const totalOwedAmount = totalOwed._sum.feeAppliedPence || 0
+  const totalSessionFeesPence = totalOwed._sum.feeAppliedPence || 0
   const totalPaidAmount = totalPaid._sum.amountPence || 0
-  const balanceDifference = totalOwedAmount - totalPaidAmount
-  const unpaid = Math.max(0, balanceDifference)
-  const credit = Math.max(0, -balanceDifference)
+  const openingBalancePence = playerData.openingBalancePence ?? 0
+  const { amountDue: unpaid, credit } = computeNetBalancePence({
+    totalSessionFeesPence,
+    openingBalancePence,
+    totalPaidPence: totalPaidAmount,
+  })
   const hasUnpaidBalance = unpaid > 0
 
   const whatsappNumber = playerData.org.whatsappSupportNumber
@@ -98,8 +103,11 @@ export default async function PlayerPaymentsPage() {
         ? 'Bank transfer'
         : 'Other'
 
-  const monzoPayUrl = playerData.org.monzoPayUrl
   const org = playerData.org
+  const monzoPayHref =
+    hasUnpaidBalance && org.monzoPayUrl
+      ? buildMonzoPaymentUrl(org.monzoPayUrl, unpaid, playerData.paymentRef)
+      : null
 
   return (
     <>
@@ -146,9 +154,9 @@ export default async function PlayerPaymentsPage() {
               <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
             </p>
           </div>
-          {monzoPayUrl && (
+          {monzoPayHref && (
             <a
-              href={monzoPayUrl}
+              href={monzoPayHref}
               target="_blank"
               rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
