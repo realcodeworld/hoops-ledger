@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Building2, Check, ChevronDown, Copy } from 'lucide-react'
 
-function CopyRow({
+export function CopyRow({
   label,
   value,
   mono,
@@ -57,17 +57,16 @@ type Props = {
   accountName: string
   sortCode: string
   accountNumber: string
-  paymentRef: string
 }
 
 /**
  * Collapsible bank transfer block styled like the online payment control; expands to show details.
+ * Pair with `PaymentReferenceCopyField` above so the reference is visible before expanding.
  */
 export function PlayerBankTransferCollapsible({
   accountName,
   sortCode,
   accountNumber,
-  paymentRef,
 }: Props) {
   const [open, setOpen] = useState(false)
 
@@ -91,11 +90,10 @@ export function PlayerBankTransferCollapsible({
       {open && (
         <div className="border-t border-red-100 bg-slate-50/90 px-4 py-4">
           <p className="text-xs text-gray-600 mb-3 leading-relaxed">
-            Use your personal payment reference below when you pay — it helps your organiser match
-            your transfer. Copy each line into your banking app.
+            Use the payment reference shown above this section when you pay — it helps your organiser
+            match your transfer. Copy each line below into your banking app.
           </p>
           <div className="rounded-xl border border-gray-200 bg-white px-3 py-1">
-            <CopyRow label="Payment reference" value={paymentRef} mono />
             <CopyRow label="Account name" value={accountName} />
             <CopyRow label="Sort code" value={sortCode} mono />
             <CopyRow label="Account number" value={accountNumber} mono />

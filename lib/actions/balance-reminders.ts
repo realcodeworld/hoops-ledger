@@ -40,22 +40,22 @@ function buildPaymentFooterLines(
   const lines: string[] = [
     '',
     '──────────',
-    '*How to pay*',
+    '*💳 How to pay*',
     '',
   ]
 
   if (hasLink && link) {
-    lines.push('*Pay online*', link, '')
+    lines.push('*🔗 Pay online*', link, '')
   }
 
   if (hasBank) {
     lines.push(
-      '*Bank transfer*',
+      '*🏦 Bank transfer*',
       `Account name: ${org.bankAccountName}`,
       `Sort code: ${org.bankSortCode}`,
       `Account number: ${org.bankAccountNumber}`,
       '',
-      '*Payment reference* (use this exact text on your transfer):',
+      '*🔑 Payment reference* (use this exact text on your transfer):',
       paymentRef
     )
   }
@@ -152,7 +152,7 @@ function buildReminderMessage(
   orgPayment: BalanceReminderOrgPayment
 ): string {
   const lines: string[] = [
-    `Hi ${playerName},`,
+    `🏀 Hi ${playerName},`,
     '',
     `Your unpaid balance is ${formatCurrency(unpaidBalancePence)}.`,
     '',
@@ -166,7 +166,7 @@ function buildReminderMessage(
   }
 
   if (unpaidSessions.length > 0) {
-    lines.push('*Unpaid sessions*')
+    lines.push('*📋 Unpaid sessions*')
     for (const s of unpaidSessions) {
       lines.push(
         `• ${s.sessionName || 'Session'} (${formatDate(s.startsAt)}) — ${formatCurrency(s.feeAppliedPence)}`
