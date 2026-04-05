@@ -17,6 +17,11 @@ import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
 import { computeNetBalancePence } from '@/lib/player-balance'
 import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
+import { buildLast6MonthsSessionFees } from '@/lib/player-monthly-fees'
+import { PlayerBalanceActivityChart } from '@/components/hoops/player-balance-activity-chart'
+import { PlayerBalanceBreakdown } from '@/components/hoops/player-balance-breakdown'
+import { PlayerBalanceDueBanner } from '@/components/hoops/player-balance-due-banner'
+import { PlayerRefreshButton } from '@/components/hoops/player-refresh-button'
 
 export default async function PlayerDashboardPage() {
   const player = await getCurrentPlayer()
@@ -126,11 +131,15 @@ export default async function PlayerDashboardPage() {
   const pointsRank = myPointsEntry?.rank ?? null
   const maxStreak = myWinEntry?.maxWinStreak ?? 0
 
+  const feeChartData = buildLast6MonthsSessionFees(playerData.attendance)
+
   return (
     <>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
         Your dashboard
       </h1>
+
+      <PlayerBalanceDueBanner playerId={player.id} amountDuePence={unpaid} />
 
       <Card
         className={
@@ -156,17 +165,20 @@ export default async function PlayerDashboardPage() {
                     : 'You are up to date.'}
               </p>
             </div>
-            {whatsappHref && (
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 transition-colors"
-                aria-label="Chat on WhatsApp about payments"
-              >
-                <WhatsappBrandIcon className="h-7 w-7" />
-              </a>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              <PlayerRefreshButton label="Refresh balance" />
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 active:scale-95 transition-all"
+                  aria-label="Chat on WhatsApp about payments"
+                >
+                  <WhatsappBrandIcon className="h-7 w-7" />
+                </a>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -181,12 +193,20 @@ export default async function PlayerDashboardPage() {
             </p>
           </div>
 
+          <PlayerBalanceBreakdown
+            totalSessionFeesPence={totalSessionFeesPence}
+            openingBalancePence={openingBalancePence}
+            totalPaidPence={totalPaidAmount}
+            amountDuePence={unpaid}
+            creditPence={credit}
+          />
+
           {monzoPayHref && (
             <a
               href={monzoPayHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem] ring-1 ring-[#FF4D4D]/20"
             >
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
               Online payment
@@ -233,6 +253,10 @@ export default async function PlayerDashboardPage() {
           </p>
         </CardContent>
       </Card>
+
+      <div className="mb-6">
+        <PlayerBalanceActivityChart data={feeChartData} />
+      </div>
 
       {/* Match summary */}
       <Card className="mb-6">

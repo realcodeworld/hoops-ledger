@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Logo } from '@/components/hoops/logo'
 import { PlayerBottomNav } from '@/components/hoops/player-bottom-nav'
+import { PlayerToastProvider } from '@/components/hoops/player-toast'
 
 export default async function PlayerLayout({
   children,
@@ -14,6 +15,7 @@ export default async function PlayerLayout({
   }
 
   return (
+    <PlayerToastProvider>
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -28,7 +30,7 @@ export default async function PlayerLayout({
         <PlayerBottomNav playerName={player.name} />
       </div>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-32 md:pb-6 animate-in fade-in-50 duration-300">
         {children}
       </main>
 
@@ -37,5 +39,6 @@ export default async function PlayerLayout({
         <PlayerBottomNav playerName={player.name} />
       </div>
     </div>
+    </PlayerToastProvider>
   )
 }

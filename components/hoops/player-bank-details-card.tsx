@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Building2, Check, ChevronDown, Copy } from 'lucide-react'
+import { usePlayerToast } from '@/components/hoops/player-toast'
 
 export function CopyRow({
   label,
@@ -17,11 +18,13 @@ export function CopyRow({
   breakAll?: boolean
 }) {
   const [copied, setCopied] = useState(false)
+  const toast = usePlayerToast()
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(value)
       setCopied(true)
+      toast?.show(`Copied ${label}`)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       /* ignore */

@@ -1,16 +1,21 @@
 import { redirect } from 'next/navigation'
 import { getCurrentPlayer } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { CreditCard, Calendar, Wallet } from 'lucide-react'
+import { CreditCard, Wallet } from 'lucide-react'
 import { WhatsappBrandIcon } from '@/components/hoops/whatsapp-brand-icon'
 import { PlayerPaymentSupportFooter } from '@/components/hoops/player-payment-support-footer'
 import { PlayerBankTransferCollapsible } from '@/components/hoops/player-bank-details-card'
 import { prisma } from '@/lib/prisma'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
-import { format } from 'date-fns'
 import { computeNetBalancePence } from '@/lib/player-balance'
 import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
+import { PlayerBalanceBreakdown } from '@/components/hoops/player-balance-breakdown'
+import { PlayerBalanceDueBanner } from '@/components/hoops/player-balance-due-banner'
+import { PlayerRefreshButton } from '@/components/hoops/player-refresh-button'
+import {
+  PlayerPaymentsHistory,
+  type HistoryItem,
+} from '@/components/hoops/player-payments-history'
 
 export default async function PlayerPaymentsPage() {
   const player = await getCurrentPlayer()
@@ -96,24 +101,40 @@ export default async function PlayerPaymentsPage() {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  const methodLabel = (method: string) =>
-    method === 'cash'
-      ? 'Cash'
-      : method === 'bank_transfer'
-        ? 'Bank transfer'
-        : 'Other'
-
   const org = playerData.org
   const monzoPayHref =
     hasUnpaidBalance && org.monzoPayUrl
       ? buildMonzoPaymentUrl(org.monzoPayUrl, unpaid, playerData.paymentRef)
       : null
 
+  const historyItems: HistoryItem[] = merged.map((item) =>
+    item.type === 'session'
+      ? {
+          type: 'session',
+          id: item.id,
+          dateIso: new Date(item.date).toISOString(),
+          sessionName: item.sessionName,
+          feePence: item.feePence,
+          status: item.status,
+          notes: item.notes,
+        }
+      : {
+          type: 'payment',
+          id: item.id,
+          dateIso: new Date(item.date).toISOString(),
+          method: item.method,
+          amountPence: item.amountPence,
+          notes: item.notes,
+        }
+  )
+
   return (
     <>
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
         Payments
       </h1>
+
+      <PlayerBalanceDueBanner playerId={player.id} amountDuePence={unpaid} />
 
       <Card
         className={
@@ -130,17 +151,20 @@ export default async function PlayerPaymentsPage() {
               />
               Balance
             </CardTitle>
-            {whatsappHref && (
-              <a
-                href={whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 transition-colors"
-                aria-label="Chat on WhatsApp about payments"
-              >
-                <WhatsappBrandIcon className="h-7 w-7" />
-              </a>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              <PlayerRefreshButton label="Refresh balance" />
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] ring-1 ring-[#25D366]/25 hover:bg-[#25D366]/25 active:scale-95 transition-all"
+                  aria-label="Chat on WhatsApp about payments"
+                >
+                  <WhatsappBrandIcon className="h-7 w-7" />
+                </a>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -154,12 +178,21 @@ export default async function PlayerPaymentsPage() {
               <CurrencyDisplay amountPence={credit > 0 ? credit : unpaid} />
             </p>
           </div>
+
+          <PlayerBalanceBreakdown
+            totalSessionFeesPence={totalSessionFeesPence}
+            openingBalancePence={openingBalancePence}
+            totalPaidPence={totalPaidAmount}
+            amountDuePence={unpaid}
+            creditPence={credit}
+          />
+
           {monzoPayHref && (
             <a
               href={monzoPayHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#FF4D4D] px-4 py-3.5 text-base font-semibold text-white shadow-md hover:bg-[#e84545] active:scale-[0.99] transition-all min-h-[3.25rem] ring-1 ring-[#FF4D4D]/20"
             >
               <Wallet className="h-6 w-6 shrink-0" aria-hidden />
               Online payment
@@ -194,68 +227,7 @@ export default async function PlayerPaymentsPage() {
         <p className="text-xs text-gray-500 mb-4">
           Unpaid sessions count toward your balance; payments your organiser has recorded appear here too.
         </p>
-        {merged.length === 0 ? (
-          <p className="text-gray-500 text-sm py-2">No sessions or payments yet</p>
-        ) : (
-          <ul className="space-y-2">
-            {merged.map((item) =>
-              item.type === 'session' ? (
-                <li
-                  key={`s-${item.id}`}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {item.sessionName || 'Session'}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {format(new Date(item.date), 'dd/MM/yy')}
-                      </p>
-                      {item.notes && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {item.notes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <CurrencyDisplay amountPence={item.feePence} />
-                    <Badge variant={item.status as 'paid' | 'unpaid' | 'waived' | 'exempt'}>
-                      {item.status}
-                    </Badge>
-                  </div>
-                </li>
-              ) : (
-                <li
-                  key={`p-${item.id}`}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <CreditCard className="w-4 h-4 text-green-600 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900">
-                        {methodLabel(item.method)} payment
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {format(new Date(item.date), 'dd/MM/yy')}
-                      </p>
-                      {item.notes && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {item.notes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <p className="font-semibold text-green-600 shrink-0">
-                    <CurrencyDisplay amountPence={item.amountPence} />
-                  </p>
-                </li>
-              )
-            )}
-          </ul>
-        )}
+        <PlayerPaymentsHistory items={historyItems} />
       </section>
 
       <PlayerPaymentSupportFooter whatsappHref={whatsappHref} />
