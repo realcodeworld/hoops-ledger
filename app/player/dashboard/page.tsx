@@ -17,8 +17,6 @@ import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { format } from 'date-fns'
 import { computeNetBalancePence } from '@/lib/player-balance'
 import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
-import { buildLast6MonthsSessionFees } from '@/lib/player-monthly-fees'
-import { PlayerBalanceActivityChart } from '@/components/hoops/player-balance-activity-chart'
 import { PlayerBalanceBreakdown } from '@/components/hoops/player-balance-breakdown'
 import { PlayerBalanceDueBanner } from '@/components/hoops/player-balance-due-banner'
 import { PlayerRefreshButton } from '@/components/hoops/player-refresh-button'
@@ -130,8 +128,6 @@ export default async function PlayerDashboardPage() {
   const myWinEntry = winStreaks.find((e) => e.playerId === player.id)
   const pointsRank = myPointsEntry?.rank ?? null
   const maxStreak = myWinEntry?.maxWinStreak ?? 0
-
-  const feeChartData = buildLast6MonthsSessionFees(playerData.attendance)
 
   return (
     <>
@@ -253,10 +249,6 @@ export default async function PlayerDashboardPage() {
           </p>
         </CardContent>
       </Card>
-
-      <div className="mb-6">
-        <PlayerBalanceActivityChart data={feeChartData} />
-      </div>
 
       {/* Match summary */}
       <Card className="mb-6">
