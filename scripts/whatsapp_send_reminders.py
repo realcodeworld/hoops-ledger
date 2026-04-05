@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Send WhatsApp messages from Hoops Ledger balance-reminder JSON (same structure as emailed to admin).
+Open WhatsApp Web chats from Hoops Ledger balance-reminder JSON and paste each message into
+the compose field (PyWhatKit does not reliably auto-send—you review and tap Send).
 
 Expected JSON (single reminder or array), matching lib/email.ts BalanceReminderPayload:
   { "phone_number": "+44...", "name": "...", "message": "..." }
@@ -72,28 +73,28 @@ def main() -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print recipients and exit without sending or importing pywhatkit",
+        help="Print recipients and exit without opening WhatsApp or importing pywhatkit",
     )
     parser.add_argument(
         "--delay",
         type=float,
-        default=25.0,
+        default=5.0,
         metavar="SECONDS",
-        help="Seconds to wait between messages after each send (default: 25)",
+        help="Seconds to wait between opening each chat (default: 5)",
     )
     parser.add_argument(
         "--wait-time",
         type=int,
-        default=15,
+        default=5,
         metavar="SECONDS",
-        help="PyWhatKit wait time before sending each message (default: 15)",
+        help="PyWhatKit wait before opening chat / pasting message (default: 5)",
     )
     parser.add_argument(
         "--tab-close-time",
         type=int,
         default=3,
         metavar="SECONDS",
-        help="Seconds before closing tab after send (default: 3)",
+        help="Seconds before closing tab after compose (default: 3)",
     )
     args = parser.parse_args()
 
@@ -122,7 +123,7 @@ def main() -> int:
                 print(f"  [{i+1}] {item.get('name', '?')}: {e}", file=sys.stderr)
                 return 1
             print(f"  [{i+1}] {item['name']!r} -> {phone} ({len(item['message'])} chars)")
-        print("Dry run: no messages sent.")
+        print("Dry run: WhatsApp not opened.")
         return 0
 
     try:
@@ -143,7 +144,7 @@ def main() -> int:
             return 1
         name = item["name"]
         msg = item["message"]
-        print(f"\n[{i + 1}/{len(items)}] Sending to {name!r} ({phone})...")
+        print(f"\n[{i + 1}/{len(items)}] {name!r} ({phone}) — opening chat...")
         try:
             pw.sendwhatmsg_instantly(
                 phone,

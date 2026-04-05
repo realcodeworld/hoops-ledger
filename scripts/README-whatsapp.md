@@ -1,6 +1,6 @@
 # WhatsApp sender from balance reminder JSON
 
-This folder contains a **standalone** Python script that sends WhatsApp messages using **WhatsApp Web** in a browser (via [PyWhatKit](https://github.com/Ankit404butfound/PyWhatKit)). It reads the **same JSON** Hoops Ledger puts in the balance reminder email to admins.
+This folder contains a **standalone** Python script that uses **WhatsApp Web** in a browser (via [PyWhatKit](https://github.com/Ankit404butfound/PyWhatKit)) to open each chat and **paste the reminder into the message field**. You send manually (PyWhatKit does not reliably auto-send). It reads the **same JSON** Hoops Ledger puts in the balance reminder email to admins.
 
 ## JSON format
 
@@ -61,7 +61,7 @@ Save the JSON from the admin email to a file (e.g. `reminders.json`), then:
 python scripts/whatsapp_send_reminders.py /path/to/reminders.json
 ```
 
-**Dry run** (validate JSON and show who would receive; does not send or require `pywhatkit`):
+**Dry run** (validate JSON and show who would be opened; does not open WhatsApp or require `pywhatkit`):
 
 ```bash
 python scripts/whatsapp_send_reminders.py /path/to/reminders.json --dry-run
@@ -71,10 +71,10 @@ python scripts/whatsapp_send_reminders.py /path/to/reminders.json --dry-run
 
 | Flag | Default | Meaning |
 |------|---------|--------|
-| `--dry-run` | off | Print targets only; no send |
-| `--delay` | `25` | Seconds to wait **between** messages (after each send) |
-| `--wait-time` | `15` | PyWhatKit’s wait before clicking send for each message |
-| `--tab-close-time` | `3` | Seconds before closing the tab after each send |
+| `--dry-run` | off | Print targets only; no browser |
+| `--delay` | `5` | Seconds to wait **between** each chat (after one is opened) |
+| `--wait-time` | `5` | PyWhatKit’s wait before opening the chat / pasting the message |
+| `--tab-close-time` | `3` | Seconds before closing the tab after compose |
 
 ## Limitations and risks
 
@@ -86,4 +86,4 @@ python scripts/whatsapp_send_reminders.py /path/to/reminders.json --dry-run
 ## Troubleshooting
 
 - `CountryCodeException` / invalid number: ensure `phone_number` includes `+` and country code.
-- Message not sent: increase `--wait-time`; ensure WhatsApp Web works manually in Chrome; check PyWhatKit [issues](https://github.com/Ankit404butfound/PyWhatKit/issues).
+- Chat didn’t open or message not in the field: increase `--wait-time`; ensure WhatsApp Web works manually in Chrome; check PyWhatKit [issues](https://github.com/Ankit404butfound/PyWhatKit/issues).
