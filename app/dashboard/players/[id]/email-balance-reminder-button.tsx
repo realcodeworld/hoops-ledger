@@ -2,8 +2,12 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { emailBalanceReminderToAdmin } from '@/lib/actions/balance-reminders'
-import { Mail } from 'lucide-react'
+import {
+  emailBalanceReminderToAdmin,
+  getBalanceReminderJsonForDownload,
+} from '@/lib/actions/balance-reminders'
+import { downloadJsonFile } from '@/lib/utils'
+import { FileDown, Mail } from 'lucide-react'
 
 interface EmailBalanceReminderButtonProps {
   playerId: string
@@ -66,6 +70,72 @@ export function EmailBalanceReminderButton({
       >
         <Mail className="w-4 h-4 mr-2" />
         {isPending ? 'Sending...' : 'Email balance reminder to me'}
+      </Button>
+      {message && (
+        <p className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+          {message.text}
+        </p>
+      )}
+    </div>
+  )
+}
+
+export function DownloadBalanceReminderJsonButton({
+  playerId,
+  playerPhone,
+  unpaidBalancePence,
+}: EmailBalanceReminderButtonProps) {
+  const [isPending, setIsPending] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  const hasPhone = !!playerPhone
+  const hasUnpaid = unpaidBalancePence > 0
+  const disabled = isPending || !hasPhone || !hasUnpaid
+
+  async function handleClick() {
+    if (!hasPhone) {
+      setMessage({ type: 'error', text: 'Add phone number to export reminder' })
+      return
+    }
+    if (!hasUnpaid) {
+      setMessage({ type: 'error', text: 'No unpaid balance to export' })
+      return
+    }
+
+    setIsPending(true)
+    setMessage(null)
+
+    const result = await getBalanceReminderJsonForDownload(playerId)
+
+    if (result.success) {
+      downloadJsonFile(result.filename, result.json)
+      setMessage({ type: 'success', text: 'JSON downloaded' })
+    } else {
+      setMessage({ type: 'error', text: result.error || 'Failed to build JSON' })
+    }
+
+    setIsPending(false)
+
+    setTimeout(() => setMessage(null), 5000)
+  }
+
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={handleClick}
+        variant="outline"
+        className="w-full sm:w-auto"
+        disabled={disabled}
+        title={
+          !hasPhone
+            ? 'Add phone number to export reminder'
+            : !hasUnpaid
+              ? 'No unpaid balance to export'
+              : undefined
+        }
+      >
+        <FileDown className="w-4 h-4 mr-2" />
+        {isPending ? 'Preparing...' : 'Download reminder JSON'}
       </Button>
       {message && (
         <p className={`text-sm ${message.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>

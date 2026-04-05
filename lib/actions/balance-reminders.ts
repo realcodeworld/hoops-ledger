@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { computeNetBalancePence } from '@/lib/player-balance'
-import { sendBalanceReminderToAdmin } from '@/lib/email'
+import { sendBalanceReminderToAdmin, type BalanceReminderPayload } from '@/lib/email'
 import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
 
 export type UnpaidSessionSummary = {
@@ -188,6 +188,185 @@ function buildReminderMessage(
   return lines.join('\n')
 }
 
+type ComposePayloadResult =
+  | {
+      status: 'ok'
+      payload: BalanceReminderPayload
+      unpaidBalancePence: number
+      sessionCount: number
+    }
+  | { status: 'no_player' }
+  | { status: 'no_phone' }
+  | { status: 'summary_error'; error: string }
+  | { status: 'no_unpaid' }
+
+/**
+ * Builds the same payload emailed to admins / used by scripts/whatsapp_send_reminders.py
+ */
+async function composeBalanceReminderPayload(
+  playerId: string,
+  orgId: string
+): Promise<ComposePayloadResult> {
+  const player = await prisma.player.findFirst({
+    where: {
+      id: playerId,
+      orgId,
+    },
+  })
+
+  if (!player) {
+    return { status: 'no_player' }
+  }
+
+  if (!player.phone) {
+    return { status: 'no_phone' }
+  }
+
+  const summaryResult = await getPlayerUnpaidSummary(playerId)
+  if (!summaryResult.success || !summaryResult.data) {
+    return {
+      status: 'summary_error',
+      error: summaryResult.error || 'Failed to get unpaid summary',
+    }
+  }
+
+  const { unpaidBalancePence, unpaidSessions, openingBalancePence } =
+    summaryResult.data
+
+  if (unpaidBalancePence === 0) {
+    return { status: 'no_unpaid' }
+  }
+
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: {
+      monzoPayUrl: true,
+      bankAccountName: true,
+      bankSortCode: true,
+      bankAccountNumber: true,
+    },
+  })
+
+  const orgPayment: BalanceReminderOrgPayment = org ?? {
+    monzoPayUrl: null,
+    bankAccountName: null,
+    bankSortCode: null,
+    bankAccountNumber: null,
+  }
+
+  const payOnlineUrl = buildMonzoPaymentUrl(
+    orgPayment.monzoPayUrl,
+    unpaidBalancePence,
+    player.paymentRef
+  )
+
+  const message = buildReminderMessage(
+    player.name,
+    unpaidBalancePence,
+    unpaidSessions,
+    openingBalancePence ?? 0,
+    player.paymentRef,
+    orgPayment,
+    payOnlineUrl
+  )
+
+  return {
+    status: 'ok',
+    payload: {
+      phone_number: player.phone,
+      name: player.name,
+      message,
+    },
+    unpaidBalancePence,
+    sessionCount: unpaidSessions.length,
+  }
+}
+
+export async function getBalanceReminderJsonForDownload(playerId: string) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return { success: false as const, error: 'Unauthorized' }
+    }
+
+    const r = await composeBalanceReminderPayload(playerId, currentUser.orgId)
+
+    if (r.status === 'no_player') {
+      return { success: false as const, error: 'Player not found' }
+    }
+    if (r.status === 'no_phone') {
+      return {
+        success: false as const,
+        error: 'Player has no phone number on file',
+      }
+    }
+    if (r.status === 'summary_error') {
+      return { success: false as const, error: r.error }
+    }
+    if (r.status === 'no_unpaid') {
+      return {
+        success: false as const,
+        error: 'No unpaid balance to export',
+      }
+    }
+
+    const json = JSON.stringify(r.payload, null, 2)
+    const safe =
+      r.payload.name
+        .replace(/[^\p{L}\p{N}\s-]/gu, '')
+        .trim()
+        .replace(/\s+/g, '-') || 'player'
+    const filename = `balance-reminder-${safe.slice(0, 48)}-${playerId.slice(0, 8)}.json`
+
+    return { success: true as const, json, filename }
+  } catch (error) {
+    console.error('getBalanceReminderJsonForDownload error:', error)
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : 'Failed to build reminder JSON',
+    }
+  }
+}
+
+export async function getBulkBalanceReminderJsonForDownload(playerIds: string[]) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return { success: false as const, error: 'Unauthorized' }
+    }
+
+    const payloads: BalanceReminderPayload[] = []
+
+    for (const playerId of playerIds) {
+      const r = await composeBalanceReminderPayload(playerId, currentUser.orgId)
+      if (r.status === 'ok') {
+        payloads.push(r.payload)
+      }
+    }
+
+    if (payloads.length === 0) {
+      return {
+        success: false as const,
+        error:
+          'No eligible players (each needs a phone number and an unpaid balance)',
+      }
+    }
+
+    const json = JSON.stringify(payloads, null, 2)
+    const filename = `balance-reminders-${payloads.length}-players.json`
+
+    return { success: true as const, json, filename }
+  } catch (error) {
+    console.error('getBulkBalanceReminderJsonForDownload error:', error)
+    return {
+      success: false as const,
+      error:
+        error instanceof Error ? error.message : 'Failed to build reminder JSON',
+    }
+  }
+}
+
 export async function emailBalanceReminderToAdmin(playerId: string) {
   try {
     const currentUser = await getCurrentUser()
@@ -195,79 +374,33 @@ export async function emailBalanceReminderToAdmin(playerId: string) {
       throw new Error('Unauthorized')
     }
 
-    const player = await prisma.player.findFirst({
-      where: {
-        id: playerId,
-        orgId: currentUser.orgId,
-      },
-    })
+    const r = await composeBalanceReminderPayload(playerId, currentUser.orgId)
 
-    if (!player) {
+    if (r.status === 'no_player') {
       throw new Error('Player not found')
     }
-
-    if (!player.phone) {
+    if (r.status === 'no_phone') {
       return {
         success: false,
         error: 'Player has no phone number on file',
       }
     }
-
-    const summaryResult = await getPlayerUnpaidSummary(playerId)
-    if (!summaryResult.success || !summaryResult.data) {
+    if (r.status === 'summary_error') {
       return {
         success: false,
-        error: summaryResult.error || 'Failed to get unpaid summary',
+        error: r.error,
       }
     }
-
-    const { unpaidBalancePence, unpaidSessions, openingBalancePence } = summaryResult.data
-
-    if (unpaidBalancePence === 0) {
+    if (r.status === 'no_unpaid') {
       return {
         success: true,
         message: 'No unpaid balance',
       }
     }
 
-    const org = await prisma.organization.findUnique({
-      where: { id: currentUser.orgId },
-      select: {
-        monzoPayUrl: true,
-        bankAccountName: true,
-        bankSortCode: true,
-        bankAccountNumber: true,
-      },
-    })
-
-    const orgPayment: BalanceReminderOrgPayment = org ?? {
-      monzoPayUrl: null,
-      bankAccountName: null,
-      bankSortCode: null,
-      bankAccountNumber: null,
-    }
-
-    const payOnlineUrl = buildMonzoPaymentUrl(
-      orgPayment.monzoPayUrl,
-      unpaidBalancePence,
-      player.paymentRef
-    )
-
-    const message = buildReminderMessage(
-      player.name,
-      unpaidBalancePence,
-      unpaidSessions,
-      openingBalancePence ?? 0,
-      player.paymentRef,
-      orgPayment,
-      payOnlineUrl
-    )
-
-    const payload = {
-      phone_number: player.phone,
-      name: player.name,
-      message,
-    }
+    const payload = r.payload
+    const unpaidBalancePence = r.unpaidBalancePence
+    const sessionCount = r.sessionCount
 
     const emailResult = await sendBalanceReminderToAdmin(
       currentUser.email,
@@ -292,7 +425,7 @@ export async function emailBalanceReminderToAdmin(playerId: string) {
           playerId,
           adminEmail: currentUser.email,
           unpaidBalancePence,
-          sessionCount: unpaidSessions.length,
+          sessionCount,
         },
       },
     })
@@ -322,41 +455,20 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
 
     const results: { playerId: string; included: boolean; error?: string }[] =
       []
-    const payloads: { phone_number: string; name: string; message: string }[] =
-      []
+    const payloads: BalanceReminderPayload[] = []
     const includedPlayerIds: string[] = []
 
-    const org = await prisma.organization.findUnique({
-      where: { id: currentUser.orgId },
-      select: {
-        monzoPayUrl: true,
-        bankAccountName: true,
-        bankSortCode: true,
-        bankAccountNumber: true,
-      },
-    })
-
-    const orgPayment: BalanceReminderOrgPayment = org ?? {
-      monzoPayUrl: null,
-      bankAccountName: null,
-      bankSortCode: null,
-      bankAccountNumber: null,
-    }
-
     for (const playerId of playerIds) {
-      const player = await prisma.player.findFirst({
-        where: {
-          id: playerId,
-          orgId: currentUser.orgId,
-        },
-      })
+      const r = await composeBalanceReminderPayload(
+        playerId,
+        currentUser.orgId
+      )
 
-      if (!player) {
+      if (r.status === 'no_player') {
         results.push({ playerId, included: false, error: 'Player not found' })
         continue
       }
-
-      if (!player.phone) {
+      if (r.status === 'no_phone') {
         results.push({
           playerId,
           included: false,
@@ -364,45 +476,24 @@ export async function emailBulkBalanceRemindersToAdmin(playerIds: string[]) {
         })
         continue
       }
-
-      const summaryResult = await getPlayerUnpaidSummary(playerId)
-      if (!summaryResult.success || !summaryResult.data) {
+      if (r.status === 'summary_error') {
         results.push({
           playerId,
           included: false,
-          error: summaryResult.error || 'Failed to get summary',
+          error: r.error,
+        })
+        continue
+      }
+      if (r.status === 'no_unpaid') {
+        results.push({
+          playerId,
+          included: false,
+          error: 'No unpaid balance',
         })
         continue
       }
 
-      const { unpaidBalancePence, unpaidSessions, openingBalancePence } = summaryResult.data
-
-      if (unpaidBalancePence === 0) {
-        results.push({ playerId, included: false, error: 'No unpaid balance' })
-        continue
-      }
-
-      const payOnlineUrl = buildMonzoPaymentUrl(
-        orgPayment.monzoPayUrl,
-        unpaidBalancePence,
-        player.paymentRef
-      )
-
-      const message = buildReminderMessage(
-        player.name,
-        unpaidBalancePence,
-        unpaidSessions,
-        openingBalancePence ?? 0,
-        player.paymentRef,
-        orgPayment,
-        payOnlineUrl
-      )
-
-      payloads.push({
-        phone_number: player.phone,
-        name: player.name,
-        message,
-      })
+      payloads.push(r.payload)
       includedPlayerIds.push(playerId)
       results.push({ playerId, included: true })
     }

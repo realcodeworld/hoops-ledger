@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  FileDown,
   Link as LinkIcon,
   Mail,
   MailPlus,
@@ -33,7 +34,11 @@ import { CategoryBadge, ActivityBadge } from '@/components/hoops/status-badge'
 import { CurrencyDisplay } from '@/components/hoops/currency-display'
 import { PlayerActionsDropdown } from '@/app/dashboard/players/player-actions-dropdown'
 import { Button } from '@/components/ui/button'
-import { emailBulkBalanceRemindersToAdmin } from '@/lib/actions/balance-reminders'
+import {
+  emailBulkBalanceRemindersToAdmin,
+  getBulkBalanceReminderJsonForDownload,
+} from '@/lib/actions/balance-reminders'
+import { downloadJsonFile } from '@/lib/utils'
 import { generateMagicLink } from '@/lib/actions/auth'
 import { SwipeableRow } from '@/components/hoops/swipeable-row'
 import { MagicLinkResultDialog } from '@/components/hoops/magic-link-result-dialog'
@@ -81,6 +86,7 @@ export function PlayersList({ players, currency }: PlayersListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [bulkPending, setBulkPending] = useState(false)
+  const [bulkDownloadPending, setBulkDownloadPending] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [swipedPlayerOpenId, setSwipedPlayerOpenId] = useState<string | null>(null)
   const [magicPendingId, setMagicPendingId] = useState<string | null>(null)
@@ -256,6 +262,21 @@ export function PlayersList({ players, currency }: PlayersListProps) {
     setTimeout(() => setBulkMessage(null), 5000)
   }
 
+  async function handleBulkDownloadJson() {
+    if (selectedCount === 0) return
+    setBulkDownloadPending(true)
+    setBulkMessage(null)
+    const result = await getBulkBalanceReminderJsonForDownload([...selectedIds])
+    setBulkDownloadPending(false)
+    if (result.success) {
+      downloadJsonFile(result.filename, result.json)
+      setBulkMessage({ type: 'success', text: `Downloaded ${result.filename}` })
+    } else {
+      setBulkMessage({ type: 'error', text: result.error || 'Failed to build JSON' })
+    }
+    setTimeout(() => setBulkMessage(null), 5000)
+  }
+
   return (
     <div className="space-y-4">
       <MagicLinkResultDialog
@@ -274,17 +295,27 @@ export function PlayersList({ players, currency }: PlayersListProps) {
             variant="outline"
             size="sm"
             onClick={handleBulkEmailReminders}
-            disabled={bulkPending}
+            disabled={bulkPending || bulkDownloadPending}
           >
             <MailPlus className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline">{bulkPending ? 'Sending...' : 'Email reminders'}</span>
             <span className="sm:hidden">{bulkPending ? '...' : 'Email'}</span>
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkDownloadJson}
+            disabled={bulkPending || bulkDownloadPending}
+          >
+            <FileDown className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">{bulkDownloadPending ? 'Preparing...' : 'Download JSON'}</span>
+            <span className="sm:hidden">{bulkDownloadPending ? '...' : 'JSON'}</span>
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedIds(new Set())}
-            disabled={bulkPending}
+            disabled={bulkPending || bulkDownloadPending}
           >
             Clear
           </Button>

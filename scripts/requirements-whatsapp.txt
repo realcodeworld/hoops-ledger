@@ -1,0 +1,2 @@
+# Standalone WhatsApp reminder sender (scripts/whatsapp_send_reminders.py)
+pywhatkit>=5.0,<7
