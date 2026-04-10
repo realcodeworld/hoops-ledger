@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { formatInTimeZone } from 'date-fns-tz'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,19 +18,31 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { updatePricingRule, createPricingRule, deletePricingRule } from '@/lib/actions/settings'
-import { DollarSign, Save, Plus, Trash2, Edit, Info, AlertTriangle } from 'lucide-react'
-import { PricingRule } from '@prisma/client'
+import { DollarSign, Plus, Trash2, Edit, Info, AlertTriangle } from 'lucide-react'
+import { PricingRule, PricingRuleVersion } from '@prisma/client'
 import { getCurrencySymbol } from '@/lib/format'
 
+type PricingRuleWithVersions = PricingRule & {
+  versions: PricingRuleVersion[]
+}
+
 interface PricingRulesManagementProps {
-  pricingRules: PricingRule[]
+  pricingRules: PricingRuleWithVersions[]
   currency: string
+  orgTimezone: string
   isAdmin: boolean
 }
 
 const formatPrice = (pence: number) => (pence / 100).toFixed(2)
+const formatVersionEffectiveFrom = (date: Date, timeZone: string) =>
+  formatInTimeZone(date, timeZone, 'dd/MM/yyyy HH:mm zzz')
 
-export function PricingRulesManagement({ pricingRules, currency, isAdmin }: PricingRulesManagementProps) {
+export function PricingRulesManagement({
+  pricingRules,
+  currency,
+  orgTimezone,
+  isAdmin,
+}: PricingRulesManagementProps) {
   const [editingRule, setEditingRule] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [isPending, setIsPending] = useState(false)
@@ -299,6 +312,19 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor={`effectiveFrom-${rule.id}`}>Effective From</Label>
+                      <Input
+                        id={`effectiveFrom-${rule.id}`}
+                        name="effectiveFrom"
+                        type="datetime-local"
+                        disabled={isPending}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Leave blank to apply immediately. The time is interpreted in your organisation timezone: {orgTimezone}.
+                      </p>
+                    </div>
+
                     <div className="flex gap-2 pt-4">
                       <Button type="submit" disabled={isPending} size="sm">
                         {isPending ? 'Saving...' : 'Save Changes'}
@@ -315,12 +341,45 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
                     </div>
                   </form>
                 ) : (
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-900">
-                      {currencySymbol}{formatPrice(rule.feePence)}
+                  <div className="space-y-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-900">
+                        {currencySymbol}{formatPrice(rule.feePence)}
+                      </div>
+                      <div className="text-sm text-blue-600 mt-1">
+                        latest configured price
+                      </div>
                     </div>
-                    <div className="text-sm text-blue-600 mt-1">
-                      per session
+
+                    <div className="rounded-lg border border-gray-200">
+                      <div className="border-b bg-gray-50 px-4 py-2">
+                        <p className="text-sm font-medium text-gray-900">Price History</p>
+                        <p className="text-xs text-gray-500">
+                          Past paid sessions stay unchanged. Unpaid sessions on or after the effective time update if they were booked under this category.
+                        </p>
+                      </div>
+                      <div className="divide-y">
+                        {rule.versions.map((version) => (
+                          <div
+                            key={version.id}
+                            className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {currencySymbol}{formatPrice(version.feePence)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Effective {formatVersionEffectiveFrom(new Date(version.effectiveFrom), orgTimezone)}
+                              </p>
+                            </div>
+                            {version.id === rule.versions[0]?.id && (
+                              <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                                Latest
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -336,8 +395,9 @@ export function PricingRulesManagement({ pricingRules, currency, isAdmin }: Pric
             <div className="text-sm text-blue-700">
               <p className="font-medium mb-2">How Pricing Categories Work:</p>
               <ul className="space-y-1">
-                <li><strong>Single Price:</strong> Each category has one price that applies to all players in that category</li>
+                <li><strong>Versioned Prices:</strong> Each category keeps a history of price changes with an effective date and time.</li>
                 <li><strong>Player Assignment:</strong> Assign players to categories like "Standard", "Student", "Guest", "U17", etc.</li>
+                <li><strong>Future Sessions:</strong> Updating a price only changes unpaid sessions on or after the effective time.</li>
                 <li><strong>Custom Categories:</strong> Create any categories you need - "Student", "Senior", "Junior", "Member", "Non-Member"</li>
                 <li><strong>Exempt Players:</strong> Players marked as "exempt" always pay {currencySymbol}0.00 regardless of their category</li>
               </ul>

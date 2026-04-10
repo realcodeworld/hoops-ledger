@@ -38,6 +38,7 @@ interface Player {
 interface MatchResultFormProps {
   /** When provided, the new match will be linked to this session */
   sessionId?: string | null
+  sessionStartsAt?: Date | null
   players: Player[]
   /** Optional: only show players who attended this session */
   attendeeIds?: string[]
@@ -47,6 +48,7 @@ interface MatchResultFormProps {
 
 export function MatchResultForm({
   sessionId,
+  sessionStartsAt,
   players,
   attendeeIds,
   previousMatches = [],
@@ -243,6 +245,7 @@ export function MatchResultForm({
             players={players}
             availablePlayers={availableForTeamA}
             selectedIds={teamAIds}
+            sessionStartsAt={sessionStartsAt}
             open={teamASheetOpen}
             onOpenChange={setTeamASheetOpen}
             onChange={setTeamAIds}
@@ -252,6 +255,7 @@ export function MatchResultForm({
             players={players}
             availablePlayers={availableForTeamB}
             selectedIds={teamBIds}
+            sessionStartsAt={sessionStartsAt}
             open={teamBSheetOpen}
             onOpenChange={setTeamBSheetOpen}
             onChange={setTeamBIds}

@@ -262,7 +262,13 @@ export async function getPlayers() {
         orgId: currentUser.orgId,
       },
       include: {
-        pricingRule: true,
+        pricingRule: {
+          include: {
+            versions: {
+              orderBy: { effectiveFrom: 'desc' },
+            },
+          },
+        },
         _count: {
           select: {
             attendance: true,

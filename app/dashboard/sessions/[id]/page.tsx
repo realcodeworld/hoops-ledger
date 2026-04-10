@@ -168,6 +168,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
           <CardContent>
             <AttendanceManager
               sessionId={id}
+              sessionStartsAt={session.startsAt}
               attendance={session.attendance || []}
               availablePlayers={players || []}
               pricingRules={pricingRules}
@@ -178,6 +179,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
         {/* Record match result */}
         <MatchResultForm
           sessionId={id}
+          sessionStartsAt={session.startsAt}
           players={players || []}
           attendeeIds={attendeeIds}
           previousMatches={previousMatches}

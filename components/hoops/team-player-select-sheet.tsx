@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { PricingRuleVersion } from '@prisma/client'
 import { Search, Check, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@/components/ui/sheet'
+import { resolveFeePenceFromVersionsAt } from '@/lib/pricing-rule-version-shared'
 import { cn } from '@/lib/utils'
 import { getCategoryBadgeClass } from '@/lib/format'
 
@@ -23,6 +25,7 @@ interface Player {
   pricingRule?: {
     name: string
     feePence: number
+    versions?: PricingRuleVersion[]
   } | null
 }
 
@@ -33,6 +36,7 @@ interface TeamPlayerSelectSheetProps {
   /** Players eligible to add (e.g. not on the other team; caller filters) */
   availablePlayers: Player[]
   selectedIds: string[]
+  sessionStartsAt?: Date | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onChange: (ids: string[]) => void
@@ -43,6 +47,7 @@ export function TeamPlayerSelectSheet({
   players,
   availablePlayers,
   selectedIds,
+  sessionStartsAt,
   open,
   onOpenChange,
   onChange,
@@ -114,6 +119,16 @@ export function TeamPlayerSelectSheet({
   const selectedCount = selectedSet.size
   const allFilteredSelected =
     filteredPlayers.length > 0 && filteredPlayers.every((p) => selectedSet.has(p.id))
+
+  const getProjectedFeePence = (player: Player) => {
+    if (!player.pricingRule) return null
+    if (!sessionStartsAt) return player.pricingRule.feePence
+    return resolveFeePenceFromVersionsAt(
+      player.pricingRule.versions,
+      new Date(sessionStartsAt),
+      player.pricingRule.feePence
+    )
+  }
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -203,7 +218,7 @@ export function TeamPlayerSelectSheet({
                         </Badge>
                         {player.pricingRule && (
                           <span className="text-xs text-gray-500 tabular-nums">
-                            £{(player.pricingRule.feePence / 100).toFixed(2)}
+                            £{((getProjectedFeePence(player) ?? player.pricingRule.feePence) / 100).toFixed(2)}
                           </span>
                         )}
                       </div>

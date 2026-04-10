@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { AttendanceStatus, PaymentMethod } from '@prisma/client'
 import { allocatePaymentToSessions } from './payments'
+import { getFeePenceForRuleAt } from '@/lib/pricing-rule-version'
 
 const attendanceRowSchema = z.object({
   playerId: z.string().min(1),
@@ -61,12 +62,17 @@ export async function upsertManyAttendance(formData: FormData) {
         continue // Skip invalid players
       }
 
+      const feeAppliedPence = player.isExempt
+        ? 0
+        : await getFeePenceForRuleAt(player.pricingRuleId, session.startsAt)
+
       const attendanceData = {
         sessionId: data.sessionId,
         playerId: row.playerId,
         checkedInAt: new Date(),
         checkedInByUser: currentUser.id,
-        feeAppliedPence: row.feeAppliedPence,
+        feeAppliedPence,
+        pricingRuleId: player.pricingRuleId,
         status: row.status,
         notes: row.notes || null,
       }
@@ -356,11 +362,9 @@ export async function markAttendance(sessionId: string, playerId: string, data: 
         throw new Error('Player or session not found')
       }
 
-      // Calculate fee based on player's pricing rule
-      let feeAppliedPence = 0
-      if (player.pricingRule && !player.isExempt) {
-        feeAppliedPence = player.pricingRule.feePence
-      }
+      const feeAppliedPence = player.isExempt
+        ? 0
+        : await getFeePenceForRuleAt(player.pricingRuleId, session.startsAt)
 
       attendance = await prisma.attendance.create({
         data: {
@@ -369,6 +373,7 @@ export async function markAttendance(sessionId: string, playerId: string, data: 
           checkedInAt: data.checkedIn ? new Date() : null,
           checkedInByUser: data.checkedIn ? currentUser.id : null,
           feeAppliedPence,
+          pricingRuleId: player.pricingRuleId,
           status: player.isExempt ? 'exempt' : 'unpaid',
           notes: data.notes,
         },
@@ -581,18 +586,16 @@ export async function addPlayerToSession(sessionId: string, playerId: string) {
       throw new Error('Player or session not found')
     }
 
-
-    // Calculate fee based on player's pricing rule
-    let feeAppliedPence = 0
-    if (player.pricingRule && !player.isExempt) {
-      feeAppliedPence = player.pricingRule.feePence
-    }
+    const feeAppliedPence = player.isExempt
+      ? 0
+      : await getFeePenceForRuleAt(player.pricingRuleId, session.startsAt)
 
     const attendance = await prisma.attendance.create({
       data: {
         sessionId,
         playerId,
         feeAppliedPence,
+        pricingRuleId: player.pricingRuleId,
         status: player.isExempt ? 'exempt' : 'unpaid',
       },
     })
@@ -741,19 +744,21 @@ export async function addMultiplePlayersToSession(
       errors.push(`${invalidPlayerIds.length} player(s) not found or not in your organization`)
     }
 
-    const attendanceRecords = players.map((player) => {
-      let feeAppliedPence = 0
-      if (player.pricingRule && !player.isExempt) {
-        feeAppliedPence = player.pricingRule.feePence
-      }
+    const attendanceRecords = await Promise.all(
+      players.map(async (player) => {
+        const feeAppliedPence = player.isExempt
+          ? 0
+          : await getFeePenceForRuleAt(player.pricingRuleId, session.startsAt)
 
-      return {
-        sessionId,
-        playerId: player.id,
-        feeAppliedPence,
-        status: player.isExempt ? ('exempt' as AttendanceStatus) : ('unpaid' as AttendanceStatus),
-      }
-    })
+        return {
+          sessionId,
+          playerId: player.id,
+          feeAppliedPence,
+          pricingRuleId: player.pricingRuleId,
+          status: player.isExempt ? ('exempt' as AttendanceStatus) : ('unpaid' as AttendanceStatus),
+        }
+      })
+    )
 
     const createdRecords = await prisma.$transaction(async (tx) => {
       const records = await tx.attendance.createMany({

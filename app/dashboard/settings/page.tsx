@@ -46,6 +46,7 @@ export default async function SettingsPage() {
           <PricingRulesManagement
             pricingRules={organization.pricingRules}
             currency={organization.currency}
+            orgTimezone={organization.timezone}
             isAdmin={isAdmin}
           />
         </>

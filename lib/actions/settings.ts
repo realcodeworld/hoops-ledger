@@ -6,6 +6,10 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { normalizeToE164 } from '@/lib/utils'
+import {
+  parseOrgLocalDateTimeToUtc,
+  recomputeUnpaidFeesForRuleFrom,
+} from '@/lib/pricing-rule-version'
 
 const organizationSchema = z.object({
   name: z.string().min(1, 'Organisation name is required'),
@@ -19,6 +23,14 @@ const pricingRuleSchema = z.object({
 })
 
 const createPricingRuleSchema = pricingRuleSchema
+
+function getEffectiveFromUtc(
+  raw: FormDataEntryValue | null,
+  orgTimezone: string
+): Date {
+  const value = typeof raw === 'string' ? raw : ''
+  return parseOrgLocalDateTimeToUtc(value, orgTimezone, new Date())
+}
 
 const MONZO_PAY_URL_MAX_LEN = 2048
 
@@ -251,6 +263,19 @@ export async function updatePricingRule(formData: FormData) {
       name: formData.get('name'),
       feePence: formData.get('fee'),
     })
+    const org = await prisma.organization.findUnique({
+      where: { id: currentUser.orgId },
+      select: { timezone: true },
+    })
+
+    if (!org) {
+      throw new Error('Organisation not found')
+    }
+
+    const effectiveFrom = getEffectiveFromUtc(
+      formData.get('effectiveFrom'),
+      org.timezone
+    )
 
     // Get existing pricing rule for audit log
     const existingRule = await prisma.pricingRule.findFirst({
@@ -258,19 +283,62 @@ export async function updatePricingRule(formData: FormData) {
         id: pricingRuleId,
         orgId: currentUser.orgId,
       },
+      include: {
+        versions: {
+          orderBy: { effectiveFrom: 'desc' },
+          take: 1,
+        },
+      },
     })
 
     if (!existingRule) {
       throw new Error('Pricing rule not found')
     }
 
-    const updatedRule = await prisma.pricingRule.update({
-      where: { id: pricingRuleId },
-      data: {
-        name: data.name,
-        feePence: data.feePence,
-      },
-    })
+    const latestVersion = existingRule.versions[0]
+    const priceChanged = existingRule.feePence !== data.feePence
+
+    const { updatedRule, createdVersion, updatedAttendances } =
+      await prisma.$transaction(async (tx) => {
+        const updatedRule = await tx.pricingRule.update({
+          where: { id: pricingRuleId },
+          data: {
+            name: data.name,
+            feePence: data.feePence,
+          },
+        })
+
+        let createdVersion: {
+          id: string
+          feePence: number
+          effectiveFrom: Date
+        } | null = null
+        let updatedAttendances = 0
+
+        if (priceChanged) {
+          createdVersion = await tx.pricingRuleVersion.create({
+            data: {
+              pricingRuleId,
+              feePence: data.feePence,
+              effectiveFrom,
+            },
+            select: {
+              id: true,
+              feePence: true,
+              effectiveFrom: true,
+            },
+          })
+
+          updatedAttendances = await recomputeUnpaidFeesForRuleFrom(
+            pricingRuleId,
+            effectiveFrom,
+            currentUser.orgId,
+            tx
+          )
+        }
+
+        return { updatedRule, createdVersion, updatedAttendances }
+      })
 
     // Create audit log
     await prisma.auditLog.create({
@@ -283,16 +351,29 @@ export async function updatePricingRule(formData: FormData) {
         before: {
           name: existingRule.name,
           feePence: existingRule.feePence,
+          latestVersionId: latestVersion?.id ?? null,
+          latestEffectiveFrom: latestVersion?.effectiveFrom ?? null,
         },
         after: {
           name: updatedRule.name,
           feePence: updatedRule.feePence,
+          effectiveFrom: createdVersion?.effectiveFrom ?? null,
+          pricingRuleVersionId: createdVersion?.id ?? null,
+          updatedAttendances,
         },
       },
     })
 
     revalidatePath('/dashboard/settings')
-    return { success: true, message: 'Pricing rules updated successfully' }
+    revalidatePath('/dashboard/sessions')
+    revalidatePath('/player/payments')
+    revalidatePath('/player/dashboard')
+    return {
+      success: true,
+      message: priceChanged
+        ? `Pricing category updated successfully. ${updatedAttendances} unpaid session fee(s) were refreshed.`
+        : 'Pricing category updated successfully',
+    }
   } catch (error) {
     console.error('Pricing rule update error:', error)
     return {
@@ -315,12 +396,24 @@ export async function createPricingRule(formData: FormData) {
       feePence: formData.get('fee'),
     })
 
-    const pricingRule = await prisma.pricingRule.create({
-      data: {
-        orgId: currentUser.orgId,
-        name: data.name,
-        feePence: data.feePence,
-      },
+    const pricingRule = await prisma.$transaction(async (tx) => {
+      const pricingRule = await tx.pricingRule.create({
+        data: {
+          orgId: currentUser.orgId,
+          name: data.name,
+          feePence: data.feePence,
+        },
+      })
+
+      await tx.pricingRuleVersion.create({
+        data: {
+          pricingRuleId: pricingRule.id,
+          feePence: data.feePence,
+          effectiveFrom: new Date(),
+        },
+      })
+
+      return pricingRule
     })
 
     // Create audit log
@@ -435,6 +528,11 @@ export async function getOrganizationSettings() {
       include: {
         pricingRules: {
           orderBy: { createdAt: 'asc' },
+          include: {
+            versions: {
+              orderBy: { effectiveFrom: 'desc' },
+            },
+          },
         },
       },
     })

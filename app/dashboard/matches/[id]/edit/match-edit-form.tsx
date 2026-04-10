@@ -104,6 +104,7 @@ export function MatchEditForm({
 
   const availableForTeamA = players.filter((p) => !teamBIds.includes(p.id))
   const availableForTeamB = players.filter((p) => !teamAIds.includes(p.id))
+  const selectedSession = sessions.find((session) => session.id === sessionId) ?? null
   const allAssigned =
     players.length > 0 &&
     players.every((p) => teamAIds.includes(p.id) || teamBIds.includes(p.id))
@@ -254,6 +255,7 @@ export function MatchEditForm({
             players={players}
             availablePlayers={availableForTeamA}
             selectedIds={teamAIds}
+            sessionStartsAt={selectedSession?.startsAt}
             open={teamASheetOpen}
             onOpenChange={setTeamASheetOpen}
             onChange={setTeamAIds}
@@ -263,6 +265,7 @@ export function MatchEditForm({
             players={players}
             availablePlayers={availableForTeamB}
             selectedIds={teamBIds}
+            sessionStartsAt={selectedSession?.startsAt}
             open={teamBSheetOpen}
             onOpenChange={setTeamBSheetOpen}
             onChange={setTeamBIds}

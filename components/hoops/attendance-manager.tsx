@@ -64,12 +64,19 @@ interface PricingRule {
 
 interface AttendanceManagerProps {
   sessionId: string
+  sessionStartsAt: Date
   attendance: AttendanceRecord[]
   availablePlayers: Player[]
   pricingRules: PricingRule[]
 }
 
-export function AttendanceManager({ sessionId, attendance, availablePlayers, pricingRules }: AttendanceManagerProps) {
+export function AttendanceManager({
+  sessionId,
+  sessionStartsAt,
+  attendance,
+  availablePlayers,
+  pricingRules,
+}: AttendanceManagerProps) {
   const [newPlayerName, setNewPlayerName] = useState('')
   const [newPlayerCategory, setNewPlayerCategory] = useState<string>('')
   const [isAddingPlayer, setIsAddingPlayer] = useState(false)
@@ -306,6 +313,7 @@ export function AttendanceManager({ sessionId, attendance, availablePlayers, pri
 
       <BulkAddPlayersSheet
         sessionId={sessionId}
+        sessionStartsAt={sessionStartsAt}
         players={availablePlayersForSession}
         open={isBulkAddOpen}
         onOpenChange={setIsBulkAddOpen}

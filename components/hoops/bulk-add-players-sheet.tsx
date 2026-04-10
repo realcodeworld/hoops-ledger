@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { PricingRuleVersion } from '@prisma/client'
 import { Search, Check, Users, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +14,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet'
 import { addMultiplePlayersToSession } from '@/lib/actions/attendance'
+import { resolveFeePenceFromVersionsAt } from '@/lib/pricing-rule-version-shared'
 import { cn } from '@/lib/utils'
 import { getCategoryBadgeClass } from '@/lib/format'
 
@@ -24,11 +26,13 @@ interface Player {
   pricingRule?: {
     name: string
     feePence: number
+    versions?: PricingRuleVersion[]
   } | null
 }
 
 interface BulkAddPlayersSheetProps {
   sessionId: string
+  sessionStartsAt: Date
   players: Player[]
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -36,6 +40,7 @@ interface BulkAddPlayersSheetProps {
 
 export function BulkAddPlayersSheet({
   sessionId,
+  sessionStartsAt,
   players,
   open,
   onOpenChange,
@@ -109,6 +114,15 @@ export function BulkAddPlayersSheet({
   const selectedCount = selectedIds.size
   const allFilteredSelected = filteredPlayers.length > 0 && 
     filteredPlayers.every((p) => selectedIds.has(p.id))
+
+  const getProjectedFeePence = (player: Player) => {
+    if (!player.pricingRule) return null
+    return resolveFeePenceFromVersionsAt(
+      player.pricingRule.versions,
+      new Date(sessionStartsAt),
+      player.pricingRule.feePence
+    )
+  }
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -199,7 +213,7 @@ export function BulkAddPlayersSheet({
                         </Badge>
                         {player.pricingRule && (
                           <span className="text-xs text-gray-500 tabular-nums">
-                            £{(player.pricingRule.feePence / 100).toFixed(2)}
+                            £{((getProjectedFeePence(player) ?? player.pricingRule.feePence) / 100).toFixed(2)}
                           </span>
                         )}
                       </div>
