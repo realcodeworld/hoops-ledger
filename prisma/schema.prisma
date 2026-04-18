@@ -139,6 +139,7 @@ model Match {
 
   @@index([sessionId])
   @@index([orgId])
+  @@index([orgId, createdAt])
   @@map("matches")
 }
 

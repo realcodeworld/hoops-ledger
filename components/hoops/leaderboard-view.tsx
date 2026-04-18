@@ -19,6 +19,12 @@ import type {
   WinStreakEntry,
   AttendanceStreakEntry,
 } from '@/lib/actions/leaderboard'
+import {
+  DEFAULT_LEADERBOARD_RANGE,
+  getLeaderboardRangeLabel,
+  parseLeaderboardRange,
+  type LeaderboardRange,
+} from '@/lib/leaderboard-range'
 
 const cellClass = 'px-2 py-2 sm:px-4 tabular-nums'
 const headClass = 'px-2 py-2 sm:px-4 text-muted-foreground font-medium'
@@ -28,6 +34,7 @@ const TAB_WIN = 'win'
 const TAB_ATTENDANCE = 'attendance'
 const TABS = [TAB_POINTS, TAB_WIN, TAB_ATTENDANCE] as const
 type TabValue = (typeof TABS)[number]
+const RANGE_OPTIONS: LeaderboardRange[] = ['week', 'month', 'year']
 
 const PAGE_SIZE = 10
 
@@ -42,24 +49,47 @@ function parsePage(p: string | null): number {
   return isNaN(num) || num < 1 ? 1 : num
 }
 
+function buildLeaderboardHref(
+  basePath: string,
+  {
+    tab,
+    page,
+    range,
+  }: {
+    tab?: TabValue | null
+    page?: number | null
+    range?: LeaderboardRange
+  }
+) {
+  const params = new URLSearchParams()
+  if (tab && tab !== TAB_POINTS) params.set('tab', tab)
+  if (range && range !== DEFAULT_LEADERBOARD_RANGE) params.set('range', range)
+  if (page && page > 1) params.set('page', String(page))
+  const queryString = params.toString()
+  return queryString ? `${basePath}?${queryString}` : basePath
+}
+
 interface PaginationProps {
   currentPage: number
   totalPages: number
   totalItems: number
   basePath: string
-  tab: string | null
+  tab: TabValue | null
+  range: LeaderboardRange
 }
 
-function Pagination({ currentPage, totalPages, totalItems, basePath, tab }: PaginationProps) {
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  basePath,
+  tab,
+  range,
+}: PaginationProps) {
   if (totalPages <= 1) return null
 
-  const buildHref = (p: number) => {
-    const params = new URLSearchParams()
-    if (tab && tab !== TAB_POINTS) params.set('tab', tab)
-    if (p > 1) params.set('page', String(p))
-    const queryString = params.toString()
-    return queryString ? `${basePath}?${queryString}` : basePath
-  }
+  const buildHref = (p: number) =>
+    buildLeaderboardHref(basePath, { tab, page: p, range })
 
   const startItem = (currentPage - 1) * PAGE_SIZE + 1
   const endItem = Math.min(currentPage * PAGE_SIZE, totalItems)
@@ -151,6 +181,46 @@ function Pagination({ currentPage, totalPages, totalItems, basePath, tab }: Pagi
   )
 }
 
+interface RangeToggleProps {
+  basePath: string
+  tab: TabValue
+  page: number
+  range: LeaderboardRange
+}
+
+function RangeToggle({ basePath, tab, page, range }: RangeToggleProps) {
+  return (
+    <div
+      className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1"
+      role="tablist"
+      aria-label="Leaderboard time range"
+    >
+      {RANGE_OPTIONS.map((option) => {
+        const isActive = option === range
+        return (
+          <Link
+            key={option}
+            href={buildLeaderboardHref(basePath, {
+              tab,
+              page,
+              range: option,
+            })}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm',
+              isActive
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            )}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            {option === 'week' ? 'Week' : option === 'year' ? 'Year' : 'Month'}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
 interface LeaderboardViewProps {
   entries: LeaderboardEntry[]
   winStreaks: WinStreakEntry[]
@@ -175,6 +245,8 @@ export function LeaderboardView({
   const tabParam = searchParams.get('tab')
   const tab = parseTab(tabParam)
   const page = parsePage(searchParams.get('page'))
+  const range = parseLeaderboardRange(searchParams.get('range'))
+  const rangeLabel = getLeaderboardRangeLabel(range)
 
   const myEntry = currentPlayerId ? entries.find((e) => e.playerId === currentPlayerId) : null
   const myWin = currentPlayerId ? winStreaks.find((e) => e.playerId === currentPlayerId) : null
@@ -199,6 +271,8 @@ export function LeaderboardView({
   const isMyEntryOnPage = myEntryPage === pointsPage
   const isMyWinOnPage = myWinPage === winPage
   const isMyAttOnPage = myAttPage === attendancePage
+  const currentPage =
+    tab === TAB_WIN ? winPage : tab === TAB_ATTENDANCE ? attendancePage : pointsPage
 
   const tabClass = (t: TabValue) =>
     tab === t
@@ -220,7 +294,7 @@ export function LeaderboardView({
     <div className="space-y-4">
       <div className="flex gap-2 border-b border-gray-200" role="tablist" aria-label="Leaderboard categories">
         <Link
-          href={basePath}
+          href={buildLeaderboardHref(basePath, { tab: TAB_POINTS, range })}
           className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_POINTS)}`}
           role="tab"
           aria-selected={tab === TAB_POINTS}
@@ -229,7 +303,7 @@ export function LeaderboardView({
           Points
         </Link>
         <Link
-          href={`${basePath}?tab=win`}
+          href={buildLeaderboardHref(basePath, { tab: TAB_WIN, range })}
           className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_WIN)}`}
           role="tab"
           aria-selected={tab === TAB_WIN}
@@ -238,7 +312,7 @@ export function LeaderboardView({
           Game stats
         </Link>
         <Link
-          href={`${basePath}?tab=attendance`}
+          href={buildLeaderboardHref(basePath, { tab: TAB_ATTENDANCE, range })}
           className={`px-4 py-2 text-sm font-medium transition-colors ${tabClass(TAB_ATTENDANCE)}`}
           role="tab"
           aria-selected={tab === TAB_ATTENDANCE}
@@ -250,24 +324,35 @@ export function LeaderboardView({
 
       {tab === TAB_POINTS && (
         <Card role="tabpanel" id="tabpanel-points" aria-labelledby="tab-points">
-          <CardHeader>
-            <CardTitle className="flex items-center flex-wrap gap-2">
-              <Trophy className="w-5 h-5 mr-2 text-primary" />
-              Points ranking
-              {currentPlayerId && (
-                myEntry ? (
-                  <span className="text-base font-normal text-gray-500">
-                    You&apos;re #{myEntry.rank} ({myEntry.totalPoints} pts)
-                  </span>
-                ) : (
-                  currentPlayerPoints != null && (
-                    <span className="text-base font-normal text-gray-500">
-                      Your points: {currentPlayerPoints} pts
-                    </span>
-                  )
-                )
-              )}
-            </CardTitle>
+          <CardHeader className="gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <CardTitle className="flex items-center flex-wrap gap-2">
+                  <Trophy className="w-5 h-5 mr-2 text-primary" />
+                  Points ranking
+                  {currentPlayerId && (
+                    myEntry ? (
+                      <span className="text-base font-normal text-gray-500">
+                        You&apos;re #{myEntry.rank} ({myEntry.totalPoints} pts)
+                      </span>
+                    ) : (
+                      currentPlayerPoints != null && (
+                        <span className="text-base font-normal text-gray-500">
+                          Your points: {currentPlayerPoints} pts
+                        </span>
+                      )
+                    )
+                  )}
+                </CardTitle>
+                <p className="mt-1 text-sm text-gray-500">{rangeLabel} (UTC)</p>
+              </div>
+              <RangeToggle
+                basePath={basePath}
+                tab={tab}
+                page={currentPage}
+                range={range}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {entries.length === 0 ? (
@@ -340,6 +425,7 @@ export function LeaderboardView({
                   totalItems={entries.length}
                   basePath={basePath}
                   tab={null}
+                  range={range}
                 />
               </>
             )}
@@ -349,24 +435,34 @@ export function LeaderboardView({
 
       {tab === TAB_WIN && (
         <Card role="tabpanel" id="tabpanel-win" aria-labelledby="tab-win">
-          <CardHeader>
-            <CardTitle className="flex items-center flex-wrap gap-2">
-              <Flame className="w-5 h-5 mr-2 text-orange-500" />
-              Game stats
-              {currentPlayerId && myWin && (
-                <span className="text-base font-normal text-gray-500">
-                  You&apos;re #{myWin.rank} · {myWin.gamesPlayed} games, {myWin.wins} W, {myWin.losses} L · Current: {myWin.currentWinStreak} · Max: {myWin.maxWinStreak}
-                </span>
-              )}
-              {currentPlayerId && !myWin && (
-                <span className="text-base font-normal text-gray-500">
-                  Record match results to see game stats.
-                </span>
-              )}
-            </CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
-              Games played, wins, losses, and streaks (by match date)
-            </p>
+          <CardHeader className="gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <CardTitle className="flex items-center flex-wrap gap-2">
+                  <Flame className="w-5 h-5 mr-2 text-orange-500" />
+                  Game stats
+                  {currentPlayerId && myWin && (
+                    <span className="text-base font-normal text-gray-500">
+                      You&apos;re #{myWin.rank} · {myWin.gamesPlayed} games, {myWin.wins} W, {myWin.losses} L · Current: {myWin.currentWinStreak} · Max: {myWin.maxWinStreak}
+                    </span>
+                  )}
+                  {currentPlayerId && !myWin && (
+                    <span className="text-base font-normal text-gray-500">
+                      Record match results to see game stats.
+                    </span>
+                  )}
+                </CardTitle>
+                <p className="mt-1 text-sm text-gray-500">
+                  Active players from {rangeLabel.toLowerCase()} (UTC); wins and streaks are lifetime.
+                </p>
+              </div>
+              <RangeToggle
+                basePath={basePath}
+                tab={tab}
+                page={currentPage}
+                range={range}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {winStreaks.length === 0 ? (
@@ -467,6 +563,7 @@ export function LeaderboardView({
                   totalItems={winStreaks.length}
                   basePath={basePath}
                   tab={TAB_WIN}
+                  range={range}
                 />
               </>
             )}
@@ -476,24 +573,34 @@ export function LeaderboardView({
 
       {tab === TAB_ATTENDANCE && (
         <Card role="tabpanel" id="tabpanel-attendance" aria-labelledby="tab-attendance">
-          <CardHeader>
-            <CardTitle className="flex items-center flex-wrap gap-2">
-              <CalendarCheck className="w-5 h-5 mr-2 text-green-600" />
-              Session stats
-              {currentPlayerId && myAtt && (
-                <span className="text-base font-normal text-gray-500">
-                  You&apos;re #{myAtt.rank} · {myAtt.sessionsAttended} attended, {myAtt.sessionsMissed} missed · Current: {myAtt.currentStreak} · Max: {myAtt.maxStreak}
-                </span>
-              )}
-              {currentPlayerId && !myAtt && (
-                <span className="text-base font-normal text-gray-500">
-                  Attend sessions to appear here.
-                </span>
-              )}
-            </CardTitle>
-            <p className="text-sm text-gray-500 mt-1">
-              Sessions attended, missed, and streaks (by session date)
-            </p>
+          <CardHeader className="gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <CardTitle className="flex items-center flex-wrap gap-2">
+                  <CalendarCheck className="w-5 h-5 mr-2 text-green-600" />
+                  Session stats
+                  {currentPlayerId && myAtt && (
+                    <span className="text-base font-normal text-gray-500">
+                      You&apos;re #{myAtt.rank} · {myAtt.sessionsAttended} attended, {myAtt.sessionsMissed} missed · Current: {myAtt.currentStreak} · Max: {myAtt.maxStreak}
+                    </span>
+                  )}
+                  {currentPlayerId && !myAtt && (
+                    <span className="text-base font-normal text-gray-500">
+                      Attend sessions to appear here.
+                    </span>
+                  )}
+                </CardTitle>
+                <p className="mt-1 text-sm text-gray-500">
+                  Active players from {rangeLabel.toLowerCase()} (UTC); attendance streaks are lifetime.
+                </p>
+              </div>
+              <RangeToggle
+                basePath={basePath}
+                tab={tab}
+                page={currentPage}
+                range={range}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {attendanceStreaks.length === 0 ? (
@@ -587,6 +694,7 @@ export function LeaderboardView({
                   totalItems={attendanceStreaks.length}
                   basePath={basePath}
                   tab={TAB_ATTENDANCE}
+                  range={range}
                 />
               </>
             )}

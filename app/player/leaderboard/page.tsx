@@ -3,23 +3,32 @@ import { Suspense } from 'react'
 import { getCurrentPlayer } from '@/lib/auth'
 import { getLeaderboard, getPlayerTotalPoints, getWinStreaks, getAttendanceStreaks } from '@/lib/actions/leaderboard'
 import { LeaderboardView } from '@/components/hoops/leaderboard-view'
+import { parseLeaderboardRange } from '@/lib/leaderboard-range'
 
-export default async function PlayerLeaderboardPage() {
+interface PlayerLeaderboardPageProps {
+  searchParams: Promise<{ range?: string }>
+}
+
+export default async function PlayerLeaderboardPage({
+  searchParams,
+}: PlayerLeaderboardPageProps) {
   const player = await getCurrentPlayer()
   if (!player) redirect('/')
+  const params = await searchParams
+  const range = parseLeaderboardRange(params.range)
 
   const [leaderboardResult, winStreaksResult, attendanceStreaksResult] =
     await Promise.all([
-      getLeaderboard(),
-      getWinStreaks(),
-      getAttendanceStreaks(),
+      getLeaderboard(range),
+      getWinStreaks(range),
+      getAttendanceStreaks(range),
     ])
   const entries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
   const winStreaks = winStreaksResult.success ? winStreaksResult.data ?? [] : []
   const attendanceStreaks = attendanceStreaksResult.success
     ? attendanceStreaksResult.data ?? []
     : []
-  const myPoints = await getPlayerTotalPoints(player.id)
+  const myPoints = await getPlayerTotalPoints(player.id, range)
 
   return (
     <>

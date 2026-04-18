@@ -20,6 +20,10 @@ import { buildMonzoPaymentUrl } from '@/lib/monzo-pay-url'
 import { PlayerBalanceBreakdown } from '@/components/hoops/player-balance-breakdown'
 import { PlayerBalanceDueBanner } from '@/components/hoops/player-balance-due-banner'
 import { PlayerRefreshButton } from '@/components/hoops/player-refresh-button'
+import {
+  DEFAULT_LEADERBOARD_RANGE,
+  getLeaderboardRangeLabel,
+} from '@/lib/leaderboard-range'
 
 export default async function PlayerDashboardPage() {
   const player = await getCurrentPlayer()
@@ -115,14 +119,18 @@ export default async function PlayerDashboardPage() {
   const draws = matchHistory.filter((m) => m.isDraw).length
   const losses = matchHistory.length - wins - draws
   const lastMatch = matchHistory[0]
+  const dashboardLeaderboardRange = DEFAULT_LEADERBOARD_RANGE
+  const dashboardLeaderboardLabel = getLeaderboardRangeLabel(
+    dashboardLeaderboardRange
+  )
 
   const [leaderboardResult, winStreaksResult] = await Promise.all([
-    getLeaderboard(),
-    getWinStreaks(),
+    getLeaderboard(dashboardLeaderboardRange),
+    getWinStreaks(dashboardLeaderboardRange),
   ])
   const leaderboardEntries = leaderboardResult.success ? leaderboardResult.data ?? [] : []
   const winStreaks = winStreaksResult.success ? winStreaksResult.data ?? [] : []
-  const myPoints = await getPlayerTotalPoints(player.id)
+  const myPoints = await getPlayerTotalPoints(player.id, dashboardLeaderboardRange)
 
   const myPointsEntry = leaderboardEntries.find((e) => e.playerId === player.id)
   const myWinEntry = winStreaks.find((e) => e.playerId === player.id)
@@ -310,18 +318,23 @@ export default async function PlayerDashboardPage() {
             <Trophy className="w-5 h-5 mr-2 text-primary" />
             Leaderboard
           </CardTitle>
+          <p className="text-sm text-gray-500">{dashboardLeaderboardLabel} (UTC)</p>
         </CardHeader>
         <CardContent>
           {pointsRank != null ? (
             <p className="text-sm text-gray-700 mb-1">
-              You&apos;re #{pointsRank} on points
+              You&apos;re #{pointsRank} on points in the {dashboardLeaderboardLabel.toLowerCase()}
               {myPoints != null && ` (${myPoints} pts)`}
             </p>
           ) : (
-            <p className="text-sm text-gray-500 mb-1">Record matches to appear on the leaderboard</p>
+            <p className="text-sm text-gray-500 mb-1">
+              Record matches or attend sessions to appear in the {dashboardLeaderboardLabel.toLowerCase()} leaderboard.
+            </p>
           )}
           {maxStreak > 0 && (
-            <p className="text-sm text-gray-600 mb-3">Best win streak: {maxStreak}</p>
+            <p className="text-sm text-gray-600 mb-3">
+              Best lifetime win streak: {maxStreak}
+            </p>
           )}
           <Button asChild variant="outline" size="sm">
             <Link href="/player/leaderboard">

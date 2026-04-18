@@ -8,6 +8,11 @@ import {
   POINTS_PER_MATCH_PARTICIPATION,
   POINT_SOURCE_MATCH_WIN,
 } from '@/lib/points'
+import {
+  DEFAULT_LEADERBOARD_RANGE,
+  getRollingWindowUtc,
+  type LeaderboardRange,
+} from '@/lib/leaderboard-range'
 
 export interface LeaderboardEntry {
   playerId: string
@@ -16,41 +21,170 @@ export interface LeaderboardEntry {
   rank: number
 }
 
-/**
- * Compute total points for a single player.
- * totalPoints = (attendanceCount * P1) + (paidCount * P2) + (matchParticipations * P3) + sum(PlayerPointEntry match_win)
- */
-export async function getPlayerTotalPoints(playerId: string): Promise<number> {
-  try {
-    const [attendanceCount, paidCount, matchParticipationCount, pointEntrySum] = await Promise.all([
-      prisma.attendance.count({
-        where: { playerId },
-      }),
-      prisma.attendance.count({
+interface VisiblePlayer {
+  id: string
+  name: string
+}
+
+interface ScopedPointsResult {
+  totals: Map<string, number>
+  activePlayerIds: Set<string>
+}
+
+async function getLeaderboardOrgId(): Promise<string | null> {
+  const user = await getCurrentUser()
+  const player = user
+    ? null
+    : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
+  return user?.orgId ?? player?.orgId ?? null
+}
+
+async function getVisiblePlayers(orgId: string): Promise<VisiblePlayer[]> {
+  return prisma.player.findMany({
+    where: {
+      orgId,
+      isActive: true,
+      hideFromLeaderboard: false,
+    },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+}
+
+function buildPointsResult(
+  playerIds: string[],
+  attendanceCounts: Array<{ playerId: string; _count: { id: number } }>,
+  paidCounts: Array<{ playerId: string; _count: { id: number } }>,
+  matchParticipationCounts: Array<{ playerId: string; _count: { id: number } }>,
+  pointSums: Array<{ playerId: string; _sum: { amount: number | null } }>
+): ScopedPointsResult {
+  const attendanceByPlayer = new Map(
+    attendanceCounts.map((r) => [r.playerId, r._count.id])
+  )
+  const paidByPlayer = new Map(paidCounts.map((r) => [r.playerId, r._count.id]))
+  const matchParticipationByPlayer = new Map(
+    matchParticipationCounts.map((r) => [r.playerId, r._count.id])
+  )
+  const entrySumByPlayer = new Map(
+    pointSums.map((r) => [r.playerId, r._sum.amount ?? 0])
+  )
+
+  const activePlayerIds = new Set<string>([
+    ...attendanceByPlayer.keys(),
+    ...paidByPlayer.keys(),
+    ...matchParticipationByPlayer.keys(),
+    ...entrySumByPlayer.keys(),
+  ])
+
+  const totals = new Map<string, number>()
+  for (const id of playerIds) {
+    const attendance = attendanceByPlayer.get(id) ?? 0
+    const paid = paidByPlayer.get(id) ?? 0
+    const matchParticipations = matchParticipationByPlayer.get(id) ?? 0
+    const entries = entrySumByPlayer.get(id) ?? 0
+    totals.set(
+      id,
+      attendance * POINTS_PER_ATTENDANCE +
+        paid * POINTS_PER_PAID_SESSION +
+        matchParticipations * POINTS_PER_MATCH_PARTICIPATION +
+        entries
+    )
+  }
+
+  return { totals, activePlayerIds }
+}
+
+async function getScopedPlayerTotals(
+  orgId: string,
+  playerIds: string[],
+  range: LeaderboardRange
+): Promise<ScopedPointsResult> {
+  if (playerIds.length === 0) {
+    return {
+      totals: new Map(),
+      activePlayerIds: new Set(),
+    }
+  }
+
+  const { start, end } = getRollingWindowUtc(range)
+  const [attendanceCounts, paidCounts, matchParticipationCounts, pointSums] =
+    await Promise.all([
+      prisma.attendance.groupBy({
+        by: ['playerId'],
         where: {
-          playerId,
-          status: 'paid',
+          playerId: { in: playerIds },
+          session: {
+            orgId,
+            startsAt: { gte: start, lt: end },
+            status: { not: 'cancelled' },
+          },
         },
+        _count: { id: true },
       }),
-      prisma.matchPlayer.count({
-        where: { playerId },
-      }),
-      prisma.playerPointEntry.aggregate({
+      prisma.attendance.groupBy({
+        by: ['playerId'],
         where: {
-          playerId,
+          playerId: { in: playerIds },
+          status: 'paid',
+          session: {
+            orgId,
+            startsAt: { gte: start, lt: end },
+            status: { not: 'cancelled' },
+          },
+        },
+        _count: { id: true },
+      }),
+      prisma.matchPlayer.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
+          match: {
+            orgId,
+            createdAt: { gte: start, lt: end },
+          },
+        },
+        _count: { id: true },
+      }),
+      prisma.playerPointEntry.groupBy({
+        by: ['playerId'],
+        where: {
+          playerId: { in: playerIds },
           source: POINT_SOURCE_MATCH_WIN,
+          match: {
+            orgId,
+            createdAt: { gte: start, lt: end },
+          },
         },
         _sum: { amount: true },
       }),
     ])
 
-    const entryPoints = pointEntrySum._sum.amount ?? 0
-    return (
-      attendanceCount * POINTS_PER_ATTENDANCE +
-      paidCount * POINTS_PER_PAID_SESSION +
-      matchParticipationCount * POINTS_PER_MATCH_PARTICIPATION +
-      entryPoints
-    )
+  return buildPointsResult(
+    playerIds,
+    attendanceCounts,
+    paidCounts,
+    matchParticipationCounts,
+    pointSums
+  )
+}
+
+/**
+ * Compute total points for a single player.
+ * totalPoints = (attendanceCount * P1) + (paidCount * P2) + (matchParticipations * P3) + sum(PlayerPointEntry match_win)
+ */
+export async function getPlayerTotalPoints(
+  playerId: string,
+  range: LeaderboardRange = DEFAULT_LEADERBOARD_RANGE
+): Promise<number> {
+  try {
+    const player = await prisma.player.findUnique({
+      where: { id: playerId },
+      select: { orgId: true },
+    })
+    if (!player) return 0
+
+    const { totals } = await getScopedPlayerTotals(player.orgId, [playerId], range)
+    return totals.get(playerId) ?? 0
   } catch (error) {
     console.error('Get player total points error:', error)
     return 0
@@ -100,34 +234,13 @@ export async function getAllPlayerTotals(
       }),
     ])
 
-    const attendanceByPlayer = new Map(
-      attendanceCounts.map((r) => [r.playerId, r._count.id])
-    )
-    const paidByPlayer = new Map(
-      paidCounts.map((r) => [r.playerId, r._count.id])
-    )
-    const matchParticipationByPlayer = new Map(
-      matchParticipationCounts.map((r) => [r.playerId, r._count.id])
-    )
-    const entrySumByPlayer = new Map(
-      pointSums.map((r) => [r.playerId, r._sum.amount ?? 0])
-    )
-
-    const result = new Map<string, number>()
-    for (const id of playerIds) {
-      const att = attendanceByPlayer.get(id) ?? 0
-      const paid = paidByPlayer.get(id) ?? 0
-      const matchParts = matchParticipationByPlayer.get(id) ?? 0
-      const entries = entrySumByPlayer.get(id) ?? 0
-      result.set(
-        id,
-        att * POINTS_PER_ATTENDANCE +
-          paid * POINTS_PER_PAID_SESSION +
-          matchParts * POINTS_PER_MATCH_PARTICIPATION +
-          entries
-      )
-    }
-    return result
+    return buildPointsResult(
+      playerIds,
+      attendanceCounts,
+      paidCounts,
+      matchParticipationCounts,
+      pointSums
+    ).totals
   } catch (error) {
     console.error('Get all player totals error:', error)
     return new Map()
@@ -138,36 +251,34 @@ export async function getAllPlayerTotals(
  * Get leaderboard for org: ranked list of players (excluding hideFromLeaderboard),
  * with totalPoints and 1-based rank.
  */
-export async function getLeaderboard(): Promise<{
+export async function getLeaderboard(
+  range: LeaderboardRange = DEFAULT_LEADERBOARD_RANGE
+): Promise<{
   success: boolean
   data?: LeaderboardEntry[]
   error?: string
 }> {
   try {
-    const user = await getCurrentUser()
-    const player = user ? null : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
-    const orgId = user?.orgId ?? player?.orgId
+    const orgId = await getLeaderboardOrgId()
     if (!orgId) {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const players = await prisma.player.findMany({
-      where: {
-        orgId,
-        isActive: true,
-        hideFromLeaderboard: false,
-      },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
-    })
-
-    const totals = await getAllPlayerTotals(orgId)
-    const entries: LeaderboardEntry[] = players.map((p) => ({
-      playerId: p.id,
-      name: p.name,
-      totalPoints: totals.get(p.id) ?? 0,
-      rank: 0,
-    }))
+    const players = await getVisiblePlayers(orgId)
+    const playerIds = players.map((player) => player.id)
+    const { totals, activePlayerIds } = await getScopedPlayerTotals(
+      orgId,
+      playerIds,
+      range
+    )
+    const entries: LeaderboardEntry[] = players
+      .filter((player) => activePlayerIds.has(player.id))
+      .map((player) => ({
+        playerId: player.id,
+        name: player.name,
+        totalPoints: totals.get(player.id) ?? 0,
+        rank: 0,
+      }))
 
     entries.sort((a, b) => b.totalPoints - a.totalPoints)
     entries.forEach((e, i) => {
@@ -209,34 +320,44 @@ export interface AttendanceStreakEntry {
  * Longest consecutive match wins per player (matches ordered by createdAt).
  * Only includes players with at least one match; excludes hideFromLeaderboard.
  */
-export async function getWinStreaks(): Promise<{
+export async function getWinStreaks(
+  range: LeaderboardRange = DEFAULT_LEADERBOARD_RANGE
+): Promise<{
   success: boolean
   data?: WinStreakEntry[]
   error?: string
 }> {
   try {
-    const user = await getCurrentUser()
-    const player = user ? null : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
-    const orgId = user?.orgId ?? player?.orgId
+    const orgId = await getLeaderboardOrgId()
     if (!orgId) {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const players = await prisma.player.findMany({
+    const players = await getVisiblePlayers(orgId)
+    const playerIds = players.map((player) => player.id)
+    const { start, end } = getRollingWindowUtc(range)
+    const activePlayers = await prisma.matchPlayer.findMany({
       where: {
-        orgId,
-        isActive: true,
-        hideFromLeaderboard: false,
+        playerId: { in: playerIds },
+        match: {
+          orgId,
+          createdAt: { gte: start, lt: end },
+        },
       },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
+      select: { playerId: true },
+      distinct: ['playerId'],
     })
-    const playerIds = new Set(players.map((p) => p.id))
+    const activePlayerIds = new Set(activePlayers.map((player) => player.playerId))
+    const eligiblePlayerIds = [...activePlayerIds]
+
+    if (eligiblePlayerIds.length === 0) {
+      return { success: true, data: [] }
+    }
 
     const matchPlayers = await prisma.matchPlayer.findMany({
       where: {
         match: { orgId },
-        playerId: { in: [...playerIds] },
+        playerId: { in: eligiblePlayerIds },
       },
       include: {
         match: { select: { winningTeam: true, createdAt: true } },
@@ -255,6 +376,7 @@ export async function getWinStreaks(): Promise<{
     }
 
     const entries: WinStreakEntry[] = players
+      .filter((player) => activePlayerIds.has(player.id))
       .map((p) => {
         const results = byPlayer.get(p.id) ?? []
         const gamesPlayed = results.length
@@ -308,33 +430,44 @@ export async function getWinStreaks(): Promise<{
  * Longest consecutive sessions attended per player (sessions ordered by startsAt).
  * Only includes players with at least one attendance; excludes hideFromLeaderboard.
  */
-export async function getAttendanceStreaks(): Promise<{
+export async function getAttendanceStreaks(
+  range: LeaderboardRange = DEFAULT_LEADERBOARD_RANGE
+): Promise<{
   success: boolean
   data?: AttendanceStreakEntry[]
   error?: string
 }> {
   try {
-    const user = await getCurrentUser()
-    const player = user ? null : await import('@/lib/auth').then((m) => m.getCurrentPlayer())
-    const orgId = user?.orgId ?? player?.orgId
+    const orgId = await getLeaderboardOrgId()
     if (!orgId) {
       return { success: false, error: 'Unauthorized' }
     }
 
-    const players = await prisma.player.findMany({
+    const players = await getVisiblePlayers(orgId)
+    const playerIds = players.map((player) => player.id)
+    const { start, end } = getRollingWindowUtc(range)
+    const activePlayers = await prisma.attendance.findMany({
       where: {
-        orgId,
-        isActive: true,
-        hideFromLeaderboard: false,
+        playerId: { in: playerIds },
+        session: {
+          orgId,
+          startsAt: { gte: start, lt: end },
+          status: { not: 'cancelled' },
+        },
       },
-      select: { id: true, name: true },
-      orderBy: { name: 'asc' },
+      select: { playerId: true },
+      distinct: ['playerId'],
     })
-    const playerIds = new Set(players.map((p) => p.id))
+    const activePlayerIds = new Set(activePlayers.map((player) => player.playerId))
+    const eligiblePlayerIds = [...activePlayerIds]
+
+    if (eligiblePlayerIds.length === 0) {
+      return { success: true, data: [] }
+    }
 
     const [sessions, attendances] = await Promise.all([
       prisma.session.findMany({
-        where: { 
+        where: {
           orgId,
           status: {
             not: 'cancelled',
@@ -345,8 +478,11 @@ export async function getAttendanceStreaks(): Promise<{
       }),
       prisma.attendance.findMany({
         where: {
-          session: { orgId },
-          playerId: { in: [...playerIds] },
+          session: {
+            orgId,
+            status: { not: 'cancelled' },
+          },
+          playerId: { in: eligiblePlayerIds },
         },
         select: { playerId: true, sessionId: true },
       }),
@@ -360,6 +496,7 @@ export async function getAttendanceStreaks(): Promise<{
 
     const totalSessions = orderedSessionIds.length
     const entries: AttendanceStreakEntry[] = players
+      .filter((player) => activePlayerIds.has(player.id))
       .map((p) => {
         const attended = attendedByPlayer.get(p.id) ?? new Set()
         const sessionsAttended = attended.size
